@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-root: #09090B;
+  --bg-card: #18181B;
+  --border: #27272A;
+  --accent: #EF4444;
+  --accent-muted: rgba(239, 68, 68, 0.12);
+  --text-primary: #FAFAFA;
+  --text-muted: #A1A1AA;
+  --text-subtle: #52525B;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-root);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-subtle); }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.4s ease both; }
+.animate-fade-in-up-1 { animation: fadeInUp 0.4s ease 0.05s both; }
+.animate-fade-in-up-2 { animation: fadeInUp 0.4s ease 0.1s both; }
+.animate-fade-in-up-3 { animation: fadeInUp 0.4s ease 0.15s both; }
+.animate-fade-in-up-4 { animation: fadeInUp 0.4s ease 0.2s both; }
+.animate-fade-in-up-5 { animation: fadeInUp 0.4s ease 0.25s both; }
+.animate-fade-in-up-6 { animation: fadeInUp 0.4s ease 0.3s both; }
+.animate-fade-in-up-7 { animation: fadeInUp 0.4s ease 0.35s both; }
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover { border-color: #3f3f46; }
+.card-accent {
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.06), 0 8px 32px rgba(239, 68, 68, 0.08);
+}
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+}
+.nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.nav-item.active {
+  color: #FAFAFA;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.nav-item.active span { color: #EF4444 !important; }
+
+/* Variante outil (section OUTILS) — icône muted par défaut */
+.nav-item-tool {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+}
+.nav-item-tool:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.progress-track { height: 6px; width: 100%; background: #09090B; border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.badge-success { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-danger { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-warning { background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
+  font-family: inherit;
+}
+.btn-primary:hover { background: #dc2626; box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.input-field {
+  width: 100%;
+  background: #09090B;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+.input-field:focus { border-color: rgba(239, 68, 68, 0.5); }
+.input-field::placeholder { color: var(--text-subtle); }
+
+.cal-day {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.cal-day.today { background: #EF4444; color: white; font-weight: 700; }
+.cal-day.payday { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; }
+.cal-day.has-expense { color: var(--text-primary); }
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #09090B;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.15s ease;
+}
+.tx-item:hover { border-color: #3f3f46; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ── Sidebar responsive ──────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  background: #09090B;
+  border-right: 1px solid #27272A;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 12px;
+  flex-shrink: 0;
+  /* Desktop: toujours visible dans le flux */
+  position: relative;
+  height: 100vh;
+  z-index: 50;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile : drawer caché par défaut */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ── Logo image ──────────────────────────────────────────────────────────── */
+/* logo.png a un fond #09090B natif → pas de halo.
+   On désactive tout filtre parasite et on force object-fit:contain */
+.logo-full-img {
+  display: block;
+  object-fit: contain;
+  height: auto;
+  /* Supprime le fond blanc si jamais le navigateur ajoute un background */
+  background: transparent !important;
+  /* Évite le halo blanc sur les navigateurs WebKit */
+  -webkit-print-color-adjust: exact;
+}
+
+/* logo-icon.png a un fond blanc → on utilise mix-blend-mode pour dark bg */
+.logo-icon-img {
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Hamburger mobile : visible seulement sur petits écrans ─────────────── */
+.hamburger-btn {
+  display: none;
+}
+@media (max-width: 767px) {
+  .hamburger-btn {
+    display: flex;
+  }
+}
+
+/* ── Responsive logo in header ───────────────────────────────────────────── */
+/* Sur mobile, le logo-icon dans le header est visible */
+.header-logo-icon {
+  display: none;
+}
+@media (max-width: 767px) {
+  .header-logo-icon {
+    display: flex;
+  }
+}
+
+/* ── Masquage responsive utilitaire ─────────────────────────────────────── */
+.hidden-mobile { display: flex; }
+.visible-mobile { display: none; }
+
+@media (max-width: 767px) {
+  .hidden-mobile { display: none; }
+  .visible-mobile { display: flex; }
+}

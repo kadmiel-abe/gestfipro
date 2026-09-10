@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6D52E8"/>
+      <stop offset="100%" stop-color="#5540C8"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond violet banque -->
+  <rect width="48" height="48" rx="11" fill="url(#bg)"/>
+  <!-- Toit/fronton (triangle) -->
+  <polygon points="24,10 40,20 8,20" fill="white"/>
+  <!-- Colonnes -->
+  <rect x="11" y="21" width="4" height="15" rx="1" fill="white"/>
+  <rect x="19" y="21" width="4" height="15" rx="1" fill="white"/>
+  <rect x="27" y="21" width="4" height="15" rx="1" fill="white"/>
+  <rect x="35" y="21" width="4" height="15" rx="1" fill="white"/>
+  <!-- Socle -->
+  <rect x="8" y="36" width="32" height="3.5" rx="1.5" fill="white"/>
+</svg>

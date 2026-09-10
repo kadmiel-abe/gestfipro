@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="mvg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066CC"/>
+      <stop offset="100%" stop-color="#0050A0"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="11" fill="url(#mvg)"/>
+  <!-- Bande rouge caractéristique Moov -->
+  <rect x="0" y="34" width="48" height="14" rx="0" fill="#EF4444"/>
+  <rect x="0" y="34" width="48" height="14" rx="11" fill="#EF4444"/>
+  <!-- Lettre M blanche -->
+  <path
+    d="M10 30 L10 13 L18.5 24.5 L24 16 L29.5 24.5 L38 13 L38 30"
+    stroke="white"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Texte moov en bas (simplifié) -->
+  <text x="24" y="43" text-anchor="middle" font-family="Arial, sans-serif" font-size="7.5" font-weight="900" fill="white" letter-spacing="1">MOOV</text>
+</svg>

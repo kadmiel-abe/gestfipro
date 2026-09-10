@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A9E6A"/>
+      <stop offset="100%" stop-color="#148057"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond vert espèces -->
+  <rect width="48" height="48" rx="11" fill="url(#cg)"/>
+  <!-- Billet principal -->
+  <rect x="8" y="15" width="32" height="20" rx="3" stroke="white" stroke-width="2.2" fill="none"/>
+  <!-- Lignes décoratives du billet -->
+  <line x1="8" y1="20" x2="40" y2="20" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  <line x1="8" y1="30" x2="40" y2="30" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  <!-- Cercle central (sceau) -->
+  <circle cx="24" cy="25" r="4.5" stroke="white" stroke-width="1.8" fill="none"/>
+  <!-- Pièce décorative coin bas-droite -->
+  <circle cx="37" cy="34" r="5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+  <line x1="37" y1="31" x2="37" y2="37" stroke="rgba(255,255,255,0.8)" stroke-width="1.2"/>
+  <line x1="34" y1="34" x2="40" y2="34" stroke="rgba(255,255,255,0.8)" stroke-width="1.2"/>
+</svg>

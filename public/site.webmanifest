@@ -1,0 +1,23 @@
+{
+  "name": "GestFiPro — Gestion Financière",
+  "short_name": "GestFiPro",
+  "description": "Tableau de bord financier pour salariés et fonctionnaires en Afrique de l'Ouest",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1080x1080",
+      "type": "image/png"
+    }
+  ]
+}

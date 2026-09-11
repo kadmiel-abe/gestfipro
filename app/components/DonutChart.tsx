@@ -8,20 +8,71 @@ interface Category {
   color: string;
 }
 
-const categories: Category[] = [
-  { label: "Nourriture", value: 0, color: "#EF4444" },
-  { label: "Transport",  value: 0, color: "#6366f1" },
-  { label: "Logement",   value: 0, color: "#8b5cf6" },
-  { label: "Loisirs",    value: 0, color: "#f59e0b" },
-  { label: "Autres",     value: 0, color: "#10b981" },
-];
+interface DonutChartProps {
+  transactions?: any[];
+}
 
 const SIZE = 140;
 const STROKE = 20;
 const R = (SIZE - STROKE) / 2;
 const CIRC = 2 * Math.PI * R;
 
-export default function DonutChart() {
+const defaultColorMap: Record<string, string> = {
+  "Nourriture": "#EF4444",
+  "Transport": "#6366f1",
+  "Logement": "#8b5cf6",
+  "Loisirs": "#f59e0b",
+  "Santé": "#ec4899",
+  "Éducation": "#14b8a6",
+  "Vêtements": "#3b82f6",
+  "Divers": "#10b981",
+  "Autres": "#10b981",
+};
+
+export default function DonutChart({ transactions = [] }: DonutChartProps) {
+  const expenseList = transactions.filter((t) => t.type === "expense" || t.amount < 0);
+  const totalExpense = expenseList.reduce((acc, t) => acc + Math.abs(t.amount), 0);
+
+  if (totalExpense === 0) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          minHeight: 140,
+          background: "#09090B",
+          borderRadius: 12,
+          border: "1px dashed #27272A",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          padding: 16,
+          textAlign: "center",
+        }}
+      >
+        <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", margin: 0 }}>
+          Aucune dépense enregistrée
+        </p>
+        <p style={{ fontSize: 11, color: "#71717A", margin: 0, maxWidth: 280 }}>
+          La répartition par catégorie se calculera automatiquement dès votre premier achat.
+        </p>
+      </div>
+    );
+  }
+
+  const catTotals: Record<string, number> = {};
+  for (const t of expenseList) {
+    const c = t.category || "Divers";
+    catTotals[c] = (catTotals[c] || 0) + Math.abs(t.amount);
+  }
+
+  const categories: Category[] = Object.entries(catTotals).map(([label, val]) => ({
+    label,
+    value: Math.max(1, Math.round((val / totalExpense) * 100)),
+    color: defaultColorMap[label] || "#a1a1aa",
+  }));
+
   let accumulated = 0;
 
   return (
@@ -45,7 +96,7 @@ export default function DonutChart() {
             stroke="#09090B"
             strokeWidth={STROKE}
           />
-          {categories.map((cat, i) => {
+          {categories.map((cat) => {
             const dash = (cat.value / 100) * CIRC;
             const gap = CIRC - dash;
             const offset = CIRC - accumulated * (CIRC / 100);
@@ -75,10 +126,10 @@ export default function DonutChart() {
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#FAFAFA"
-            fontSize="18"
+            fontSize="15"
             fontWeight="800"
           >
-            0 FCFA
+            {totalExpense >= 1000000 ? `${(totalExpense / 1000000).toFixed(1)}M` : totalExpense.toLocaleString("fr-FR")}
           </text>
           <text
             x={SIZE / 2}

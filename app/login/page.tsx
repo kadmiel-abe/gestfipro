@@ -3,38 +3,86 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Eye, EyeOff, ArrowRight, Lock, User, AlertCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validation
     if (!username.trim()) {
-      setError("Veuillez saisir votre nom d'utilisateur.");
+      setError("Veuillez saisir votre email ou nom d'utilisateur.");
       return;
     }
     if (!password.trim()) {
       setError("Veuillez saisir votre mot de passe.");
       return;
     }
-    if (password.length < 4) {
-      setError("Mot de passe trop court (minimum 4 caractères).");
+    if (password.length < 6) {
+      setError("Mot de passe trop court (minimum 6 caractères pour Supabase).");
       return;
     }
 
-    // Simulation connexion (MVP : pas d'auth réelle)
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const email = username.includes("@")
+        ? username.trim().toLowerCase()
+        : `${username.trim().toLowerCase()}@gestfipro.app`;
+
+      // 1. Tenter la connexion
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!signInError && signInData.user) {
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      // 2. Si non trouvé ou échec, tenter l'inscription automatique
+      if (signInError && (signInError.message.includes("Invalid login credentials") || signInError.message.includes("Email not confirmed"))) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: username.split("@")[0],
+            },
+          },
+        });
+
+        if (signUpError) {
+          setError(signInError.message || signUpError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (signUpData.user) {
+          window.location.href = "/onboarding";
+          return;
+        }
+      }
+
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      setError(err?.message || "Erreur de connexion");
       setLoading(false);
-      window.location.href = "/";
-    }, 800);
+    }
   };
 
   return (
@@ -197,7 +245,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => { setUsername(e.target.value); setError(""); }}
-                  placeholder="Ex: kadmiel_abe"
+                  placeholder="Ex: nom_utilisateur"
                   style={{ paddingLeft: 36 }}
                   autoComplete="username"
                 />

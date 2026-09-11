@@ -3,14 +3,70 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { User, Banknote, CalendarDays, ArrowRight, CheckCircle2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Profil", "Salaire", "Comptes", "Terminé"];
 
 export default function OnboardingPage() {
+  const supabase = createClient();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [salary, setSalary] = useState("");
   const [payday, setPayday] = useState("28");
+  const [accountBalances, setAccountBalances] = useState<{ [key: string]: number }>({
+    "Espèces": 0,
+    "Wave": 0,
+    "Orange Money": 0,
+    "Compte Bancaire": 0,
+  });
+
+  const finishOnboarding = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const netSalary = Number(salary) || 0;
+      const paydayNum = Number(payday) || 28;
+      const fullName = name.trim() || "Utilisateur";
+
+      if (user) {
+        // Sauvegarder dans profiles
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          full_name: fullName,
+          net_salary: netSalary,
+          payday_with_month: paydayNum,
+          updated_at: new Date().toISOString(),
+        });
+
+        // Initialiser les comptes dans accounts
+        const accountsToInsert = [
+          { user_id: user.id, name: "Espèces", type: "cash", balance: accountBalances["Espèces"] || 0 },
+          { user_id: user.id, name: "Wave", type: "wave", balance: accountBalances["Wave"] || 0 },
+          { user_id: user.id, name: "Orange Money", type: "orange_money", balance: accountBalances["Orange Money"] || 0 },
+          { user_id: user.id, name: "Banque", type: "bank", balance: accountBalances["Compte Bancaire"] || 0 },
+        ];
+
+        await supabase.from("accounts").upsert(accountsToInsert, { onConflict: "user_id,name" as any });
+      }
+
+      // Toujours persister dans localStorage pour la session
+      localStorage.setItem("gestfipro_profile", JSON.stringify({
+        userName: fullName,
+        monthlySalary: netSalary,
+        paydayDate: paydayNum,
+      }));
+
+      localStorage.setItem("gestfipro_accounts", JSON.stringify([
+        { id: 1, name: "Espèces", type: "Espèces", balance: accountBalances["Espèces"] || 0, colorClass: "#4ade80", icon: "💵" },
+        { id: 2, name: "Wave", type: "Mobile Money", balance: accountBalances["Wave"] || 0, colorClass: "#38bdf8", icon: "🌊" },
+        { id: 3, name: "Orange Money", type: "Mobile Money", balance: accountBalances["Orange Money"] || 0, colorClass: "#fb923c", icon: "🟠" },
+        { id: 4, name: "Banque", type: "Banque", balance: accountBalances["Compte Bancaire"] || 0, colorClass: "#818cf8", icon: "🏦" },
+      ]));
+    } catch (err) {
+      console.error("Erreur sauvegarde onboarding:", err);
+    }
+
+    window.location.href = "/dashboard";
+  };
 
   const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
 
@@ -151,7 +207,7 @@ export default function OnboardingPage() {
                     className="input-field"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex : Kadmiel"
+                    placeholder="Votre nom complet"
                     style={{ paddingLeft: 36 }}
                   />
                 </div>
@@ -228,7 +284,19 @@ export default function OnboardingPage() {
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                     {acc.icon} {acc.label} (FCFA)
                   </label>
-                  <input className="input-field" type="number" placeholder={acc.placeholder} min={0} />
+                  <input
+                    className="input-field"
+                    type="number"
+                    placeholder={acc.placeholder}
+                    value={accountBalances[acc.label] || ""}
+                    onChange={(e) =>
+                      setAccountBalances((prev) => ({
+                        ...prev,
+                        [acc.label]: Number(e.target.value),
+                      }))
+                    }
+                    min={0}
+                  />
                 </div>
               ))}
             </>
@@ -251,7 +319,7 @@ export default function OnboardingPage() {
           <button
             className="btn-primary"
             style={{ justifyContent: "center", padding: "11px 0", width: "100%" }}
-            onClick={step === steps.length - 1 ? () => (window.location.href = "/") : next}
+            onClick={step === steps.length - 1 ? finishOnboarding : next}
           >
             {step === steps.length - 1 ? (
               <>Accéder au tableau de bord <ArrowRight size={14} /></>

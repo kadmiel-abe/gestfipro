@@ -63,7 +63,39 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   return null;
 }
 
-export default function CashflowChart() {
+interface CashflowChartProps {
+  transactions?: any[];
+  totalBalance?: number;
+}
+
+export default function CashflowChart({ transactions = [], totalBalance = 0 }: CashflowChartProps) {
+  if (transactions.length === 0 && totalBalance === 0) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: 200,
+          background: "#09090B",
+          borderRadius: 12,
+          border: "1px dashed #27272A",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          padding: 16,
+          textAlign: "center",
+        }}
+      >
+        <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", margin: 0 }}>
+          Aucune transaction pour ce cycle
+        </p>
+        <p style={{ fontSize: 11, color: "#71717A", margin: 0, maxWidth: 300 }}>
+          L'évolution de votre solde et de vos flux financiers s'affichera dès vos premières opérations enregistrées.
+        </p>
+      </div>
+    );
+  }
   return (
     <div style={{ width: "100%", height: 200 }}>
       <ResponsiveContainer width="100%" height="100%">

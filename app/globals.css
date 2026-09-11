@@ -1,6 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-crimson: #EF4444;
+  --color-primary: #EF4444;
+  --color-accent: #EF4444;
+  --color-emerald-500: #EF4444;
+  --color-green-500: #EF4444;
+}
+
 :root {
   --bg-root: #09090B;
   --bg-card: #18181B;
@@ -10,9 +18,41 @@
   --text-primary: #FAFAFA;
   --text-muted: #A1A1AA;
   --text-subtle: #52525B;
+  --header-bg: rgba(9, 9, 11, 0.9);
+  --input-bg: #09090B;
+}
+
+html.dark {
+  --bg-root: #09090B;
+  --bg-card: #18181B;
+  --border: #27272A;
+  --accent: #EF4444;
+  --accent-muted: rgba(239, 68, 68, 0.12);
+  --text-primary: #FAFAFA;
+  --text-muted: #A1A1AA;
+  --text-subtle: #52525B;
+  --header-bg: rgba(9, 9, 11, 0.9);
+  --input-bg: #09090B;
+}
+
+html:not(.dark) {
+  --bg-root: #F4F4F5;
+  --bg-card: #FFFFFF;
+  --border: #E4E4E7;
+  --accent: #EF4444;
+  --accent-muted: rgba(239, 68, 68, 0.1);
+  --text-primary: #09090B;
+  --text-muted: #71717A;
+  --text-subtle: #A1A1AA;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --input-bg: #FFFFFF;
 }
 
 * { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
 
 html, body {
   height: 100%;
@@ -127,7 +167,7 @@ html, body {
   border: 1px solid var(--border);
   color: var(--text-muted);
 }
-.badge-success { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-success { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.25); color: #EF4444; }
 .badge-danger { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
 .badge-warning { background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
 
@@ -177,7 +217,7 @@ html, body {
   color: var(--text-muted);
 }
 .cal-day.today { background: #EF4444; color: white; font-weight: 700; }
-.cal-day.payday { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; }
+.cal-day.payday { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #EF4444; }
 .cal-day.has-expense { color: var(--text-primary); }
 
 .tx-item {
@@ -203,8 +243,8 @@ html, body {
 /* ── Sidebar responsive ──────────────────────────────────────────────────── */
 .sidebar {
   width: 220px;
-  background: #09090B;
-  border-right: 1px solid #27272A;
+  background: var(--bg-root);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -214,7 +254,61 @@ html, body {
   position: relative;
   height: 100vh;
   z-index: 50;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html:not(.dark) .sidebar {
+  background: #FFFFFF !important;
+  border-right-color: #E4E4E7 !important;
+}
+
+html:not(.dark) header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: #E4E4E7 !important;
+}
+
+html:not(.dark) .card {
+  background: #FFFFFF !important;
+  border-color: #E4E4E7 !important;
+  color: #09090B !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+html:not(.dark) .card:hover {
+  border-color: #D4D4D8 !important;
+}
+
+html:not(.dark) .input-field {
+  background: #FFFFFF !important;
+  border-color: #E4E4E7 !important;
+  color: #09090B !important;
+}
+
+html:not(.dark) .nav-item:hover,
+html:not(.dark) .nav-item-tool:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #09090B !important;
+}
+
+html:not(.dark) .tx-item {
+  background: #FFFFFF !important;
+  border-color: #E4E4E7 !important;
+}
+
+/* Sidebar collapsed state (desktop toggle) */
+.sidebar.sidebar-collapsed {
+  width: 72px;
+  padding: 20px 8px;
+}
+
+.sidebar.sidebar-collapsed .nav-item,
+.sidebar.sidebar-collapsed .nav-item-tool {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.sidebar.sidebar-collapsed .section-label {
+  display: none;
 }
 
 /* Mobile : drawer caché par défaut */

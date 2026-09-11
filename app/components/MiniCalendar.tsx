@@ -13,7 +13,7 @@ const DAYS_OF_WEEK = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 export default function MiniCalendar({
   today,
   paydayDate,
-  expenseDays = [2, 4, 5, 7, 9, 10],
+  expenseDays = [],
 }: MiniCalendarProps) {
   // September 2026: 1st is a Tuesday (index 1 in Mon-first week)
   const firstDayOffset = 1; // 0=Mon, 1=Tue, ...

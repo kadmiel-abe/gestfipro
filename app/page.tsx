@@ -1,2009 +1,1570 @@
 "use client";
 
-import React, { useState } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import {
-  LayoutDashboard,
-  Wallet,
-  BarChart3,
-  Settings,
-  Plus,
-  Send,
-  Mic,
-  Search,
-  Bell,
-  ShieldAlert,
-  ChevronRight,
-  TrendingDown,
-  TrendingUp,
+  motion,
+  useScroll,
+  useTransform,
+  useInView,
+  useMotionValue,
+  animate,
+  AnimatePresence,
+} from "framer-motion";
+import {
+  Shield,
   Zap,
-  Clock,
-  CircleDollarSign,
-  BadgeCheck,
-  AlertTriangle,
-  Trash2,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  ArrowRight,
   CheckCircle2,
-  X,
-  PiggyBank,
-  Menu,
-  Briefcase,
+  Sparkles,
+  PieChart,
+  Wallet,
+  Smartphone,
+  Lock,
+  Clock,
   HelpCircle,
-  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  Globe,
+  Star,
+  Users,
+  Check,
+  Coins,
 } from "lucide-react";
-import MiniCalendar from "./components/MiniCalendar";
-import { SidebarLogoFull, SidebarLogoIcon } from "./components/Logo";
-import { AccountIcon, getAccountColor } from "./components/AccountIcon";
 
-// Dynamic imports for chart components (client-only)
-const CashflowChart = dynamic(() => import("./components/CashflowChart"), {
-  ssr: false,
-  loading: () => (
-    <div
-      style={{
-        height: 200,
-        background: "#09090B",
-        borderRadius: 12,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <span style={{ color: "#52525B", fontSize: 12 }}>Chargement du graphique…</span>
-    </div>
-  ),
-});
+type Language = "fr" | "en";
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
 
-const DonutChart = dynamic(() => import("./components/DonutChart"), {
-  ssr: false,
-  loading: () => (
-    <div style={{ height: 140, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <span style={{ color: "#52525B", fontSize: 12 }}>…</span>
-    </div>
-  ),
-});
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type TabKey = "accueil" | "comptes" | "historique" | "statistiques" | "objectifs" | "reglages" | "business" | "guide";
-
-interface Account {
-  id: number;
-  name: string;
-  type: string;
-  balance: number;
-  colorClass: string;
-  icon: string;
-}
-
-interface Transaction {
-  id: number;
+interface CurrencyConfig {
+  code: Currency;
   label: string;
-  category: string;
-  amount: number;
-  type: "income" | "expense";
-  date: string;
-  account: string;
-  icon: string;
+  defaultBalance: number;
+  flag: string;
 }
 
-interface Objective {
-  id: number;
-  title: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline: string;
-  icon: string;
-}
+const CURRENCIES: Record<Currency, CurrencyConfig> = {
+  XOF: { code: "XOF", label: "FCFA (UEMOA)", defaultBalance: 174000, flag: "🌍" },
+  XAF: { code: "XAF", label: "FCFA (CEMAC)", defaultBalance: 174000, flag: "🌍" },
+  NGN: { code: "NGN", label: "Naira ₦", defaultBalance: 420000, flag: "🇳🇬" },
+  KES: { code: "KES", label: "KSh", defaultBalance: 38000, flag: "🇰🇪" },
+  ZAR: { code: "ZAR", label: "Rand R", defaultBalance: 5200, flag: "🇿🇦" },
+  USD: { code: "USD", label: "USD $", defaultBalance: 320, flag: "💵" },
+};
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
+// ── COMPOSANT D'ANIMATION COUNT-UP POUR CHIFFRES ET MONTANTS ───────────────
+function AnimatedNumber({
+  value,
+  formatter,
+}: {
+  value: number;
+  formatter?: (n: number) => string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const motionVal = useMotionValue(0);
 
-function fmt(n: number) {
-  return n.toLocaleString("fr-FR");
-}
-
-function formatDateFr(d: Date): string {
-  const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const months = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-// ─── Modal Component ─────────────────────────────────────────────────────────
-
-interface AddTransactionModalProps {
-  accounts: Account[];
-  onClose: () => void;
-  onAdd: (tx: Omit<Transaction, "id">) => void;
-}
-
-function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalProps) {
-  const [label, setLabel] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Nourriture");
-  const [type, setType] = useState<"expense" | "income">("expense");
-  const [account, setAccount] = useState(accounts[0]?.name ?? "Espèces");
-
-  const categories = ["Nourriture", "Transport", "Logement", "Loisirs", "Santé", "Éducation", "Vêtements", "Divers"];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!label.trim() || !amount) return;
-    onAdd({
-      label,
-      category,
-      amount: type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount)),
-      type,
-      date: "À l'instant",
-      account,
-      icon: type === "income" ? "⬇" : "⬆",
-    });
-    onClose();
-  };
+  useEffect(() => {
+    if (isInView) {
+      const controls = animate(motionVal, value, {
+        duration: 0.65,
+        ease: [0.16, 1, 0.3, 1],
+        onUpdate: (latest) => {
+          if (ref.current) {
+            ref.current.textContent = formatter
+              ? formatter(latest)
+              : Math.round(latest).toLocaleString();
+          }
+        },
+      });
+      return () => controls.stop();
+    } else if (ref.current) {
+      ref.current.textContent = formatter
+        ? formatter(value)
+        : Math.round(value).toLocaleString();
+    }
+  }, [isInView, value, formatter, motionVal]);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.7)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="card animate-fade-in-up"
-        style={{ width: "100%", maxWidth: 440, padding: 24, margin: 16 }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#FAFAFA" }}>Nouvelle saisie</h3>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", color: "#A1A1AA", cursor: "pointer", padding: 4 }}
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <span ref={ref}>
+      {formatter ? formatter(value) : Math.round(value).toLocaleString()}
+    </span>
+  );
+}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Type toggle */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 10,
-                border: type === "expense" ? "1px solid rgba(239,68,68,0.5)" : "1px solid #27272A",
-                background: type === "expense" ? "rgba(239,68,68,0.1)" : "#09090B",
-                color: type === "expense" ? "#f87171" : "#A1A1AA",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Dépense
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 10,
-                border: type === "income" ? "1px solid rgba(34,197,94,0.4)" : "1px solid #27272A",
-                background: type === "income" ? "rgba(34,197,94,0.08)" : "#09090B",
-                color: type === "income" ? "#4ade80" : "#A1A1AA",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Entrée d'argent
-            </button>
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Libellé</label>
-            <input className="input-field" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Supermarché Hayat..." required />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Montant (FCFA)</label>
-            <input className="input-field" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Ex: 35000" required min={1} />
-          </div>
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Catégorie</label>
-              <select
-                className="input-field"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{ appearance: "none" }}
-              >
-                {categories.map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Compte</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {/* Prévisualisation icône opérateur sélectionné */}
-                <AccountIcon name={account} size={32} radius={8} />
-                <select
-                  className="input-field"
-                  value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  style={{ appearance: "none", flex: 1 }}
-                >
-                  {accounts.map((a) => <option key={a.id}>{a.name}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" className="btn-primary" style={{ justifyContent: "center", marginTop: 4 }}>
-            <Plus size={14} />
-            Enregistrer
-          </button>
-        </form>
-      </div>
+// ── COMPOSANT JAUGE DE PROGRESSION AVEC SCALE-X & TRANSITION CRITIQUE ───────
+function AnimatedGauge({
+  percentage,
+  isCritical = false,
+  className = "",
+}: {
+  percentage: number;
+  isCritical?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`w-full h-1.5 rounded-full bg-[#27272A] overflow-hidden ${className}`}>
+      <motion.div
+        className={`h-full rounded-full transition-colors duration-300 ${
+          isCritical ? "bg-[#EF4444]" : "bg-[#10b981]"
+        }`}
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: Math.min(Math.max(percentage / 100, 0), 1) }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ transformOrigin: "left" }}
+      />
     </div>
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+export default function GestFiProPanAfricanLanding() {
+  const [lang, setLang] = useState<Language>("fr");
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("XOF");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-export default function GestFiProDashboard() {
-  const [activeTab, setActiveTab] = useState<TabKey>("accueil");
-  const [showModal, setShowModal] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [hasUnread, setHasUnread] = useState(true);          // point rouge cloche
-  const [activeNotif, setActiveNotif] = useState<null | { icon: string; title: string; desc: string; detail: string; time: string; color: string }>(null);
-  const [settingsSaved, setSettingsSaved] = useState(false);
-  const [historySearch, setHistorySearch] = useState("");
-  const [userName, setUserName] = useState("");
-  const [monthlySalary, setMonthlySalary] = useState(0);
-  const [paydayDate, setPaydayDate] = useState(28);
+  // Parallax global du Hero
+  const { scrollY } = useScroll();
+  const heroHaloY = useTransform(scrollY, [0, 800], [0, 140]);
+  const heroTextY = useTransform(scrollY, [0, 600], [0, -20]);
 
-  const [accounts, setAccounts] = useState<Account[]>([
-    { id: 1, name: "Espèces",      type: "Espèces",      balance: 0, colorClass: getAccountColor("Espèces"),      icon: "💵" },
-    { id: 2, name: "Wave",         type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Wave"),         icon: "🌊" },
-    { id: 3, name: "Orange Money", type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Orange Money"), icon: "🟠" },
-    { id: 4, name: "Banque",       type: "Banque",        balance: 0, colorClass: getAccountColor("Banque"),       icon: "🏦" },
-  ]);
+  // Simulateur interactif
+  const [simDays, setSimDays] = useState(12);
+  const [simBalance, setSimBalance] = useState<number>(CURRENCIES["XOF"].defaultBalance);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-
-  const [quickInputText, setQuickInputText] = useState("");
-
-  // ─── Computed values ──────────────────────────────────────────────────────
-  const now = new Date();
-  const todayNum = now.getDate();
-  const dateStr = formatDateFr(now);
-
-  const totalBalance = accounts.reduce((acc, a) => acc + a.balance, 0);
-
-  let daysRemaining = paydayDate - todayNum;
-  if (daysRemaining <= 0) daysRemaining += 30;
-
-  const dailyBudget = daysRemaining > 0 ? Math.round(totalBalance / daysRemaining) : 0;
-
-  const todayExpenses = transactions
-    .filter((t) => t.type === "expense" && t.date.startsWith("Auj"))
-    .reduce((acc, t) => acc + Math.abs(t.amount), 0);
-
-  const isBudgetCritical = dailyBudget < 10000;
-  const rhythmAlert = todayExpenses > dailyBudget;
-
-  // ─── Handlers ─────────────────────────────────────────────────────────────
-  const handleAddTransaction = (tx: Omit<Transaction, "id">) => {
-    const newTx = { ...tx, id: Date.now() };
-    setTransactions((prev) => [newTx, ...prev]);
-    if (tx.type === "expense") {
-      setAccounts((prev) =>
-        prev.map((a) => (a.name === tx.account ? { ...a, balance: a.balance + tx.amount } : a))
-      );
-    } else {
-      setAccounts((prev) =>
-        prev.map((a) => (a.name === tx.account ? { ...a, balance: a.balance + tx.amount } : a))
-      );
-    }
+  const handleCurrencyChange = (curr: Currency) => {
+    setSelectedCurrency(curr);
+    setSimBalance(CURRENCIES[curr].defaultBalance);
   };
 
-  const handleQuickSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickInputText.trim()) return;
-    handleAddTransaction({
-      label: quickInputText,
-      category: "Divers",
-      amount: -5000,
-      type: "expense",
-      date: "À l'instant",
-      account: "Wave",
-      icon: "📝",
-    });
-    setQuickInputText("");
-  };
+  const dailyBudget = simDays > 0 ? Math.round(simBalance / simDays) : 0;
+  const isBudgetCritical = simDays <= 4 || dailyBudget < 2000;
 
-  // ─── Nav items — NAVIGATION section ──────────────────────────────────────
-  const navItems: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "accueil",      label: "Accueil",      icon: <LayoutDashboard size={15} /> },
-    { key: "comptes",      label: "Comptes",      icon: <Wallet size={15} /> },
-    { key: "historique",   label: "Historique",   icon: <Clock size={15} /> },
-    { key: "statistiques", label: "Statistiques", icon: <BarChart3 size={15} /> },
-    { key: "business",     label: "Business",     icon: <Briefcase size={15} /> },
-    { key: "reglages",     label: "Réglages",     icon: <Settings size={15} /> },
+  const fmt = (n: number) => Math.round(n).toLocaleString(lang === "fr" ? "fr-FR" : "en-US");
+
+  // Dictionnaire de traduction FR / EN
+  const t = {
+    fr: {
+      badge: "La 1ère plateforme panafricaine de gestion par cycle de paie",
+      heroTitle1: "Maîtrisez votre argent",
+      heroTitle2: "jusqu'au prochain salaire.",
+      heroSubtitle:
+        "Suivi en temps réel de votre trésorerie et calcul automatique de votre budget journalier disponible (Solde ÷ Jours restants). 0 connexion bancaire requise.",
+      ctaPrimary: "Créer mon compte gratuit",
+      ctaSecondary: "Voir la démo en direct",
+      microTrust1: "100% Manuel & Confidentiel",
+      microTrust2: "Zéro carte bancaire",
+      microTrust3: "Multi-devises africaines",
+
+      // Dashboard Mockup
+      mockDaysLeft: "Jours avant la paie",
+      mockDaysCount: "jours",
+      mockRhythm: "Rythme optimal",
+      mockDailyBudget: "Budget conseillé / jour",
+      mockTodaySpent: "Dépenses aujourd'hui",
+      mockTotalBalance: "Solde Total Agrégé",
+      mockAccounts: "Espèces · Mobile Money · Banque",
+      mockSavingsGoal: "Santé Budgétaire",
+      mockSimulatorLabel: "Simulateur en direct :",
+      mockAdjustDays: "Jours restants :",
+
+      // Defis
+      defisBadge: "La réalité du salarié africain",
+      defisTitle: "Des défis que vous vivez chaque mois",
+      defisSubtitle:
+        "Comptes dispersés, Mobile Money d'un côté, cash de l'autre : impossible de savoir ce qu'il vous reste pour finir le mois.",
+      defi1Title: "Comptes Dispersés",
+      defi1Sub: "Mobile Money + Cash + Banque = ?",
+      defi1Desc:
+        "Votre argent est éparpillé entre Wave, Orange Money, M-Pesa, MTN, cash et banques locales. Vous n'avez jamais une vision consolidée.",
+      defi2Title: "Dépenses Inattendues",
+      defi2Sub: "Où s'évapore le salaire ?",
+      defi2Desc:
+        "Au 15 du mois, la moitié du salaire a disparu dans des micro-dépenses du quotidien sans qu'aucun suivi clair ne vous alerte.",
+      defi3Title: "L'Angoisse de la Fin de Mois",
+      defi3Sub: "Toujours à sec avant la paie",
+      defi3Desc:
+        "Même avec un salaire régulier, la dernière semaine avant le virement devient stressante, forçant à emprunter ou serrer la ceinture.",
+      defisTransition: "GestFiPro unifie tous vos comptes et calcule votre budget quotidien de sécurité.",
+
+      // Bento Grid
+      bentoTitle: "Conçu pour ceux qui vivent de salaire en salaire",
+      bentoSubtitle: "Une approche radicalement simple adaptée à l'Afrique entière.",
+      bento1Title: "Cycle de Paie Intelligent",
+      bento1Desc:
+        "Le compteur se synchronise automatiquement avec votre date de paie pour calculer ce que vous pouvez dépenser chaque jour sans risque de découvert.",
+      bento2Title: "Saisie Rapide < 3s",
+      bento2Desc:
+        "Enregistrez vos achats du quotidien en 3 secondes chrono. Une interface ultra-épurée pour un suivi sans friction.",
+      bento3Title: "Confidentialité Totale",
+      bento3Desc:
+        "Zéro liaison bancaire requise. Vos comptes manuels restent sous votre contrôle exclusif et chiffré.",
+      bento4Title: "Santé Financière & Alertes",
+      bento4Desc:
+        "Une jauge dynamique vous prévient immédiatement si votre rythme de dépense met en danger votre fin de mois.",
+
+      // How it works
+      howBadge: "Prêt en 30 secondes",
+      howTitle: "Comment fonctionne GestFiPro ?",
+      step1Title: "1. Déclarez votre cycle",
+      step1Desc: "Renseignez votre salaire net et votre date de paie habituelle. 0 carte bancaire requise.",
+      step2Title: "2. Ajoutez vos soldes",
+      step2Desc: "Indiquez ce que vous avez : Mobile Money, espèces en poche, compte bancaire.",
+      step3Title: "3. Notez en 3 secondes",
+      step3Desc: "Enregistrez chaque dépense. Le solde et le budget quotidien se recalculent immédiatement.",
+      step4Title: "4. Finissez serein",
+      step4Desc: "Terminez chaque mois sans découvert et observez votre capacité d'épargne grandir.",
+
+      // Testimonials
+      testiTitle: "Adopté par les salariés à travers toute l'Afrique",
+      testiSubtitle: "D'Abidjan à Nairobi, de Dakar à Johannesburg.",
+
+      // Security
+      secTitle: "Vos données, votre souveraineté",
+      secDesc:
+        "GestFiPro ne se connecte jamais à vos comptes bancaires et ne stocke aucun identifiant bancaire. Vos données financières sont strictement confidentielles, chiffrées de bout en bout et protégées.",
+
+      // FAQ
+      faqTitle: "Questions fréquentes",
+      faqSubtitle: "Tout ce que vous devez savoir pour démarrer.",
+
+      // CTA
+      ctaFinalTitle: "Prêt à reprendre le contrôle de votre paie ?",
+      ctaFinalSubtitle:
+        "Rejoignez des milliers de salariés africains qui ne redoutent plus la fin du mois. Prêt en 30 secondes chrono.",
+      ctaFinalBtn: "Créer mon compte gratuit",
+      ctaFinalDemo: "Ouvrir l'application",
+    },
+    en: {
+      badge: "The #1 Pan-African Pay-Cycle Financial Platform",
+      heroTitle1: "Master your money",
+      heroTitle2: "until your next payday.",
+      heroSubtitle:
+        "Real-time cashflow tracking and automatic daily budget calculation (Balance ÷ Remaining Days). 0 bank integration required.",
+      ctaPrimary: "Create free account",
+      ctaSecondary: "Live Interactive Demo",
+      microTrust1: "100% Manual & Private",
+      microTrust2: "No credit card needed",
+      microTrust3: "Pan-African Multi-Currency",
+
+      // Dashboard Mockup
+      mockDaysLeft: "Days before payday",
+      mockDaysCount: "days",
+      mockRhythm: "Optimal rhythm",
+      mockDailyBudget: "Recommended / day",
+      mockTodaySpent: "Spent today",
+      mockTotalBalance: "Total Consolidated Balance",
+      mockAccounts: "Cash · Mobile Money · Bank",
+      mockSavingsGoal: "Budget Health",
+      mockSimulatorLabel: "Live Simulator :",
+      mockAdjustDays: "Remaining days :",
+
+      // Defis
+      defisBadge: "The African Employee Reality",
+      defisTitle: "Challenges you face every month",
+      defisSubtitle:
+        "Scattered accounts, Mobile Money here, cash there: impossible to know what you can safely spend.",
+      defi1Title: "Fragmented Accounts",
+      defi1Sub: "Mobile Money + Cash + Bank = ?",
+      defi1Desc:
+        "Your money is spread across Wave, Orange Money, M-Pesa, MTN, cash and local banks. You never have a single source of truth.",
+      defi2Title: "Hidden Spending Leaks",
+      defi2Sub: "Where did the salary go?",
+      defi2Desc:
+        "By the 15th of the month, half the salary has vanished into micro-expenses without any visual warning.",
+      defi3Title: "End-of-Month Stress",
+      defi3Sub: "Always broke before payday",
+      defi3Desc:
+        "Even with a steady job, the last week before salary feels like an uphill battle, forcing loans or extreme frugality.",
+      defisTransition: "GestFiPro unifies all your accounts and computes your safe daily budget.",
+
+      // Bento Grid
+      bentoTitle: "Built for those living from paycheck to paycheck",
+      bentoSubtitle: "A radically simple approach crafted for all of Africa.",
+      bento1Title: "Intelligent Pay Cycle",
+      bento1Desc:
+        "The countdown automatically synchronizes with your salary date to calculate what you can spend each day without overdraft risk.",
+      bento2Title: "Ultra-Fast Entry < 3s",
+      bento2Desc:
+        "Log everyday expenses in under 3 seconds. An ultra-minimal interface for zero-friction tracking.",
+      bento3Title: "Total Privacy",
+      bento3Desc:
+        "Zero bank link required. Your manual accounts remain under your exclusive, encrypted control.",
+      bento4Title: "Financial Health & Alerts",
+      bento4Desc:
+        "A reactive gauge warns you immediately if your spending pace threatens your month-end runway.",
+
+      // How it works
+      howBadge: "Ready in 30 seconds",
+      howTitle: "How does GestFiPro work?",
+      step1Title: "1. Set your cycle",
+      step1Desc: "Enter your net salary and typical payday. No credit card required.",
+      step2Title: "2. Add your balances",
+      step2Desc: "Input what you have: Mobile Money, cash in pocket, bank account.",
+      step3Title: "3. Log in 3 seconds",
+      step3Desc: "Track each transaction. Balance and daily allowance recalculate instantly.",
+      step4Title: "4. Finish stress-free",
+      step4Desc: "End each month without overdrafts and watch your savings grow.",
+
+      // Testimonials
+      testiTitle: "Trusted by workers across the entire continent",
+      testiSubtitle: "From Abidjan to Nairobi, Dakar to Johannesburg.",
+
+      // Security
+      secTitle: "Your data, your sovereignty",
+      secDesc:
+        "GestFiPro never connects to your bank accounts and never asks for banking credentials. Your financial data is strictly confidential, encrypted end-to-end.",
+
+      // FAQ
+      faqTitle: "Frequently Asked Questions",
+      faqSubtitle: "Everything you need to know to get started.",
+
+      // CTA
+      ctaFinalTitle: "Ready to take control of your payday?",
+      ctaFinalSubtitle:
+        "Join thousands of African employees who no longer fear the end of the month. Ready in 30 seconds.",
+      ctaFinalBtn: "Create free account",
+      ctaFinalDemo: "Open Application",
+    },
+  }[lang];
+
+  const panAfricanTestimonials = [
+    {
+      name: "Moussa Coulibaly",
+      city: "Abidjan, Côte d'Ivoire",
+      flag: "🇨🇮",
+      role: lang === "fr" ? "Cadre commercial" : "Sales Executive",
+      text:
+        lang === "fr"
+          ? "Avant, le 15 du mois j'étais déjà à découvert sans savoir pourquoi. Avec GestFiPro et mon budget/jour calculé en direct, je termine le mois avec plus de 50 000 FCFA d'épargne."
+          : "Before, by the 15th I was already overspent without knowing why. With GestFiPro and my live daily budget, I finish each month saving over 50,000 FCFA.",
+    },
+    {
+      name: "David Ochieng",
+      city: "Nairobi, Kenya",
+      flag: "🇰🇪",
+      role: lang === "fr" ? "Développeur logiciel" : "Software Engineer",
+      text:
+        lang === "fr"
+          ? "Je gère mon compte M-Pesa et mon compte bancaire KES en même temps. Le compte à rebours jusqu'au jour de paie a transformé ma gestion financière !"
+          : "Managing my M-Pesa and local KES bank account together in one view is a game changer. The payday countdown completely transformed how I budget.",
+    },
+    {
+      name: "Chidinma Nwosu",
+      city: "Lagos, Nigeria",
+      flag: "🇳🇬",
+      role: lang === "fr" ? "Comptable" : "Accountant",
+      text:
+        lang === "fr"
+          ? "Avec l'inflation en Naira, savoir exactement combien je peux dépenser par jour est une bénédiction. Zéro connexion bancaire, 100% sécurisé."
+          : "With Naira fluctuations, knowing exactly how much I can safely spend each day is a lifesaver. Zero bank login needed, 100% private.",
+    },
   ];
 
-  // ─── Tool items — OUTILS section (Guide uniquement) ───────────────────────
-  const toolItems: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "guide", label: "Guide", icon: <HelpCircle size={15} /> },
+  const panAfricanFaqs = [
+    {
+      q:
+        lang === "fr"
+          ? "Est-ce que GestFiPro a accès à mes comptes bancaires ou Mobile Money ?"
+          : "Does GestFiPro connect to my bank or Mobile Money accounts?",
+      a:
+        lang === "fr"
+          ? "Non, jamais. GestFiPro fonctionne selon un principe 100% manuel et souverain. Vous n'avez aucun identifiant bancaire ni mot de passe à renseigner. Vos données restent strictement entre vos mains."
+          : "No, never. GestFiPro is 100% manual and sovereign. You never provide bank logins or passwords. Your financial data stays strictly under your control.",
+    },
+    {
+      q:
+        lang === "fr"
+          ? "Quels pays et devises sont pris en charge ?"
+          : "Which countries and currencies are supported?",
+      a:
+        lang === "fr"
+          ? "Toute l'Afrique : Afrique de l'Ouest (XOF), Afrique Centrale (XAF), Nigeria (NGN), Kenya (KES), Afrique du Sud (ZAR), ainsi que les devises internationales (USD)."
+          : "All of Africa: West Africa (XOF), Central Africa (XAF), Nigeria (NGN), Kenya (KES), South Africa (ZAR), and international currencies (USD).",
+    },
+    {
+      q:
+        lang === "fr"
+          ? "Comment est calculé le budget journalier ?"
+          : "How is the daily budget calculated?",
+      a:
+        lang === "fr"
+          ? "La formule est simple et infaillible : Budget quotidien = (Somme de vos soldes réels) ÷ (Nombre de jours restants jusqu'au prochain salaire). Il se met à jour à chaque dépense notée."
+          : "The formula is simple and foolproof: Daily budget = (Sum of real balances) ÷ (Days remaining until next payday). It updates with every logged expense.",
+    },
+    {
+      q:
+        lang === "fr"
+          ? "Puis-je l'utiliser si ma date de salaire varie ?"
+          : "Can I use it if my payday fluctuates?",
+      a:
+        lang === "fr"
+          ? "Oui. Vous pouvez modifier votre jour de paie à tout moment ou réajuster vos comptes d'un simple clic."
+          : "Yes. You can edit your payday date or adjust your balances at any time with a single click.",
+    },
+    {
+      q:
+        lang === "fr"
+          ? "Est-ce gratuit ?"
+          : "Is it free to use?",
+      a:
+        lang === "fr"
+          ? "Oui, la création de compte et le suivi de base de votre cycle de paie sont 100% gratuits et sans carte bancaire."
+          : "Yes, account creation and essential pay-cycle tracking are 100% free with no credit card required.",
+    },
   ];
-
-  // ─── Shared styles ────────────────────────────────────────────────────────
-  const s = {
-    flex: { display: "flex" } as React.CSSProperties,
-    flexCol: { display: "flex", flexDirection: "column" as const },
-    gap4: { gap: 4 } as React.CSSProperties,
-    gap8: { gap: 8 } as React.CSSProperties,
-    gap12: { gap: 12 } as React.CSSProperties,
-    gap16: { gap: 16 } as React.CSSProperties,
-    gap20: { gap: 20 } as React.CSSProperties,
-    gap24: { gap: 24 } as React.CSSProperties,
-  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: "#09090B",
-        color: "#FAFAFA",
-        overflow: "hidden",
-        fontFamily: "'Inter', sans-serif",
-      }}
-    >
-      {/* ══════════════════════ MOBILE DRAWER OVERLAY ═══════════════════════ */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.65)",
-            backdropFilter: "blur(4px)",
-            zIndex: 40,
-          }}
-        />
-      )}
-
-      <aside
-        className={sidebarOpen ? "sidebar sidebar-open" : "sidebar"}
+    <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] selection:bg-[#EF4444] selection:text-white font-['Inter',sans-serif] overflow-x-hidden">
+      
+      {/* ── ANIMATED BACKGROUND MESH & HALOS (STYLE LINEAR / MOLTRACK) AVEC PARALLAX ── */}
+      <motion.div
+        style={{ y: heroHaloY }}
+        className="fixed inset-0 pointer-events-none -z-10 overflow-hidden"
       >
-        {/* ══ SIDEBAR CONTENT ══════════════════════════════════════════════ */}
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#EF4444]/18 via-[#EF4444]/5 to-transparent blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute top-[35%] -left-60 w-[550px] h-[550px] bg-[#EF4444]/8 blur-[180px] rounded-full" />
+        <div className="absolute top-[65%] -right-60 w-[650px] h-[650px] bg-[#EF4444]/8 blur-[180px] rounded-full" />
+      </motion.div>
 
-          {/* ── Logo + sous-titre + bouton fermeture ──────────────────────── */}
-          <div
-            style={{
-              position: "relative",
-              padding: "4px 4px 16px 4px",
-            }}
-          >
-            {/* Logo — mix-blend-mode:screen, fond transparent */}
-            <SidebarLogoFull onClick={() => setActiveTab("accueil")} />
-
-            {/* Sous-titre discret */}
-            <p
-              style={{
-                fontSize: 10,
-                color: "#52525B",
-                fontWeight: 500,
-                letterSpacing: "0.02em",
-                marginTop: 2,
-                paddingLeft: 2,
-              }}
-            >
-              Suivi financier intelligent
-            </p>
-
-            {/* ✕ fermeture mobile */}
-            <button
-              onClick={() => setSidebarOpen(false)}
-              title="Fermer"
-              aria-label="Fermer le menu"
-              style={{
-                position: "absolute",
-                top: 4,
-                right: 0,
-                background: "none",
-                border: "none",
-                color: "#52525B",
-                cursor: "pointer",
-                padding: 2,
-                display: "flex",
-                lineHeight: 0,
-                transition: "color 0.15s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          {/* ── NAVIGATION ────────────────────────────────────────────────── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 1, marginBottom: 8 }}>
-            <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>Navigation</p>
-            {navItems.map((item) => (
-              <button
-                key={item.key}
-                className={`nav-item${activeTab === item.key ? " active" : ""}`}
-                onClick={() => {
-                  setActiveTab(item.key);
-                  setSidebarOpen(false);
-                }}
-              >
-                <span style={{ color: activeTab === item.key ? "#EF4444" : "#52525B", display: "flex", alignItems: "center" }}>
-                  {item.icon}
-                </span>
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          {/* ── Séparateur ───────────────────────────────────────────────── */}
-          <div style={{ borderTop: "1px solid #27272A", margin: "8px 0" }} />
-
-          {/* ── OUTILS (Guide uniquement) ─────────────────────────────────── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>Outils</p>
-            {toolItems.map((item) => (
-              <button
-                key={item.key}
-                className={`nav-item-tool${activeTab === item.key ? " active" : ""}`}
-                onClick={() => {
-                  setActiveTab(item.key);
-                  setSidebarOpen(false);
-                }}
-                style={{
-                  background: activeTab === item.key ? "rgba(239,68,68,0.08)" : undefined,
-                  color: activeTab === item.key ? "#FAFAFA" : undefined,
-                }}
-              >
-                <span style={{ color: activeTab === item.key ? "#EF4444" : "#52525B", display: "flex", alignItems: "center" }}>
-                  {item.icon}
-                </span>
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-        </div>
-
-        {/* ── Profil utilisateur compact ───────────────────────────────── */}
-        <div
-          style={{
-            padding: "10px 8px",
-            borderTop: "1px solid #27272A",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginTop: 8,
-          }}
-        >
-          {/* Avatar initiales */}
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #EF4444, #f97316)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 11,
-              fontWeight: 800,
-              color: "white",
-              flexShrink: 0,
-              boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
-            }}
-          >
-            {userName.substring(0, 2).toUpperCase()}
-          </div>
-          <div style={{ overflow: "hidden", flex: 1 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {userName} ABE
-            </p>
-            <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Salarié · Côte d'Ivoire</p>
-          </div>
-          <button
-            onClick={() => setActiveTab("reglages")}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
-            title="Paramètres"
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-          >
-            <Settings size={13} />
-          </button>
-        </div>
-      </aside>
-
-      {/* ══════════════════════════════ MAIN AREA ════════════════════════════ */}
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          position: "relative",
-        }}
+      {/* ═══════════════════════════════════════════════════════════════════
+          1. HEADER NAVBAR (STICKY, LOGO OFFICIEL & SÉLECTEURS)
+      ════════════════════════════════════════════════════════════════════ */}
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="sticky top-0 z-50 flex items-center justify-between px-6 lg:px-16 py-4 border-b border-[#27272A]/70 backdrop-blur-xl bg-[#09090B]/85"
       >
-        {/* ── TOP HEADER ─────────────────────────────────────────────────── */}
-        <header
-          style={{
-            height: 60,
-            borderBottom: "1px solid #27272A",
-            padding: "0 28px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            background: "rgba(9,9,11,0.9)",
-            backdropFilter: "blur(12px)",
-            flexShrink: 0,
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
+        {/* Logo Officiel logo.png - Redirection vers la section Hero */}
+        <Link
+          href="#hero"
+          onClick={(e) => {
+            e.preventDefault();
+            const heroEl = document.getElementById("hero");
+            if (heroEl) {
+              heroEl.scrollIntoView({ behavior: "smooth" });
+            } else {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
           }}
+          className="flex items-center gap-3 group cursor-pointer"
+          title={lang === "fr" ? "Retour au début" : "Back to top"}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* ── Hamburger mobile (caché sur desktop) ── */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="w-10 h-10 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-lg shadow-[#EF4444]/20 group-hover:border-[#EF4444]/60 transition-colors shrink-0 flex items-center justify-center"
+          >
+            <Image
+              src="/icons/logo.png"
+              alt="GestFiPro"
+              width={40}
+              height={40}
+              className="w-full h-full object-contain"
+              priority
+            />
+          </motion.div>
+          <span className="text-xl font-black tracking-tight text-white group-hover:text-white transition-colors">
+            GestFi<span className="text-[#EF4444]">Pro</span>
+          </span>
+        </Link>
+
+        {/* Navigation desktop */}
+        <nav className="hidden md:flex items-center gap-7 text-sm text-[#A1A1AA]">
+          <a href="#defis" className="hover:text-white transition-colors">
+            {lang === "fr" ? "Le Problème" : "The Problem"}
+          </a>
+          <a href="#features" className="hover:text-white transition-colors">
+            {lang === "fr" ? "Fonctionnalités" : "Features"}
+          </a>
+          <a href="#how" className="hover:text-white transition-colors">
+            {lang === "fr" ? "Comment ça marche" : "How it works"}
+          </a>
+          <a href="#testimonials" className="hover:text-white transition-colors">
+            {lang === "fr" ? "Témoignages" : "Reviews"}
+          </a>
+          <a href="#faq" className="hover:text-white transition-colors">
+            FAQ
+          </a>
+        </nav>
+
+        {/* Action Controls : Sélecteur Langue + Devises + Auth */}
+        <div className="flex items-center gap-3">
+          
+          {/* Sélecteur de Devises Panafricain */}
+          <div className="hidden sm:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
+            <Coins className="w-3.5 h-3.5 text-[#EF4444] mr-1.5" />
+            <select
+              value={selectedCurrency}
+              onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
+              className="bg-transparent text-white font-bold cursor-pointer outline-none text-xs"
+              aria-label="Currency selector"
+            >
+              <option value="XOF" className="bg-[#18181B]">XOF (CFA Ouest)</option>
+              <option value="XAF" className="bg-[#18181B]">XAF (CFA Centre)</option>
+              <option value="NGN" className="bg-[#18181B]">NGN (₦ Nigeria)</option>
+              <option value="KES" className="bg-[#18181B]">KES (KSh Kenya)</option>
+              <option value="ZAR" className="bg-[#18181B]">ZAR (R Afrique du Sud)</option>
+              <option value="USD" className="bg-[#18181B]">USD ($)</option>
+            </select>
+          </div>
+
+          {/* Sélecteur de Langue FR | EN */}
+          <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl p-1 text-xs font-bold">
             <button
-              onClick={() => setSidebarOpen(true)}
-              title="Ouvrir le menu"
-              className="hamburger-btn"
-              style={{
-                background: "#18181B",
-                border: "1px solid #27272A",
-                borderRadius: 8,
-                width: 36,
-                height: 36,
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "#A1A1AA",
+              onClick={() => setLang("fr")}
+              className={`px-2 py-1 rounded-lg transition-all ${
+                lang === "fr"
+                  ? "bg-[#EF4444] text-white shadow-sm"
+                  : "text-[#A1A1AA] hover:text-white"
+              }`}
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLang("en")}
+              className={`px-2 py-1 rounded-lg transition-all ${
+                lang === "en"
+                  ? "bg-[#EF4444] text-white shadow-sm"
+                  : "text-[#A1A1AA] hover:text-white"
+              }`}
+            >
+              EN
+            </button>
+          </div>
+
+          {/* Liens Auth */}
+          <Link
+            href="/login"
+            className="hidden sm:inline-block text-sm font-semibold text-[#A1A1AA] hover:text-white transition-colors px-2 py-1"
+          >
+            {lang === "fr" ? "Connexion" : "Sign In"}
+          </Link>
+          <motion.div
+            whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(239, 68, 68, 0.55)" }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="inline-block rounded-xl"
+          >
+            <Link
+              href="/onboarding"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#EF4444] text-white font-bold text-xs sm:text-sm shadow-[0_0_25px_rgba(239,68,68,0.4)] hover:bg-[#DC2626] transition-colors flex items-center gap-1.5"
+            >
+              <span>{lang === "fr" ? "Commencer" : "Get Started"}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </motion.header>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          2. HERO SECTION PANAFRICAINE & DYNAMIQUE AVEC MOTION DESIGN
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="hero" className="relative pt-14 pb-20 px-6 lg:px-16 max-w-7xl mx-auto text-center scroll-mt-24">
+        
+        <motion.div style={{ y: heroTextY }}>
+          {/* Badge supérieur Panafricain */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#18181B] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] mb-8 hover:border-[#EF4444]/40 transition-colors shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#EF4444] animate-pulse" />
+            <span>{t.badge}</span>
+            <span className="text-sm">🌍</span>
+          </motion.div>
+
+          {/* Titre Principal */}
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight max-w-4xl mx-auto leading-[1.1] mb-6 text-[#FAFAFA]"
+          >
+            {t.heroTitle1}{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#EF4444] via-[#f87171] to-rose-400">
+              {t.heroTitle2}
+            </span>
+          </motion.h1>
+
+          {/* Sous-titre */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            className="text-base sm:text-xl text-[#A1A1AA] max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
+          >
+            {t.heroSubtitle}
+          </motion.p>
+
+          {/* Double CTA avec micro-interactions hover / tap */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
+          >
+            <motion.div
+              whileHover={{
+                scale: 1.03,
+                boxShadow: "0 0 28px rgba(239, 68, 68, 0.6)",
+                transition: { duration: 0.2, ease: "easeOut" },
               }}
+              whileTap={{ scale: 0.97, transition: { duration: 0.15 } }}
+              className="w-full sm:w-auto rounded-xl"
             >
-              <Menu size={16} />
-            </button>
-
-            {/* ── Logo icon dans le header (caché sur desktop) ── */}
-            <span className="header-logo-icon">
-              <SidebarLogoIcon size={32} onClick={() => setActiveTab("accueil")} />
-            </span>
-
-            <span
-              className="badge badge-success"
-              style={{ gap: 6 }}
-            >
-              <span
-                className="pulse-dot"
-                style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", display: "inline-block" }}
-              />
-              Cycle de paie actif (J-{daysRemaining})
-            </span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>Solde Consolidé</p>
-              <p style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} FCFA</p>
-            </div>
-            <div style={{ width: 1, height: 32, background: "#27272A" }} />
-            <button
-              onClick={() => setShowModal(true)}
-              className="btn-primary"
-              style={{ padding: "7px 14px" }}
-            >
-              <Plus size={14} />
-              Saisie rapide
-            </button>
-            <div style={{ position: "relative" }}>
-              {/* ─── Bouton cloche ─── */}
-              <button
-                onClick={() => setShowNotifications((v) => !v)}
-                title="Notifications"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: showNotifications ? "rgba(239,68,68,0.1)" : "#18181B",
-                  border: showNotifications ? "1px solid rgba(239,68,68,0.3)" : "1px solid #27272A",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: showNotifications ? "#EF4444" : "#A1A1AA",
-                  cursor: "pointer",
-                  position: "relative",
-                  transition: "all 0.15s",
-                }}
+              <Link
+                href="/onboarding"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#EF4444] text-white font-bold shadow-xl shadow-[#EF4444]/30 hover:bg-[#DC2626] transition-colors flex items-center justify-center gap-2 text-base"
               >
-                <Bell size={15} />
-                {/* Point rouge — disparaît après «Tout marquer comme lu» */}
-                {hasUnread && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 7,
-                      right: 7,
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: "#EF4444",
-                      border: "1px solid #09090B",
-                    }}
-                  />
-                )}
-              </button>
+                <span>{t.ctaPrimary}</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </motion.div>
 
-              {/* ─── Panneau liste notifications ─── */}
-              {showNotifications && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 44,
-                    right: 0,
-                    width: 310,
-                    background: "#18181B",
-                    border: "1px solid #27272A",
-                    borderRadius: 14,
-                    boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
-                    zIndex: 50,
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* En-tête */}
-                  <div style={{ padding: "14px 16px", borderBottom: "1px solid #27272A", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA" }}>Notifications</p>
-                    {hasUnread
-                      ? <span className="badge badge-danger" style={{ fontSize: 9 }}>2 nouvelles</span>
-                      : <span className="badge" style={{ fontSize: 9 }}>Tout lu</span>
-                    }
-                  </div>
-
-                  {/* Liste */}
-                  {([
-                    {
-                      icon: "⚠️",
-                      title: "Budget journalier serré",
-                      desc: `Vous avez dépensé ${fmt(todayExpenses)} FCFA aujourd'hui.`,
-                      detail: `Votre budget journalier est de ${fmt(dailyBudget)} FCFA.\n\nAujourd'hui vous avez déjà dépensé ${fmt(todayExpenses)} FCFA, ce qui représente ${dailyBudget > 0 ? Math.round((todayExpenses / dailyBudget) * 100) : 0}% de votre enveloppe du jour.\n\n👉 Conseil : Évitez les achats non essentiels pour le reste de la journée afin de rester dans les clous jusqu'à votre prochaine paie (J-${daysRemaining}).`,
-                      time: "Il y a 2h",
-                      color: "#EF4444",
-                    },
-                    {
-                      icon: "📅",
-                      title: `Paie dans ${daysRemaining} jours`,
-                      desc: "Pensez à préparer vos provisions.",
-                      detail: `Votre prochaine paie est prévue le ${paydayDate} du mois, soit dans ${daysRemaining} jours.\n\nSolde disponible actuel : ${fmt(totalBalance)} FCFA\nBudget restant par jour : ${fmt(dailyBudget)} FCFA\n\n👉 Conseil : Faites vos courses de la semaine maintenant pour éviter les dépenses d'urgence en fin de cycle.`,
-                      time: "Aujourd'hui",
-                      color: "#818cf8",
-                    },
-                    {
-                      icon: "✅",
-                      title: "Salaire enregistré",
-                      desc: `${fmt(monthlySalary)} FCFA crédité sur Banque.`,
-                      detail: `Votre salaire net de ${fmt(monthlySalary)} FCFA a bien été enregistré sur votre compte Banque au début du cycle.\n\nCe montant sert de référence pour calculer votre taux de consommation mensuel (actuellement ${Math.round(((monthlySalary - totalBalance) / monthlySalary) * 100)}% consommé).\n\n✅ Aucune action requise.`,
-                      time: "1er du mois",
-                      color: "#4ade80",
-                    },
-                  ] as const).map((n, i) => (
-                    <div
-                      key={i}
-                      onClick={() => { setActiveNotif(n); setShowNotifications(false); }}
-                      style={{
-                        padding: "12px 16px",
-                        borderBottom: i < 2 ? "1px solid #27272A" : "none",
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "flex-start",
-                        cursor: "pointer",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{n.icon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: "#FAFAFA", marginBottom: 2 }}>{n.title}</p>
-                        <p style={{ fontSize: 11, color: "#A1A1AA", lineHeight: 1.4 }}>{n.desc}</p>
-                      </div>
-                      <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                        <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap" }}>{n.time}</p>
-                        <span style={{ fontSize: 9, color: n.color, fontWeight: 600 }}>Voir →</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Pied — Tout marquer comme lu */}
-                  <div style={{ padding: "10px 16px" }}>
-                    <button
-                      onClick={() => {
-                        setHasUnread(false);     // supprime le point rouge
-                        setShowNotifications(false);
-                      }}
-                      style={{ width: "100%", background: "none", border: "1px solid #27272A", borderRadius: 8, padding: "7px 0", fontSize: 12, color: "#A1A1AA", cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#52525B")}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#27272A")}
-                    >
-                      ✓ Tout marquer comme lu
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 0 80px 0" }}>
-
-          {/* ════════════ TAB: ACCUEIL ════════════ */}
-          {activeTab === "accueil" && (
-            <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto" }}>
-
-              {/* ── HERO BANNER ── */}
-              <div
-                className="card animate-fade-in-up"
-                style={{
-                  padding: "22px 28px",
-                  marginBottom: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  position: "relative",
-                  overflow: "hidden",
-                  flexWrap: "wrap",
-                  gap: 16,
-                }}
+            <motion.div
+              whileHover={{
+                scale: 1.02,
+                borderColor: "rgba(239, 68, 68, 0.5)",
+                boxShadow: "0 0 16px rgba(239, 68, 68, 0.2)",
+                transition: { duration: 0.2, ease: "easeOut" },
+              }}
+              whileTap={{ scale: 0.97, transition: { duration: 0.15 } }}
+              className="w-full sm:w-auto rounded-xl"
+            >
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#18181B] border border-[#27272A] text-white font-semibold hover:bg-[#27272A]/80 transition-all text-base flex items-center justify-center gap-2.5"
               >
-                {/* Radial glow BG */}
-                <div
-                  style={{
-                    position: "absolute",
-                    right: -40,
-                    top: -40,
-                    width: 220,
-                    height: 220,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)",
-                    pointerEvents: "none",
-                  }}
-                />
+                <span>{t.ctaSecondary}</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] animate-ping" />
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* Micro-réassurance */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#A1A1AA] mb-14"
+          >
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#EF4444]" /> {t.microTrust1}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#EF4444]" /> {t.microTrust2}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#EF4444]" /> {t.microTrust3}
+            </span>
+          </motion.div>
+        </motion.div>
+
+        {/* ── MOCKUP DASHBOARD INTERACTIF EN DIRECT AVEC FLOTTEMENT & JAUGES DYNAMIQUES ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mx-auto max-w-5xl"
+        >
+          {/* Flottement infini et subtil */}
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
+            transition={{
+              duration: 3.5,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+            className="rounded-2xl p-2 bg-gradient-to-b from-[#27272A] to-[#18181B] shadow-2xl shadow-black/90 border border-[#27272A]"
+          >
+            <div className="bg-[#09090B] rounded-xl p-6 lg:p-8 text-left overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[#EF4444]/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* En-tête Mockup */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[#27272A]">
                 <div>
-                  <p style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
-                    {dateStr}
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#A1A1AA]">
+                    {t.mockDaysLeft}
                   </p>
-                  <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.03em", color: "#FAFAFA", lineHeight: 1.1, marginBottom: 6 }}>
-                    Bonjour {userName} 👋
-                  </h1>
-                  <p style={{ fontSize: 13, color: "#A1A1AA", maxWidth: 400 }}>
+                  <h3 className="text-3xl font-black text-white flex items-center gap-3 mt-1">
+                    {/* Compteur interactif avec transition flip/fade */}
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={simDays}
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="inline-block"
+                      >
+                        {simDays}
+                      </motion.span>
+                    </AnimatePresence>{" "}
+                    {t.mockDaysCount}{" "}
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-[#10b981]/15 text-[#4ade80] font-bold border border-[#10b981]/30">
+                      ✓ {t.mockRhythm}
+                    </span>
+                  </h3>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#A1A1AA]">
+                    {t.mockDailyBudget}
+                  </p>
+                  <p className="text-3xl font-black text-[#4ade80] mt-1">
+                    <AnimatedNumber value={dailyBudget} formatter={fmt} /> {selectedCurrency}
+                  </p>
+                </div>
+              </div>
+
+              {/* 3 Cartes Principales de suivi avec stagger, hover lift et jauges */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                
+                {/* Carte 1 : Dépenses aujourd'hui */}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{
+                    y: -4,
+                    scale: 1.02,
+                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+                    transition: { duration: 0.25, ease: "easeOut" },
+                  }}
+                  className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+                >
+                  <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockTodaySpent}</p>
+                  <p className="text-2xl font-extrabold text-white">
+                    <AnimatedNumber value={dailyBudget * 0.3} formatter={fmt} /> {selectedCurrency}
+                  </p>
+                  <AnimatedGauge percentage={30} isCritical={false} className="mt-2.5" />
+                  <span className="text-[10px] text-[#4ade80] font-semibold block mt-1.5">
+                    ✓ {lang === "fr" ? "Sous le quota journalier" : "Well below daily limit"}
+                  </span>
+                </motion.div>
+
+                {/* Carte 2 : Solde Total */}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{
+                    y: -4,
+                    scale: 1.02,
+                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+                    transition: { duration: 0.25, ease: "easeOut" },
+                  }}
+                  className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+                >
+                  <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockTotalBalance}</p>
+                  <p className="text-2xl font-extrabold text-white">
+                    <AnimatedNumber value={simBalance} formatter={fmt} /> {selectedCurrency}
+                  </p>
+                  <AnimatedGauge percentage={68} isCritical={false} className="mt-2.5" />
+                  <span className="text-[10px] text-[#A1A1AA] block mt-1.5">
+                    {t.mockAccounts}
+                  </span>
+                </motion.div>
+
+                {/* Carte 3 : Santé Budgétaire avec transition critique de couleur */}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{
+                    y: -4,
+                    scale: 1.02,
+                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+                    transition: { duration: 0.25, ease: "easeOut" },
+                  }}
+                  className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+                >
+                  <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockSavingsGoal}</p>
+                  <p className={`text-2xl font-extrabold transition-colors duration-300 ${
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10b981]"
+                  }`}>
+                    {isBudgetCritical ? "28%" : "82%"}
+                  </p>
+                  <AnimatedGauge
+                    percentage={isBudgetCritical ? 28 : 82}
+                    isCritical={isBudgetCritical}
+                    className="mt-2.5"
+                  />
+                  <span className={`text-[10px] font-semibold block mt-1.5 transition-colors duration-300 ${
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10b981]"
+                  }`}>
                     {isBudgetCritical
-                      ? "⚠️ Attention : votre budget quotidien est serré. Réduisez vos dépenses."
-                      : "Vos finances sont stables. Votre rythme de dépense est optimal pour tenir jusqu'à la paie."}
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <div
-                    style={{
-                      background: "#09090B",
-                      border: "1px solid #27272A",
-                      borderRadius: 12,
-                      padding: "12px 20px",
-                      textAlign: "right",
-                    }}
-                  >
-                    <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                      Salaire net déclaré
-                    </p>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: "#4ade80" }}>{fmt(monthlySalary)} FCFA</p>
-                  </div>
-                  <button onClick={() => setShowModal(true)} className="btn-primary">
-                    <Plus size={14} />
-                    Nouvelle saisie
-                  </button>
-                </div>
+                      ? lang === "fr" ? "Alerte : Risque de fin de mois tendue" : "Alert: Month-end runway at risk"
+                      : lang === "fr" ? "Fin de mois sécurisée" : "Month-end runway secured"}
+                  </span>
+                </motion.div>
+
               </div>
 
-              {/* ── 4 KPI CARDS ── */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: 14,
-                  marginBottom: 20,
-                }}
-              >
-                {/* Solde total */}
-                <div className="card animate-fade-in-up-1" style={{ padding: "18px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Solde total</span>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <CircleDollarSign size={14} color="#EF4444" />
-                    </div>
-                  </div>
-                  <p className="kpi-value">{fmt(totalBalance)}</p>
-                  <p style={{ fontSize: 10, color: "#A1A1AA", marginTop: 2 }}>FCFA • {accounts.length} comptes</p>
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 4 }}>
-                    <TrendingUp size={11} color="#52525B" />
-                    <span style={{ fontSize: 10, color: "#52525B", fontWeight: 600 }}>Aucune donnée comparative</span>
-                  </div>
-                </div>
-
-                {/* Jours avant paie */}
-                <div className="card animate-fade-in-up-2" style={{ padding: "18px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Avant la paie</span>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(99,102,241,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Clock size={14} color="#818cf8" />
-                    </div>
-                  </div>
-                  <p className="kpi-value">{daysRemaining}<span style={{ fontSize: 12, fontWeight: 400, color: "#A1A1AA" }}> j</span></p>
-                  <p style={{ fontSize: 10, color: "#A1A1AA", marginTop: 2 }}>Versement le {paydayDate} du mois</p>
-                  <div style={{ marginTop: 10 }}>
-                    <span className="badge badge-success" style={{ fontSize: 9 }}>
-                      <CheckCircle2 size={9} />
-                      Cycle actif
-                    </span>
-                  </div>
-                </div>
-
-                {/* Budget / jour */}
-                <div
-                  className={`card animate-fade-in-up-3${isBudgetCritical ? " card-accent" : ""}`}
-                  style={{ padding: "18px 20px" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: isBudgetCritical ? "#f87171" : "#A1A1AA",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      Budget / jour
-                    </span>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: isBudgetCritical ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Zap size={14} color="#EF4444" />
-                    </div>
-                  </div>
-                  <p className="kpi-value" style={{ color: isBudgetCritical ? "#f87171" : "#FAFAFA" }}>
-                    {fmt(dailyBudget)}
-                  </p>
-                  <p style={{ fontSize: 10, color: "#A1A1AA", marginTop: 2 }}>FCFA max autorisé</p>
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 4 }}>
-                    {isBudgetCritical ? (
-                      <><AlertTriangle size={11} color="#f87171" /><span style={{ fontSize: 10, color: "#f87171", fontWeight: 600 }}>Rythme critique !</span></>
-                    ) : (
-                      <><CheckCircle2 size={11} color="#4ade80" /><span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>Rythme sain</span></>
-                    )}
-                  </div>
-                </div>
-
-                {/* Dépenses du jour */}
-                <div className="card animate-fade-in-up-4" style={{ padding: "18px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Dép. aujourd'hui</span>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(251,191,36,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <TrendingDown size={14} color="#fbbf24" />
-                    </div>
-                  </div>
-                  <p className="kpi-value">{fmt(todayExpenses)}</p>
-                  <p style={{ fontSize: 10, color: "#A1A1AA", marginTop: 2 }}>FCFA • {transactions.filter((t) => t.date.startsWith("Auj")).length} transaction(s)</p>
-                  <div style={{ marginTop: 10 }}>
-                    <span className={`badge ${rhythmAlert ? "badge-danger" : "badge-warning"}`} style={{ fontSize: 9 }}>
-                      {rhythmAlert ? "⚠ Dépasse le budget" : dailyBudget > 0 ? `${Math.round((todayExpenses / dailyBudget) * 100)}% du budget` : "—"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── MAIN BENTO GRID ── */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 320px",
-                  gridTemplateRows: "auto auto",
-                  gap: 14,
-                }}
-              >
-                {/* Cashflow Chart — wide left */}
-                <div
-                  className="card animate-fade-in-up-5"
-                  style={{ gridColumn: "1 / 3", padding: "22px 24px" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA", marginBottom: 3 }}>Évolution du Solde & Flux</h3>
-                      <p style={{ fontSize: 11, color: "#A1A1AA" }}>Trésorerie sur le cycle en cours — Septembre 2026</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ width: 10, height: 2, background: "#EF4444", display: "inline-block", borderRadius: 2 }} />
-                        <span style={{ fontSize: 10, color: "#A1A1AA" }}>Solde</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ width: 10, height: 2, background: "#6366f1", display: "inline-block", borderRadius: 2 }} />
-                        <span style={{ fontSize: 10, color: "#A1A1AA" }}>Dépenses</span>
-                      </div>
-                      <span className="badge" style={{ fontSize: 10 }}>XOF</span>
-                    </div>
-                  </div>
-                  <CashflowChart />
-                </div>
-
-                {/* Mini Calendar — right col, row 1 */}
-                <div
-                  className="card animate-fade-in-up-5"
-                  style={{ padding: "20px 20px", gridColumn: "3", gridRow: "1" }}
-                >
-                  <p className="section-label" style={{ marginBottom: 14 }}>Calendrier du cycle</p>
-                  <MiniCalendar today={todayNum} paydayDate={paydayDate} />
-                </div>
-
-                {/* Donut Category — bottom left */}
-                <div
-                  className="card animate-fade-in-up-6"
-                  style={{ padding: "22px 24px", gridColumn: "1" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA", marginBottom: 3 }}>Répartition par Catégorie</h3>
-                      <p style={{ fontSize: 11, color: "#A1A1AA" }}>Dépenses du mois en cours</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab("statistiques")}
-                      style={{ fontSize: 11, color: "#EF4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 3 }}
-                    >
-                      Détails <ChevronRight size={12} />
-                    </button>
-                  </div>
-                  <DonutChart />
-                </div>
-
-                {/* Alerts — bottom center */}
-                <div
-                  className="card animate-fade-in-up-6"
-                  style={{ padding: "22px 24px", gridColumn: "2" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Alertes & Rythme</h3>
-                    {transactions.length > 0 && <span className="badge badge-danger" style={{ fontSize: 9 }}>Voir les alertes</span>}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {/* Alert 1 */}
-                    <div
-                      style={{
-                        background: "#09090B",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <ShieldAlert size={14} color="#EF4444" style={{ flexShrink: 0, marginTop: 1 }} />
-                      <div>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: "#FAFAFA", marginBottom: 3 }}>Analyse budgétaire</p>
-                        <p style={{ fontSize: 11, color: "#A1A1AA", lineHeight: 1.5 }}>
-                          {transactions.length === 0
-                            ? "Aucune transaction enregistrée. Ajoutez vos dépenses pour voir les alertes."
-                            : "Surveillez vos dépenses par catégorie pour optimiser votre budget mensuel."
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Info bar — rythme */}
-                    <div
-                      style={{
-                        background: "#09090B",
-                        border: "1px solid #27272A",
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: "#A1A1AA" }}>Consommation budgétaire</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA" }}>
-                          {Math.round(((monthlySalary - totalBalance) / monthlySalary) * 100)}%
-                        </span>
-                      </div>
-                      <div className="progress-track">
-                        <div
-                          className="progress-fill"
-                          style={{
-                            width: `${Math.min(Math.round(((monthlySalary - totalBalance) / monthlySalary) * 100), 100)}%`,
-                            background: "linear-gradient(90deg, #EF4444, #f97316)",
-                          }}
-                        />
-                      </div>
-                      <p style={{ fontSize: 10, color: "#52525B", marginTop: 6 }}>
-                        {fmt(monthlySalary - totalBalance)} FCFA dépensés sur {fmt(monthlySalary)} FCFA (salaire)
-                      </p>
-                    </div>
-
-                    {/* OK status */}
-                    <div
-                      style={{
-                        background: "rgba(34,197,94,0.04)",
-                        border: "1px solid rgba(34,197,94,0.15)",
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "center",
-                      }}
-                    >
-                      <BadgeCheck size={14} color="#4ade80" style={{ flexShrink: 0 }} />
-                      <p style={{ fontSize: 11, color: "#A1A1AA" }}>
-                        <span style={{ color: "#4ade80", fontWeight: 700 }}>Objectif fin de mois</span> :{" "}
-                        {totalBalance > 0
-                          ? `Vous êtes sur la bonne trajectoire pour conserver ${fmt(Math.round(totalBalance * 0.15))} FCFA d'épargne résiduelle.`
-                          : "Configurez votre solde et salaire dans Réglages pour voir votre projection."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Transactions — right col, row 2 */}
-                <div
-                  className="card animate-fade-in-up-7"
-                  style={{ padding: "22px 20px", gridColumn: "3", gridRow: "2" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Transactions</h3>
-                    <button
-                      onClick={() => setActiveTab("historique")}
-                      style={{ fontSize: 11, color: "#EF4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 3 }}
-                    >
-                      Tout voir <ChevronRight size={12} />
-                    </button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {transactions.slice(0, 5).map((tx) => (
-                      <div key={tx.id} className="tx-item" style={{ padding: "10px 12px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 9,
-                              background: tx.type === "income" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 14,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {tx.icon}
-                          </div>
-                          <div>
-                            <p style={{ fontSize: 11, fontWeight: 600, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 140 }}>{tx.label}</p>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                              <AccountIcon name={tx.account} size={12} radius={3} />
-                              <p style={{ fontSize: 9, color: "#A1A1AA" }}>{tx.date} · {tx.account}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 800,
-                            color: tx.type === "income" ? "#4ade80" : "#FAFAFA",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {tx.type === "income" ? "+" : ""}{fmt(tx.amount)} FCFA
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: COMPTES ════════════ */}
-          {activeTab === "comptes" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Comptes Financiers</h2>
-                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Gérez vos supports manuels (Espèces, Wave, Orange Money, Banque).</p>
-                </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    const name = prompt("Nom du compte :");
-                    const bal = prompt("Solde initial (FCFA) :");
-                    if (name && bal) {
-                      setAccounts((prev) => [
-                        ...prev,
-                        { id: Date.now(), name, type: "Manuel", balance: Number(bal) || 0, colorClass: "#6366f1", icon: "💳" },
-                      ]);
-                    }
-                  }}
-                >
-                  <Plus size={14} /> Ajouter un compte
-                </button>
-              </div>
-
-              {/* Total balance bar */}
-              <div
-                className="card"
-                style={{
-                  padding: "20px 24px",
-                  marginBottom: 16,
-                  background: "linear-gradient(135deg, #18181B 0%, #1c1c1f 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <p className="section-label" style={{ marginBottom: 6 }}>Solde total consolidé</p>
-                  <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#FAFAFA" }}>{fmt(totalBalance)} <span style={{ fontSize: 14, fontWeight: 500, color: "#A1A1AA" }}>FCFA</span></p>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {accounts.map((a) => (
-                    <div key={a.id} style={{ textAlign: "right", background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "8px 14px" }}>
-                      <p style={{ fontSize: 9, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase" }}>{a.name}</p>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: a.colorClass }}>{fmt(a.balance)} FCFA</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {accounts.map((acc) => (
-                  <div key={acc.id} className="card" style={{ padding: "20px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                       {/* ── Icône opérateur brandée ── */}
-                      <AccountIcon name={acc.name} type={acc.type} size={46} radius={13} />
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{acc.name}</p>
-                        <p style={{ fontSize: 11, color: "#A1A1AA" }}>{acc.type}</p>
-                        <div style={{ marginTop: 4 }}>
-                          <span className="badge" style={{ fontSize: 9 }}>Manuel</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <p style={{ fontSize: 16, fontWeight: 800, color: "#FAFAFA" }}>{fmt(acc.balance)}</p>
-                        <p style={{ fontSize: 10, color: "#A1A1AA" }}>FCFA</p>
-                      </div>
-                      {/* Bouton éditer solde */}
-                      <button
-                        title="Modifier le solde"
-                        onClick={() => {
-                          const val = prompt(`Nouveau solde pour "${acc.name}" (FCFA) :`, String(acc.balance));
-                          if (val !== null && !isNaN(Number(val)) && Number(val) >= 0) {
-                            setAccounts((prev) => prev.map((a) => a.id === acc.id ? { ...a, balance: Number(val) } : a));
-                          }
-                        }}
-                        style={{ background: "#27272A", border: "none", borderRadius: 8, color: "#A1A1AA", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#EF4444"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "#27272A"; e.currentTarget.style.color = "#A1A1AA"; }}
-                      >
-                        ✏️
-                      </button>
-                      {/* Bouton supprimer */}
-                      <button
-                        onClick={() => {
-                          if (confirm(`Supprimer le compte "${acc.name}" ?`)) {
-                            setAccounts((prev) => prev.filter((a) => a.id !== acc.id));
-                          }
-                        }}
-                        style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 4, display: "flex", transition: "color 0.15s" }}
-                        title="Supprimer ce compte"
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: HISTORIQUE ════════════ */}
-          {activeTab === "historique" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Historique des Transactions</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Retrouvez l'ensemble de vos mouvements financiers.</p>
-              </div>
-
-              <div className="card" style={{ padding: "20px 24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-                  <Search size={14} color="#52525B" />
+              {/* Simulateur interactif */}
+              <div className="bg-[#18181B]/70 border border-[#27272A] rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#A1A1AA]">
+                <span className="flex items-center gap-1.5 font-semibold text-[#FAFAFA]">
+                  <Sparkles className="w-3.5 h-3.5 text-[#EF4444]" /> {t.mockSimulatorLabel}
+                </span>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <span>{t.mockAdjustDays}</span>
                   <input
-                    className="input-field"
-                    style={{ border: "none", padding: 0, background: "transparent" }}
-                    placeholder="Rechercher une transaction..."
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
+                    type="range"
+                    min={1}
+                    max={30}
+                    value={simDays}
+                    onChange={(e) => setSimDays(Number(e.target.value))}
+                    className="accent-[#EF4444] cursor-pointer w-32"
                   />
-                  {historySearch && (
-                    <button
-                      onClick={() => setHistorySearch("")}
-                      style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0 }}
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {transactions
-                    .filter((tx) =>
-                      historySearch === "" ||
-                      tx.label.toLowerCase().includes(historySearch.toLowerCase()) ||
-                      tx.category.toLowerCase().includes(historySearch.toLowerCase()) ||
-                      tx.account.toLowerCase().includes(historySearch.toLowerCase())
-                    )
-                    .map((tx) => (
-                    <div key={tx.id} className="tx-item">
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        {/* Icône transaction (catégorie) */}
-                        <div
-                          style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 10,
-                            background: tx.type === "income" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 18,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {tx.icon}
-                        </div>
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "#FAFAFA" }}>{tx.label}</p>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                            {/* Micro-icône opérateur */}
-                            <AccountIcon name={tx.account} size={14} radius={3} />
-                            <p style={{ fontSize: 11, color: "#A1A1AA" }}>
-                              {tx.date} · <span style={{ color: "#FAFAFA", fontWeight: 500 }}>{tx.account}</span> · {tx.category}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: tx.type === "income" ? "#4ade80" : "#FAFAFA" }}>
-                        {tx.type === "income" ? "+" : ""}{fmt(tx.amount)} FCFA
-                      </span>
-                    </div>
-                    ))
-                  }
-                  {transactions.filter((tx) =>
-                    historySearch === "" ||
-                    tx.label.toLowerCase().includes(historySearch.toLowerCase()) ||
-                    tx.category.toLowerCase().includes(historySearch.toLowerCase()) ||
-                    tx.account.toLowerCase().includes(historySearch.toLowerCase())
-                  ).length === 0 && (
-                    <div style={{ textAlign: "center", padding: "28px 0", color: "#52525B", fontSize: 13 }}>
-                      Aucune transaction pour « {historySearch} »
-                    </div>
-                  )}
+                  <span className="font-bold text-[#EF4444] w-12 text-right">{simDays} j</span>
                 </div>
               </div>
+
             </div>
-          )}
+          </motion.div>
+        </motion.div>
 
-          {/* ════════════ TAB: STATISTIQUES ════════════ */}
-          {activeTab === "statistiques" && (
-            <div style={{ padding: "24px 28px", maxWidth: 1000 }}>
-              <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Statistiques Avancées</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Analysez vos habitudes de dépenses par catégorie ce mois-ci.</p>
-              </div>
+      </section>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div className="card" style={{ padding: "22px 24px" }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Répartition par Poste</h3>
-                  <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>Dépenses en FCFA — Septembre 2026</p>
-                  <DonutChart />
-                </div>
-
-                <div className="card" style={{ padding: "22px 24px" }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Détail par catégorie</h3>
-                  <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>Budget mensuel vs réel</p>
-                  {[
-                    { cat: "Nourriture & Marché",   pct: 0, amount: 0, color: "#EF4444",  budget: 0 },
-                    { cat: "Transport",              pct: 0, amount: 0, color: "#6366f1",  budget: 0 },
-                    { cat: "Logement & Factures",   pct: 0, amount: 0, color: "#8b5cf6",  budget: 0 },
-                    { cat: "Loisirs",                pct: 0, amount: 0, color: "#f59e0b",  budget: 0 },
-                    { cat: "Autres",                 pct: 0, amount: 0, color: "#10b981",  budget: 0 },
-                  ].map((item) => (
-                    <div key={item.cat} style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0, display: "inline-block" }} />
-                          <span style={{ fontSize: 12, color: "#FAFAFA" }}>{item.cat}</span>
-                        </div>
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#A1A1AA" }}>{fmt(item.amount)} FCFA</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: item.amount > item.budget ? "#f87171" : "#4ade80" }}>{item.pct}%</span>
-                        </div>
-                      </div>
-                      <div className="progress-track">
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${item.pct}%`, background: item.color, opacity: 0.85 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="card" style={{ padding: "22px 24px", gridColumn: "1 / 3" }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Évolution du Solde — Mois en cours</h3>
-                  <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>Tendance de votre trésorerie depuis le 1er Septembre</p>
-                  <CashflowChart />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: OBJECTIFS ════════════ */}
-          {activeTab === "objectifs" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Objectifs Financiers</h2>
-                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Définissez vos cibles d'épargne et suivez votre progression.</p>
-                </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    const title = prompt("Titre de l'objectif :");
-                    const target = prompt("Montant cible (FCFA) :");
-                    if (title && target) {
-                      setObjectives((prev) => [
-                        ...prev,
-                        { id: Date.now(), title, targetAmount: Number(target), currentAmount: 0, deadline: "31 Déc. 2026", icon: "🎯" },
-                      ]);
-                    }
-                  }}
-                >
-                  <Plus size={14} /> Nouvel objectif
-                </button>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {objectives.map((obj) => {
-                  const pct = Math.min(Math.round((obj.currentAmount / obj.targetAmount) * 100), 100);
-                  const remaining = obj.targetAmount - obj.currentAmount;
-                  return (
-                    <div key={obj.id} className="card" style={{ padding: "22px 24px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <span style={{ fontSize: 24 }}>{obj.icon}</span>
-                          <div>
-                            <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{obj.title}</p>
-                            <p style={{ fontSize: 11, color: "#A1A1AA" }}>Échéance : {obj.deadline}</p>
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 800,
-                            padding: "4px 10px",
-                            borderRadius: 99,
-                            background: pct >= 100 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-                            border: `1px solid ${pct >= 100 ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.2)"}`,
-                            color: pct >= 100 ? "#4ade80" : "#f87171",
-                          }}
-                        >
-                          {pct}%
-                        </span>
-                      </div>
-
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                          <span style={{ fontSize: 11, color: "#A1A1AA" }}>Progression</span>
-                          <span style={{ fontSize: 11, fontWeight: 700 }}>
-                            {fmt(obj.currentAmount)} / {fmt(obj.targetAmount)} FCFA
-                          </span>
-                        </div>
-                        <div className="progress-track" style={{ height: 8 }}>
-                          <div
-                            className="progress-fill"
-                            style={{
-                              width: `${pct}%`,
-                              background: pct >= 100 ? "#4ade80" : "linear-gradient(90deg, #EF4444, #f97316)",
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, color: "#A1A1AA" }}>
-                          Reste : <strong style={{ color: "#FAFAFA" }}>{fmt(remaining)} FCFA</strong>
-                        </span>
-                        <button
-                          className="btn-primary"
-                          style={{ padding: "5px 12px", fontSize: 11 }}
-                          onClick={() => {
-                            const amount = prompt(`Alimenter "${obj.title}" de combien ? (FCFA)`);
-                            if (amount && Number(amount) > 0) {
-                              setObjectives((prev) =>
-                                prev.map((o) =>
-                                  o.id === obj.id
-                                    ? { ...o, currentAmount: Math.min(o.currentAmount + Number(amount), o.targetAmount) }
-                                    : o
-                                )
-                              );
-                            }
-                          }}
-                        >
-                          <PiggyBank size={11} /> Alimenter
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: RÉGLAGES ════════════ */}
-          {activeTab === "reglages" && (
-            <div style={{ padding: "24px 28px", maxWidth: 560 }}>
-              <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Paramètres</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Configurez votre profil et votre cycle de paie.</p>
-              </div>
-
-              <div className="card" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 18 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Nom d'utilisateur
-                  </label>
-                  <input className="input-field" type="text" value={userName} onChange={(e) => setUserName(e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Salaire Net Mensuel (FCFA)
-                  </label>
-                  <input className="input-field" type="number" value={monthlySalary} onChange={(e) => setMonthlySalary(Number(e.target.value))} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Jour de versement de la paie
-                  </label>
-                  <input className="input-field" type="number" value={paydayDate} onChange={(e) => setPaydayDate(Number(e.target.value))} min={1} max={31} />
-                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 5 }}>La date de versement sert à calculer le budget quotidien et le compte à rebours.</p>
-                </div>
-
-                <div style={{ borderTop: "1px solid #27272A", paddingTop: 18 }}>
-                  <p className="section-label" style={{ marginBottom: 12 }}>Informations calculées</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
-                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>Budget / jour actuel</p>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#EF4444" }}>{fmt(dailyBudget)} FCFA</p>
-                    </div>
-                    <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
-                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>Jours avant paie</p>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#818cf8" }}>{daysRemaining} jours</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bannière succès enregistrement */}
-                {settingsSaved && (
-                  <div
-                    style={{
-                      background: "rgba(34,197,94,0.1)",
-                      border: "1px solid rgba(34,197,94,0.3)",
-                      borderRadius: 10,
-                      padding: "10px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      fontSize: 13,
-                      color: "#4ade80",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <CheckCircle2 size={14} />
-                    Paramètres enregistrés avec succès !
-                  </div>
-                )}
-
-                <button
-                  className="btn-primary"
-                  style={{ justifyContent: "center" }}
-                  onClick={() => {
-                    setSettingsSaved(true);
-                    setTimeout(() => setSettingsSaved(false), 3000);
-                  }}
-                >
-                  <CheckCircle2 size={14} />
-                  Enregistrer les paramètres
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: BUSINESS ════════════ */}
-          {activeTab === "business" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontSize: 24 }}>💼</span>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em" }}>
-                    Business & Revenus Complémentaires
-                  </h2>
-                </div>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>
-                  Suivez vos activités parallèles, freelance ou petits commerces en dehors de votre salaire principal.
-                </p>
-              </div>
-
-              {/* Bannière MVP */}
-              <div
-                className="card"
-                style={{
-                  padding: "20px 24px",
-                  borderColor: "rgba(239,68,68,0.25)",
-                  background: "rgba(239,68,68,0.06)",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 16,
-                  marginBottom: 24,
-                }}
-              >
-                <span style={{ fontSize: 28, flexShrink: 0 }}>🚀</span>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", marginBottom: 4 }}>
-                    Fonctionnalité en cours de développement
-                  </p>
-                  <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>
-                    Le suivi des revenus Business (freelance, petit commerce, tontines) sera disponible dans la prochaine
-                    version. En attendant, vous pouvez enregistrer ces revenus comme transactions de type{" "}
-                    <strong style={{ color: "#EF4444" }}>Revenu</strong> dans vos comptes manuels.
-                  </p>
-                </div>
-              </div>
-
-              {/* Astuce MVP */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {[
-                  { icon: "💵", title: "Freelance & Prestations", tip: "Saisissez chaque paiement client comme un revenu dans votre compte Wave ou Espèces.", color: "#6366f1" },
-                  { icon: "🛍️", title: "Petit Commerce", tip: "Notez le bénéfice net quotidien comme revenu. Tracez vos entrées de caisse séparément.", color: "#f59e0b" },
-                  { icon: "🤝", title: "Tontines & Épargne", tip: "Enregistrez les cotisations reçues comme revenus et les versements comme dépenses.", color: "#10b981" },
-                  { icon: "📊", title: "Suivi Statistiques", tip: "Utilisez l'onglet Statistiques pour visualiser la part de vos revenus complémentaires.", color: "#8b5cf6" },
-                ].map((item) => (
-                  <div key={item.title} className="card" style={{ padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <span
-                        style={{
-                          width: 36, height: 36, borderRadius: 10,
-                          background: `${item.color}20`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 18, flexShrink: 0,
-                        }}
-                      >
-                        {item.icon}
-                      </span>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA" }}>{item.title}</p>
-                    </div>
-                    <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>{item.tip}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ════════════ TAB: GUIDE ════════════ */}
-          {activeTab === "guide" && (
-            <div style={{ padding: "24px 28px", maxWidth: 780 }}>
-
-              {/* En-tête */}
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                  <div
-                    style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: "rgba(239,68,68,0.12)",
-                      border: "1px solid rgba(239,68,68,0.25)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >
-                    <BookOpen size={20} color="#EF4444" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em" }}>Guide d'utilisation</h2>
-                    <p style={{ fontSize: 12, color: "#A1A1AA" }}>GestFiPro · Gestion financière de A à Z</p>
-                  </div>
-                </div>
-                <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7 }}>
-                  Suivez ces 4 étapes pour configurer votre tableau de bord et commencer à suivre vos finances en temps réel.
-                </p>
-              </div>
-
-              {/* Étapes */}
-              {[
-                {
-                  step: "01",
-                  icon: "🏦",
-                  title: "Configurer vos comptes manuels",
-                  color: "#6366f1",
-                  content: [
-                    "Rendez-vous dans l'onglet **Comptes** via la barre latérale.",
-                    "GestFiPro supporte 4 types de comptes : **Espèces**, **Wave**, **Orange Money** et **Banque**.",
-                    "Pour chaque compte, saisissez le **solde actuel** tel qu'il apparaît sur votre téléphone ou carnet.",
-                    "Le solde **consolidé** (somme de tous vos comptes) s'affiche en permanence dans l'en-tête du tableau de bord.",
-                    "Vous pouvez modifier un solde à tout moment depuis l'onglet Comptes → icône stylo.",
-                  ],
-                  tip: "💡 Astuce : Commencez par saisir votre solde Wave car c'est souvent le plus utilisé en Côte d'Ivoire.",
-                },
-                {
-                  step: "02",
-                  icon: "💰",
-                  title: "Définir votre salaire et cycle de paie",
-                  color: "#f59e0b",
-                  content: [
-                    "Allez dans **Réglages** (icône engrenage en bas de la sidebar).",
-                    "Saisissez votre **salaire net mensuel** en FCFA — celui que vous recevez réellement.",
-                    "Indiquez le **jour de versement** (ex: le 28 de chaque mois pour les fonctionnaires).",
-                    "GestFiPro calcule automatiquement le nombre de jours restants avant votre prochaine paie.",
-                    "Ces paramètres servent à calculer votre **budget journalier** = Solde ÷ Jours restants.",
-                  ],
-                  tip: "💡 Si vous êtes payé le dernier jour ouvrable, choisissez le 28 pour avoir une marge de sécurité.",
-                },
-                {
-                  step: "03",
-                  icon: "📅",
-                  title: "Comprendre le compteur \"Jours avant la paie\"",
-                  color: "#EF4444",
-                  content: [
-                    "Le **badge vert** dans l'en-tête affiche le nombre de jours restants jusqu'au prochain versement.",
-                    "La carte **Budget/Jour** sur l'accueil indique combien vous pouvez dépenser par jour sans dépasser votre solde.",
-                    "Si ce budget journalier passe sous **10 000 FCFA**, la carte vire au rouge — signe de vigilance.",
-                    "Le graphique **Cashflow** vous montre l'évolution de votre solde sur 7 jours.",
-                    "L'indicateur de **Rythme de dépense** compare vos dépenses du jour au budget journalier recommandé.",
-                  ],
-                  tip: "🎯 Objectif : dépenser chaque jour strictement moins que votre Budget/Jour pour finir le mois sereinement.",
-                },
-                {
-                  step: "04",
-                  icon: "⚡",
-                  title: "Saisir vos dépenses et revenus",
-                  color: "#10b981",
-                  content: [
-                    "Cliquez sur **Saisie rapide** (bouton rouge dans l'en-tête) ou sur le champ en bas de l'écran.",
-                    "Pour chaque transaction, renseignez : **libellé**, **montant**, **catégorie** (Nourriture, Transport, etc.) et **compte débité**.",
-                    "Les dépenses s'affichent instantanément dans la liste **Transactions récentes** sur l'accueil.",
-                    "Consultez l'onglet **Historique** pour voir toutes vos transactions triées par date.",
-                    "L'onglet **Statistiques** génère des graphiques de répartition par catégorie pour analyser vos habitudes.",
-                  ],
-                  tip: "⚡ Bonne pratique : saisissez chaque dépense immédiatement après l'avoir faite — 10 secondes suffisent !",
-                },
-              ].map((item, idx) => (
-                <div key={item.step} style={{ marginBottom: idx < 3 ? 24 : 0 }}>
-                  <div className="card" style={{ padding: "22px 24px", borderColor: `${item.color}22` }}>
-                    {/* Numéro d'étape + titre */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                      <div
-                        style={{
-                          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                          background: `${item.color}18`,
-                          border: `1px solid ${item.color}40`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        <span style={{ fontSize: 18 }}>{item.icon}</span>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: item.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                          Étape {item.step}
-                        </span>
-                        <h3 style={{ fontSize: 15, fontWeight: 800, color: "#FAFAFA" }}>{item.title}</h3>
-                      </div>
-                    </div>
-
-                    {/* Liste des instructions */}
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {item.content.map((line, i) => (
-                        <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                          <span
-                            style={{
-                              width: 20, height: 20, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                              background: `${item.color}20`,
-                              border: `1px solid ${item.color}40`,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 9, fontWeight: 800, color: item.color,
-                            }}
-                          >
-                            {i + 1}
-                          </span>
-                          <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.65 }}>
-                            {line.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
-                              pi % 2 === 1
-                                ? <strong key={pi} style={{ color: "#FAFAFA", fontWeight: 700 }}>{part}</strong>
-                                : part
-                            )}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* Astuce */}
-                    <div
-                      style={{
-                        background: `${item.color}0D`,
-                        border: `1px solid ${item.color}25`,
-                        borderRadius: 8,
-                        padding: "10px 14px",
-                      }}
-                    >
-                      <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>
-                        {item.tip.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
-                          pi % 2 === 1
-                            ? <strong key={pi} style={{ color: "#FAFAFA" }}>{part}</strong>
-                            : part
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* CTA retour accueil */}
-              <div style={{ marginTop: 28, display: "flex", justifyContent: "center" }}>
-                <button
-                  className="btn-primary"
-                  style={{ padding: "11px 28px" }}
-                  onClick={() => setActiveTab("accueil")}
-                >
-                  <LayoutDashboard size={14} />
-                  Commencer avec le tableau de bord
-                </button>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* ── FLOATING QUICK INPUT ─────────────────────────────────────────── */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "100%",
-            maxWidth: 560,
-            padding: "0 20px",
-            zIndex: 30,
-          }}
+      {/* ═══════════════════════════════════════════════════════════════════
+          3. SECTION "DES DÉFIS QUE VOUS CONNAISSEZ" (PANAFRICAIN)
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="defis" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-3xl mx-auto mb-16"
         >
-          <form
-            onSubmit={handleQuickSubmit}
-            style={{
-              background: "#18181B",
-              border: "1px solid #27272A",
-              borderRadius: 99,
-              padding: "6px 6px 6px 16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-              backdropFilter: "blur(16px)",
+          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+            {t.defisBadge}
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight mt-4 mb-4 text-[#FAFAFA]">
+            {t.defisTitle}
+          </h2>
+          <p className="text-base sm:text-lg text-[#A1A1AA]">
+            {t.defisSubtitle}
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Défi 1 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
             }}
+            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
-              <button
-                type="button"
-                onClick={() => setShowModal(true)}
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  background: "#27272A",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#FAFAFA",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              >
-                <Plus size={13} />
-              </button>
-              <input
-                type="text"
-                value={quickInputText}
-                onChange={(e) => setQuickInputText(e.target.value)}
-                placeholder="Saisie rapide : taxi 5000, riz 3000..."
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  fontSize: 12,
-                  color: "#FAFAFA",
-                  width: "100%",
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <button
-                type="button"
-                title="Saisie vocale (bientôt disponible)"
-                onClick={() => alert("🎙️ La saisie vocale sera disponible dans une prochaine version de GestFiPro.")}
-                style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 6, display: "flex", alignItems: "center" }}
-              >
-                <Mic size={14} />
-              </button>
-              <button
-                type="submit"
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  background: "#EF4444",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(239,68,68,0.35)",
-                }}
-              >
-                <Send size={13} />
-              </button>
-            </div>
-          </form>
-        </div>
-      </main>
-
-      {/* ── MODAL ─────────────────────────────────────────────────────────── */}
-      {showModal && (
-        <AddTransactionModal
-          accounts={accounts}
-          onClose={() => setShowModal(false)}
-          onAdd={handleAddTransaction}
-        />
-      )}
-
-      {/* ── MODAL DÉTAIL NOTIFICATION ──────────────────────────────────────── */}
-      {activeNotif && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 100,
-            backdropFilter: "blur(4px)",
-            padding: 16,
-          }}
-          onClick={(e) => e.target === e.currentTarget && setActiveNotif(null)}
-        >
-          <div
-            className="card animate-fade-in-up"
-            style={{ width: "100%", maxWidth: 420, padding: 0, overflow: "hidden" }}
-          >
-            {/* Header coloré selon la notif */}
-            <div
-              style={{
-                padding: "18px 20px",
-                background: `${activeNotif.color}10`,
-                borderBottom: `1px solid ${activeNotif.color}25`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 22 }}>{activeNotif.icon}</span>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA", letterSpacing: "-0.02em" }}>
-                    {activeNotif.title}
-                  </p>
-                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 2 }}>{activeNotif.time}</p>
-                </div>
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-5">
+                📱
               </div>
-              <button
-                onClick={() => setActiveNotif(null)}
-                style={{ background: "none", border: "none", color: "#A1A1AA", cursor: "pointer", padding: 4, display: "flex" }}
-              >
-                <X size={16} />
-              </button>
+              <h3 className="text-xl font-bold text-white mb-2">{t.defi1Title}</h3>
+              <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-3">
+                {t.defi1Sub}
+              </p>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.defi1Desc}
+              </p>
             </div>
+          </motion.div>
 
-            {/* Corps — détail contextuel */}
-            <div style={{ padding: "20px 20px" }}>
-              {activeNotif.detail.split("\n").map((line, i) => (
-                <p
-                  key={i}
-                  style={{
-                    fontSize: line.startsWith("👉") || line.startsWith("✅") ? 12 : 13,
-                    color: line.startsWith("👉") ? activeNotif.color : line === "" ? "transparent" : "#A1A1AA",
-                    fontWeight: line.startsWith("👉") || line.startsWith("✅") ? 600 : 400,
-                    lineHeight: 1.65,
-                    marginBottom: line === "" ? 8 : 4,
-                  }}
+          {/* Défi 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] text-xl font-bold mb-5">
+                💸
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.defi2Title}</h3>
+              <p className="text-xs text-[#f59e0b] font-semibold uppercase tracking-wider mb-3">
+                {t.defi2Sub}
+              </p>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.defi2Desc}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Défi 3 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold mb-5">
+                📉
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.defi3Title}</h3>
+              <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-3">
+                {t.defi3Sub}
+              </p>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.defi3Desc}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bannière de transition */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-[#EF4444]/15 via-[#18181B] to-[#18181B] border border-[#EF4444]/30 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div>
+            <h4 className="text-lg font-bold text-white">
+              {t.defisTransition}
+            </h4>
+            <p className="text-xs text-[#A1A1AA] mt-1">
+              {lang === "fr"
+                ? "Wave, Orange Money, M-Pesa, MTN, Moov, Espèces, Banque : tout est agrégé simplement."
+                : "Wave, Orange Money, M-Pesa, MTN, Moov, Cash, Bank: all aggregated in one safe view."}
+            </p>
+          </div>
+          <motion.div
+            whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(239, 68, 68, 0.5)" }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Link
+              href="/onboarding"
+              className="px-6 py-3 rounded-xl bg-[#EF4444] text-white font-bold text-sm hover:bg-[#DC2626] transition-colors shrink-0 flex items-center gap-2"
+            >
+              {lang === "fr" ? "Démarrer maintenant" : "Start now"} <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          4. BENTO GRID DES 4 FONCTIONNALITÉS CLÉS DU MVP
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="features" className="py-24 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4 text-white">
+            {t.bentoTitle}
+          </h2>
+          <p className="text-[#A1A1AA] text-base">
+            {t.bentoSubtitle}
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Bento 1 : Cycle de Paie Intelligent */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.bento1Title}</h3>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.bento1Desc}
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#EF4444] font-semibold flex items-center gap-1.5">
+              <span>✓ {lang === "fr" ? "Formule : Solde ÷ Jours restants" : "Formula: Balance ÷ Remaining days"}</span>
+            </div>
+          </motion.div>
+
+          {/* Bento 2 : Saisie Rapide < 3s */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.bento2Title}</h3>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.bento2Desc}
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#4ade80] font-semibold flex items-center gap-1.5">
+              <span>⚡ {lang === "fr" ? "Sans prise de tête" : "Friction-free tracking"}</span>
+            </div>
+          </motion.div>
+
+          {/* Bento 3 : Sécurité & Confidentialité */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
+                <Shield className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.bento3Title}</h3>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.bento3Desc}
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#38bdf8] font-semibold flex items-center gap-1.5">
+              <span>🔒 {lang === "fr" ? "0 identifiant bancaire stocké" : "0 bank credentials stored"}</span>
+            </div>
+          </motion.div>
+
+          {/* Bento 4 : Visualisation & Santé */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
+                <PieChart className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{t.bento4Title}</h3>
+              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                {t.bento4Desc}
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#f59e0b] font-semibold flex items-center gap-1.5">
+              <span>📊 {lang === "fr" ? "Répartition par catégorie automatique" : "Automatic category breakdown"}</span>
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          5. SECTION "COMMENT ÇA MARCHE" (30 SECONDES CHRONO)
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="how" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A] bg-[#09090B]/60">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+            {t.howBadge}
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 mb-4 text-white">
+            {t.howTitle}
+          </h2>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          
+          {/* Étape 1 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+          >
+            {/* Icône animée à l'entrée (scale, rotate, fade-in) */}
+            <motion.div
+              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
+              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
+            >
+              <Users className="w-5 h-5" />
+            </motion.div>
+            <h3 className="text-lg font-bold text-white mb-2">{t.step1Title}</h3>
+            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step1Desc}</p>
+          </motion.div>
+
+          {/* Étape 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+          >
+            <motion.div
+              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
+              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
+            >
+              <Wallet className="w-5 h-5" />
+            </motion.div>
+            <h3 className="text-lg font-bold text-white mb-2">{t.step2Title}</h3>
+            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step2Desc}</p>
+          </motion.div>
+
+          {/* Étape 3 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+          >
+            <motion.div
+              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
+              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
+            >
+              <Zap className="w-5 h-5" />
+            </motion.div>
+            <h3 className="text-lg font-bold text-white mb-2">{t.step3Title}</h3>
+            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step3Desc}</p>
+          </motion.div>
+
+          {/* Étape 4 */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{
+              y: -4,
+              scale: 1.02,
+              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+          >
+            <motion.div
+              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
+              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
+            >
+              <TrendingUp className="w-5 h-5" />
+            </motion.div>
+            <h3 className="text-lg font-bold text-white mb-2">{t.step4Title}</h3>
+            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step4Desc}</p>
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          6. TÉMOIGNAGES PANAFRICAINS GÉOLOCALISÉS
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="testimonials" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-2xl mx-auto mb-14"
+        >
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-[#f59e0b] mb-2">
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <span className="text-white ml-1">4.9 / 5</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-3">
+            {t.testiTitle}
+          </h2>
+          <p className="text-[#A1A1AA] text-base">{t.testiSubtitle}</p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {panAfricanTestimonials.map((item, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={{
+                y: -4,
+                scale: 1.02,
+                boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
+                transition: { duration: 0.25, ease: "easeOut" },
+              }}
+              className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/40 transition-colors"
+            >
+              <p className="text-sm text-[#FAFAFA] leading-relaxed mb-6 italic">
+                "{item.text}"
+              </p>
+              <div className="pt-4 border-t border-[#27272A] flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    {item.name} <span>{item.flag}</span>
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA]">{item.city}</p>
+                </div>
+                <span className="text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-1 rounded-full">
+                  {item.role}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          7. SÉCURITÉ & VIE PRIVÉE
+      ════════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 px-6 lg:px-16 max-w-5xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-3xl bg-gradient-to-b from-[#18181B] to-[#09090B] border border-[#27272A] p-8 sm:p-12 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="w-14 h-14 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center mx-auto mb-6 text-[#10b981]"
+          >
+            <Lock className="w-7 h-7" />
+          </motion.div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white mb-3">
+            {t.secTitle}
+          </h2>
+          <p className="text-sm sm:text-base text-[#A1A1AA] max-w-2xl mx-auto mb-8 leading-relaxed">
+            {t.secDesc}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold text-white">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+            >
+              🔒 100% Manuel & Privé
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+            >
+              🛡️ Chiffrement AES-256
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+            >
+              💳 Zéro carte bancaire demandée
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          8. FAQ INTERACTIVE AVEC ANIMATION D'ACCORDÉON
+      ════════════════════════════════════════════════════════════════════ */}
+      <section id="faq" className="py-20 px-6 lg:px-16 max-w-4xl mx-auto border-t border-[#27272A]">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-14"
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+            FAQ
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mt-4 mb-2">
+            {t.faqTitle}
+          </h2>
+          <p className="text-sm text-[#A1A1AA]">{t.faqSubtitle}</p>
+        </motion.div>
+
+        <div className="space-y-4">
+          {panAfricanFaqs.map((faq, i) => {
+            const isOpen = openFaq === i;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.45, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                className="rounded-xl bg-[#18181B] border border-[#27272A] overflow-hidden transition-colors"
+              >
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : i)}
+                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-white hover:text-[#EF4444] transition-colors"
                 >
-                  {line || "\u00a0"}
-                </p>
-              ))}
-            </div>
+                  <span>{faq.q}</span>
+                  <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <ChevronDown className={`w-5 h-5 ${isOpen ? "text-[#EF4444]" : "text-[#A1A1AA]"}`} />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-[#A1A1AA] leading-relaxed border-t border-[#27272A]/40">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
 
-            {/* Footer */}
-            <div style={{ padding: "0 20px 18px", display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setActiveNotif(null)}
-                className="btn-primary"
-                style={{ flex: 1, justifyContent: "center", padding: "9px 0" }}
+      {/* ═══════════════════════════════════════════════════════════════════
+          9. CTA FINAL (HIGH-CONVERSION) AVEC GLOW & MICRO-INTERACTIONS
+      ════════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 px-6 lg:px-16 max-w-5xl mx-auto text-center relative">
+        <div className="absolute left-1/2 -top-24 -translate-x-1/2 w-[600px] h-[350px] bg-[#EF4444]/20 blur-[130px] rounded-full pointer-events-none -z-10" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-3xl bg-gradient-to-b from-[#18181B] to-[#09090B] border border-[#27272A] p-10 sm:p-16 relative overflow-hidden shadow-2xl"
+        >
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-6">
+            {t.ctaFinalTitle}
+          </h2>
+          <p className="text-base sm:text-lg text-[#A1A1AA] max-w-2xl mx-auto mb-10 leading-relaxed">
+            {t.ctaFinalSubtitle}
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <motion.div
+              whileHover={{
+                scale: 1.03,
+                boxShadow: "0 0 28px rgba(239, 68, 68, 0.6)",
+                transition: { duration: 0.2, ease: "easeOut" },
+              }}
+              whileTap={{ scale: 0.97, transition: { duration: 0.15 } }}
+              className="w-full sm:w-auto rounded-xl"
+            >
+              <Link
+                href="/onboarding"
+                className="w-full sm:w-auto px-9 py-4 rounded-xl text-base font-bold text-white bg-[#EF4444] hover:bg-[#dc2626] shadow-xl shadow-[#EF4444]/30 transition-colors flex items-center justify-center gap-2 group"
               >
-                Compris
-              </button>
-              <button
-                onClick={() => { setActiveNotif(null); setHasUnread(false); }}
-                style={{
-                  flex: 1,
-                  background: "none",
-                  border: "1px solid #27272A",
-                  borderRadius: 10,
-                  color: "#A1A1AA",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  padding: "9px 0",
-                }}
+                <span>{t.ctaFinalBtn}</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              whileHover={{
+                scale: 1.02,
+                borderColor: "rgba(239, 68, 68, 0.5)",
+                boxShadow: "0 0 16px rgba(239, 68, 68, 0.2)",
+                transition: { duration: 0.2, ease: "easeOut" },
+              }}
+              whileTap={{ scale: 0.97, transition: { duration: 0.15 } }}
+              className="w-full sm:w-auto rounded-xl"
+            >
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] transition-all flex items-center justify-center"
               >
-                Marquer comme lu
-              </button>
+                {t.ctaFinalDemo}
+              </Link>
+            </motion.div>
+          </div>
+
+          <p className="text-xs text-[#71717A] mt-6">
+            ✓ 100% {lang === "fr" ? "Gratuit" : "Free"} · {lang === "fr" ? "Zéro carte bancaire" : "No credit card"} · {lang === "fr" ? "Prêt en 30 secondes" : "Ready in 30 seconds"}
+          </p>
+        </motion.div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          10. FOOTER PANAFRICAIN
+      ════════════════════════════════════════════════════════════════════ */}
+      <footer className="border-t border-[#27272A] py-12 px-6 lg:px-16 text-xs text-[#A1A1AA]">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          {/* Logo Footer redirigeant vers la section Hero */}
+          <Link
+            href="#hero"
+            onClick={(e) => {
+              e.preventDefault();
+              const heroEl = document.getElementById("hero");
+              if (heroEl) {
+                heroEl.scrollIntoView({ behavior: "smooth" });
+              } else {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className="flex items-center gap-3 group cursor-pointer"
+            title={lang === "fr" ? "Retour au début" : "Back to top"}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+              className="w-8 h-8 rounded-lg overflow-hidden bg-[#18181B] border border-[#27272A] shadow-sm flex items-center justify-center shrink-0 group-hover:border-[#EF4444]/60 transition-colors"
+            >
+              <Image
+                src="/icons/logo.png"
+                alt="GestFiPro"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+            <div>
+              <span className="text-sm font-bold text-white group-hover:text-white transition-colors">
+                GestFi<span className="text-[#EF4444]">Pro</span>
+              </span>
+              <p className="text-[11px] text-[#71717A]">
+                {lang === "fr"
+                  ? "Gestion financière par cycle de paie en Afrique"
+                  : "Pay-cycle financial management across Africa"}
+              </p>
             </div>
+          </Link>
+
+          <div className="flex flex-wrap items-center gap-6">
+            <a href="#features" className="hover:text-white transition-colors">
+              {lang === "fr" ? "Fonctionnalités" : "Features"}
+            </a>
+            <a href="#defis" className="hover:text-white transition-colors">
+              {lang === "fr" ? "Le Problème" : "The Problem"}
+            </a>
+            <a href="#how" className="hover:text-white transition-colors">
+              {lang === "fr" ? "Comment ça marche" : "How it works"}
+            </a>
+            <a href="#faq" className="hover:text-white transition-colors">
+              FAQ
+            </a>
+            <Link href="/guide" className="hover:text-white transition-colors">
+              Guide
+            </Link>
+            <Link href="/login" className="hover:text-white transition-colors">
+              {lang === "fr" ? "Connexion" : "Login"}
+            </Link>
+            <Link href="/dashboard" className="hover:text-white transition-colors">
+              {lang === "fr" ? "Application" : "Dashboard"}
+            </Link>
           </div>
         </div>
-      )}
+
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-[#27272A]/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#71717A]">
+          <p>© 2026 GestFiPro. {lang === "fr" ? "Tous droits réservés. Pensé pour une liberté financière universelle." : "All rights reserved. Designed for financial peace of mind."}</p>
+          <p>
+            🇨🇮 Côte d'Ivoire · 🇸🇳 Sénégal · 🇳🇬 Nigeria · 🇰🇪 Kenya · 🇿🇦 South Africa · 🇨🇲 Cameroun · 🇬🇭 Ghana · 🇲🇱 Mali
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

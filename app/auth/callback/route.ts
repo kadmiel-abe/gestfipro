@@ -11,8 +11,10 @@ export async function GET(request: NextRequest) {
   if (code) {
     const cookieStore = await cookies();
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-anon.supabase.co";
+    const supabaseAnonKey =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key-gestfipro";
 
     const response = NextResponse.redirect(new URL(next, request.url));
 

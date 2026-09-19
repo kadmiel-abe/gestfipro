@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * AccountIcon — Affiche directement l'image PNG/JPG de l'opérateur
  * avec arrondi appliqué sur l'image elle-même, sans conteneur,

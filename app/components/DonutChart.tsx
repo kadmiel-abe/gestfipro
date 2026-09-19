@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { Transaction } from "@/lib/types";
 
 interface Category {
   label: string;
@@ -9,6 +10,7 @@ interface Category {
 }
 
 interface DonutChartProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transactions?: any[];
 }
 

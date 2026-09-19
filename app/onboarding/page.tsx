@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { User, Banknote, CalendarDays, ArrowRight, CheckCircle2 } from "lucide-react";
+import { User, Banknote, CalendarDays, ArrowRight, CheckCircle2, Plus, Trash2, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Profil", "Salaire", "Comptes", "Terminé"];
@@ -12,20 +12,37 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [salary, setSalary] = useState("");
-  const [payday, setPayday] = useState("28");
-  const [accountBalances, setAccountBalances] = useState<{ [key: string]: number }>({
-    "Espèces": 0,
-    "Wave": 0,
-    "Orange Money": 0,
-    "Compte Bancaire": 0,
-  });
+  const [payday, setPayday] = useState("");
+  const [customAccounts, setCustomAccounts] = useState<{ id: string; name: string; type: string; balance: number }[]>([]);
+  const [newAccName, setNewAccName] = useState("");
+  const [newAccType, setNewAccType] = useState("Espèces");
+  const [newAccBal, setNewAccBal] = useState("");
+
+  const addCustomAccount = () => {
+    if (!newAccName.trim()) return;
+    setCustomAccounts((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        name: newAccName.trim(),
+        type: newAccType,
+        balance: Number(newAccBal) || 0,
+      },
+    ]);
+    setNewAccName("");
+    setNewAccBal("");
+  };
+
+  const removeCustomAccount = (id: string) => {
+    setCustomAccounts((prev) => prev.filter((a) => a.id !== id));
+  };
 
   const finishOnboarding = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const netSalary = Number(salary) || 0;
-      const paydayNum = Number(payday) || 28;
-      const fullName = name.trim() || "Utilisateur";
+      const paydayNum = Number(payday) > 0 && Number(payday) <= 31 ? Number(payday) : null;
+      const fullName = name.trim() || "";
 
       if (user) {
         // Sauvegarder dans profiles
@@ -37,30 +54,35 @@ export default function OnboardingPage() {
           updated_at: new Date().toISOString(),
         });
 
-        // Initialiser les comptes dans accounts
-        const accountsToInsert = [
-          { user_id: user.id, name: "Espèces", type: "cash", balance: accountBalances["Espèces"] || 0 },
-          { user_id: user.id, name: "Wave", type: "wave", balance: accountBalances["Wave"] || 0 },
-          { user_id: user.id, name: "Orange Money", type: "orange_money", balance: accountBalances["Orange Money"] || 0 },
-          { user_id: user.id, name: "Banque", type: "bank", balance: accountBalances["Compte Bancaire"] || 0 },
-        ];
+        // Insérer UNIQUEMENT les comptes explicitement ajoutés par l'utilisateur
+        if (customAccounts.length > 0) {
+          const accountsToInsert = customAccounts.map((acc) => {
+            let type = "cash";
+            const lower = acc.type.toLowerCase() + " " + acc.name.toLowerCase();
+            if (lower.includes("wave")) type = "wave";
+            else if (lower.includes("orange") || lower.includes("mtn") || lower.includes("moov") || lower.includes("mobile")) type = "mobile_money";
+            else if (lower.includes("banque") || lower.includes("bank")) type = "bank";
 
-        await supabase.from("accounts").upsert(accountsToInsert, { onConflict: "user_id,name" as any });
+            return {
+              user_id: user.id,
+              name: acc.name,
+              type: type,
+              balance: acc.balance,
+            };
+          });
+
+          await supabase.from("accounts").insert(accountsToInsert);
+        }
       }
 
-      // Toujours persister dans localStorage pour la session
+      // Persistance dans localStorage pour la session
       localStorage.setItem("gestfipro_profile", JSON.stringify({
         userName: fullName,
         monthlySalary: netSalary,
-        paydayDate: paydayNum,
+        paydayDate: paydayNum || 0,
       }));
 
-      localStorage.setItem("gestfipro_accounts", JSON.stringify([
-        { id: 1, name: "Espèces", type: "Espèces", balance: accountBalances["Espèces"] || 0, colorClass: "#4ade80", icon: "💵" },
-        { id: 2, name: "Wave", type: "Mobile Money", balance: accountBalances["Wave"] || 0, colorClass: "#38bdf8", icon: "🌊" },
-        { id: 3, name: "Orange Money", type: "Mobile Money", balance: accountBalances["Orange Money"] || 0, colorClass: "#fb923c", icon: "🟠" },
-        { id: 4, name: "Banque", type: "Banque", balance: accountBalances["Compte Bancaire"] || 0, colorClass: "#818cf8", icon: "🏦" },
-      ]));
+      localStorage.setItem("gestfipro_accounts", JSON.stringify(customAccounts));
     } catch (err) {
       console.error("Erreur sauvegarde onboarding:", err);
     }
@@ -79,7 +101,7 @@ export default function OnboardingPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px 16px",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
       <div
@@ -271,34 +293,123 @@ export default function OnboardingPage() {
                   Vos comptes 🏦
                 </h2>
                 <p style={{ fontSize: 12, color: "#A1A1AA" }}>
-                  Indiquez vos soldes actuels pour initialiser votre tableau de bord.
+                  Optionnel : Vous pouvez ajouter un compte dès maintenant ou commencer avec un tableau de bord vierge et les créer plus tard.
                 </p>
               </div>
-              {[
-                { label: "Espèces", icon: "💵", placeholder: "Ex : 50000" },
-                { label: "Wave", icon: "🌊", placeholder: "Ex : 120000" },
-                { label: "Orange Money", icon: "🟠", placeholder: "Ex : 80000" },
-                { label: "Compte Bancaire", icon: "🏦", placeholder: "Ex : 450000" },
-              ].map((acc) => (
-                <div key={acc.label}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    {acc.icon} {acc.label} (FCFA)
+
+              {/* Formulaire d'ajout de compte optionnel */}
+              <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", marginBottom: 4 }}>
+                      Nom du compte
+                    </label>
+                    <input
+                      className="input-field"
+                      placeholder="Ex: Wave, Espèces, BOA..."
+                      value={newAccName}
+                      onChange={(e) => setNewAccName(e.target.value)}
+                      style={{ fontSize: 12, padding: "8px 12px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", marginBottom: 4 }}>
+                      Type
+                    </label>
+                    <select
+                      className="input-field"
+                      value={newAccType}
+                      onChange={(e) => setNewAccType(e.target.value)}
+                      style={{ fontSize: 12, padding: "8px 12px" }}
+                    >
+                      <option value="Espèces">💵 Espèces</option>
+                      <option value="Wave">🌊 Wave</option>
+                      <option value="Orange Money">🟠 Orange Money</option>
+                      <option value="Mobile Money">📱 Mobile Money (Autre)</option>
+                      <option value="Banque">🏦 Compte Bancaire</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", marginBottom: 4 }}>
+                    Solde initial (FCFA)
                   </label>
                   <input
                     className="input-field"
                     type="number"
-                    placeholder={acc.placeholder}
-                    value={accountBalances[acc.label] || ""}
-                    onChange={(e) =>
-                      setAccountBalances((prev) => ({
-                        ...prev,
-                        [acc.label]: Number(e.target.value),
-                      }))
-                    }
+                    placeholder="0"
+                    value={newAccBal}
+                    onChange={(e) => setNewAccBal(e.target.value)}
+                    style={{ fontSize: 12, padding: "8px 12px" }}
                     min={0}
                   />
                 </div>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={addCustomAccount}
+                  style={{
+                    background: "#27272A",
+                    color: "#FAFAFA",
+                    border: "1px solid #3F3F46",
+                    borderRadius: 8,
+                    padding: "8px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    marginTop: 4,
+                  }}
+                >
+                  <Plus size={14} /> Ajouter ce compte
+                </button>
+              </div>
+
+              {/* Liste des comptes ajoutés */}
+              {customAccounts.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase" }}>
+                    Comptes prêts à être créés ({customAccounts.length}) :
+                  </p>
+                  {customAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: "#09090B",
+                        border: "1px solid #27272A",
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        fontSize: 12,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Wallet size={14} color="#EF4444" />
+                        <div>
+                          <span style={{ fontWeight: 700, color: "#FAFAFA" }}>{a.name}</span>
+                          <span style={{ fontSize: 10, color: "#A1A1AA", marginLeft: 6 }}>({a.type})</span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontWeight: 700, color: "#FAFAFA" }}>{Number(a.balance).toLocaleString("fr-FR")} FCFA</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomAccount(a.id)}
+                          style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 2 }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 

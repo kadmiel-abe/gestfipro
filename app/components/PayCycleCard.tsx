@@ -24,11 +24,23 @@ function fmt(n: number) {
   return Math.round(n).toLocaleString("fr-FR");
 }
 
-export function computePayCycle(paydayWithMonth: number, totalBalance: number) {
+export function computePayCycle(paydayWithMonth: number | null | undefined, totalBalance: number) {
   const now = new Date();
   const todayNum = now.getDate();
-  const safePayday = paydayWithMonth > 0 && paydayWithMonth <= 31 ? paydayWithMonth : 28;
+  const isConfigured = Boolean(paydayWithMonth && paydayWithMonth > 0 && paydayWithMonth <= 31);
 
+  if (!isConfigured || !paydayWithMonth) {
+    return {
+      daysRemaining: 0,
+      dailyBudget: 0,
+      isBudgetCritical: false,
+      safePayday: null,
+      todayNum,
+      isConfigured: false,
+    };
+  }
+
+  const safePayday = paydayWithMonth;
   let daysRemaining = safePayday - todayNum;
   if (daysRemaining <= 0) {
     // Nombre de jours restants jusqu'au prochain mois
@@ -45,6 +57,7 @@ export function computePayCycle(paydayWithMonth: number, totalBalance: number) {
     isBudgetCritical,
     safePayday,
     todayNum,
+    isConfigured: true,
   };
 }
 
@@ -53,206 +66,126 @@ export default function PayCycleCard({
   paydayWithMonth,
   totalBalance,
   todayExpenses,
-  accountsCount = 4,
+  accountsCount = 0,
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
-  const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum } = computePayCycle(
+  const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
     totalBalance
   );
 
-  const rhythmAlert = dailyBudget > 0 && todayExpenses > dailyBudget;
+  const rhythmAlert = isConfigured && dailyBudget > 0 && todayExpenses > dailyBudget;
   const budgetRatio = dailyBudget > 0 ? Math.round((todayExpenses / dailyBudget) * 100) : 0;
-  const cycleProgress = Math.min(100, Math.max(4, Math.round(((30 - daysRemaining) / 30) * 100)));
+  const cycleProgress = isConfigured ? Math.min(100, Math.max(4, Math.round(((30 - daysRemaining) / 30) * 100))) : 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+    <div className="flex flex-col gap-4 mb-6">
       {/* ═══════════════════ CARTE PRINCIPALE : CYCLE DE PAIE ═══════════════════ */}
-      <div
-        className="card animate-fade-in-up"
-        style={{
-          padding: "24px 26px",
-          background: "linear-gradient(135deg, rgba(239,68,68,0.08) 0%, #18181B 50%, #18181B 100%)",
-          border: "1px solid rgba(239,68,68,0.25)",
-          borderRadius: 16,
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-        }}
-      >
+      <div className="card animate-fade-in-up p-4 sm:p-6 bg-gradient-to-br from-[#EF4444]/10 via-[#18181B] to-[#18181B] border border-[#EF4444]/30 rounded-2xl sm:rounded-3xl shadow-2xl">
         {/* En-tête de la carte */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: "rgba(239,68,68,0.12)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Calendar size={20} color="#EF4444" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center text-[#EF4444] shrink-0">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#FAFAFA", letterSpacing: "-0.02em", margin: 0 }}>
+              <h3 className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tracking-tight">
                 Cycle de Paie
               </h3>
-              <p style={{ fontSize: 12, color: "#A1A1AA", margin: "2px 0 0 0" }}>
-                Versement prévu le {safePayday} du mois · Jour {todayNum} en cours
+              <p className="text-xs text-[#A1A1AA] mt-0.5">
+                {isConfigured
+                  ? `Versement prévu le ${safePayday} du mois · Jour ${todayNum} en cours`
+                  : "Aucun jour de paie configuré"}
               </p>
             </div>
           </div>
 
-          <span className="badge badge-success" style={{ gap: 6, padding: "5px 12px", fontSize: 11 }}>
-            <span
-              className="pulse-dot"
-              style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", display: "inline-block" }}
-            />
-            Cycle actif (J-{daysRemaining})
-          </span>
+          {isConfigured ? (
+            <span className="badge badge-success inline-flex items-center gap-1.5 px-3 py-1 text-xs self-start sm:self-auto">
+              <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-[#EF4444] inline-block" />
+              Cycle actif (J-{daysRemaining})
+            </span>
+          ) : (
+            <span className="badge inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-amber-500/10 text-amber-500 border border-amber-500/30 self-start sm:self-auto">
+              Jour non défini
+            </span>
+          )}
         </div>
 
-        {/* Les deux métriques affichées EN GROS côte à côte */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 16,
-          }}
-        >
+        {/* Les deux métriques affichées côte à côte */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* Métrique 1 : Jours restants avant la paie */}
-          <div
-            style={{
-              background: "#09090B",
-              border: "1px solid #27272A",
-              borderRadius: 14,
-              padding: "20px 22px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "#A1A1AA",
-                }}
-              >
+          <div className="bg-[#09090B] border border-[#27272A] rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
                 Jours restants avant la paie
               </span>
-              <Clock size={16} color="#A1A1AA" />
+              <Clock className="w-4 h-4 text-[#A1A1AA]" />
             </div>
 
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-              <span
-                style={{
-                  fontSize: "3rem",
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  letterSpacing: "-0.04em",
-                  color: "#FAFAFA",
-                }}
-              >
-                {daysRemaining}
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className={`text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums ${
+                isConfigured ? "text-[#FAFAFA]" : "text-[#71717A]"
+              }`}>
+                {isConfigured ? daysRemaining : "Non défini"}
               </span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#A1A1AA" }}>
-                {daysRemaining > 1 ? "jours restants" : "jour restant"}
-              </span>
+              {isConfigured && (
+                <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
+                  {daysRemaining > 1 ? "jours restants" : "jour restant"}
+                </span>
+              )}
             </div>
 
             {/* Barre d'avancement du cycle */}
-            <div style={{ marginTop: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#71717A", marginBottom: 4 }}>
+            <div className="mt-2">
+              <div className="flex justify-between text-[10px] text-[#71717A] mb-1">
                 <span>Cycle en cours</span>
-                <span>Prochaine paie : le {safePayday}</span>
+                <span>{isConfigured ? `Prochaine paie : le ${safePayday}` : "Jour de paie requis"}</span>
               </div>
-              <div style={{ height: 6, width: "100%", background: "#18181B", borderRadius: 99, overflow: "hidden" }}>
+              <div className="h-1.5 w-full bg-[#18181B] rounded-full overflow-hidden">
                 <div
-                  style={{
-                    height: "100%",
-                    width: `${cycleProgress}%`,
-                    background: "linear-gradient(90deg, #EF4444, #f87171)",
-                    borderRadius: 99,
-                    transition: "width 0.4s ease",
-                  }}
+                  className="h-full bg-gradient-to-r from-[#EF4444] to-[#f87171] rounded-full transition-all duration-400"
+                  style={{ width: `${cycleProgress}%` }}
                 />
               </div>
             </div>
           </div>
 
           {/* Métrique 2 : Budget journalier autorisé */}
-          <div
-            style={{
-              background: "#09090B",
-              border: isBudgetCritical ? "1px solid rgba(239,68,68,0.45)" : "1px solid #27272A",
-              borderRadius: 14,
-              padding: "20px 22px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              boxShadow: isBudgetCritical ? "0 0 24px rgba(239,68,68,0.12)" : "none",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: isBudgetCritical ? "#f87171" : "#A1A1AA",
-                }}
-              >
+          <div className={`bg-[#09090B] rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col justify-between border ${
+            isBudgetCritical ? "border-[#EF4444]/50 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-[#27272A]"
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                isBudgetCritical ? "text-[#f87171]" : "text-[#A1A1AA]"
+              }`}>
                 Budget journalier autorisé
               </span>
-              <Zap size={16} color="#EF4444" />
+              <Zap className="w-4 h-4 text-[#EF4444]" />
             </div>
 
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-              <span
-                style={{
-                  fontSize: "3rem",
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  letterSpacing: "-0.04em",
-                  color: "#EF4444",
-                }}
-              >
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-[#EF4444]">
                 {fmt(dailyBudget)}
               </span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#A1A1AA" }}>
+              <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
                 FCFA / jour
               </span>
             </div>
 
-            <div style={{ marginTop: 6 }}>
-              <p style={{ fontSize: 11, color: "#A1A1AA", margin: "0 0 6px 0", lineHeight: 1.4 }}>
-                Solde total disponible ({fmt(totalBalance)} FCFA) ÷ {daysRemaining} {daysRemaining > 1 ? "jours" : "jour"}
+            <div className="mt-2">
+              <p className="text-[11px] font-medium text-[#A1A1AA] mb-1.5">
+                Solde ({fmt(totalBalance)} FCFA) ÷ {daysRemaining} {daysRemaining > 1 ? "jours" : "jour"}
               </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="flex items-center gap-1.5">
                 {isBudgetCritical ? (
-                  <span className="badge badge-danger" style={{ fontSize: 10 }}>
-                    <AlertTriangle size={10} />
+                  <span className="badge badge-danger text-[10px] px-2 py-0.5">
+                    <AlertTriangle className="w-3 h-3" />
                     Vigilance : budget sous 10 000 FCFA/j
                   </span>
                 ) : (
-                  <span className="badge badge-success" style={{ fontSize: 10 }}>
-                    <CheckCircle2 size={10} />
+                  <span className="badge badge-success text-[10px] px-2 py-0.5">
+                    <CheckCircle2 className="w-3 h-3" />
                     Rythme conseillé équilibré
                   </span>
                 )}
@@ -263,72 +196,46 @@ export default function PayCycleCard({
       </div>
 
       {/* ═══════════════════ KPIs SECONDAIRES ═══════════════════ */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 14,
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {/* Solde total disponible */}
-        <div className="card animate-fade-in-up-2" style={{ padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className="card animate-fade-in-up-2 p-4 sm:p-5 rounded-xl sm:rounded-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] text-[#A1A1AA] font-bold uppercase tracking-wider">
               Solde total disponible
             </span>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                background: "rgba(239,68,68,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CircleDollarSign size={14} color="#EF4444" />
+            <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center text-[#EF4444]">
+              <CircleDollarSign className="w-4 h-4" />
             </div>
           </div>
-          <p className="kpi-value">{fmt(totalBalance)} <span style={{ fontSize: 13, fontWeight: 500, color: "#A1A1AA" }}>FCFA</span></p>
-          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, color: "#71717A" }}>
-              Consolidé sur {accountsCount} compte{accountsCount > 1 ? "s" : ""}
-            </span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
+            {fmt(totalBalance)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#71717A]">
+            <span>Consolidé sur {accountsCount} compte{accountsCount > 1 ? "s" : ""}</span>
             {netSalary > 0 && (
-              <span style={{ fontSize: 11, color: "#52525B" }}>
-                · Salaire : {fmt(netSalary)} FCFA
-              </span>
+              <span>· Salaire : {fmt(netSalary)} FCFA</span>
             )}
           </div>
         </div>
 
         {/* Dépenses du jour */}
-        <div className="card animate-fade-in-up-3" style={{ padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className="card animate-fade-in-up-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] text-[#A1A1AA] font-bold uppercase tracking-wider">
               Dépenses aujourd'hui
             </span>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                background: "rgba(251,191,36,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <TrendingDown size={14} color="#fbbf24" />
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+              <TrendingDown className="w-4 h-4" />
             </div>
           </div>
-          <p className="kpi-value">{fmt(todayExpenses)} <span style={{ fontSize: 13, fontWeight: 500, color: "#A1A1AA" }}>FCFA</span></p>
-          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <span className={`badge ${rhythmAlert ? "badge-danger" : "badge-warning"}`} style={{ fontSize: 10 }}>
-              {rhythmAlert ? "⚠ Dépasse le budget journalier" : dailyBudget > 0 ? `${budgetRatio}% du budget journalier` : "Aucune dépense"}
+          <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
+            {fmt(todayExpenses)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className={`badge ${rhythmAlert ? "badge-danger" : "badge-warning"} text-[10px] px-2 py-0.5`}>
+              {rhythmAlert ? "⚠ Dépasse le budget journalier" : dailyBudget > 0 ? `${budgetRatio}% du budget/j` : "Aucune dépense"}
             </span>
-            <span style={{ fontSize: 11, color: "#71717A" }}>
+            <span className="text-[11px] text-[#71717A]">
               ({todayTransactionsCount} transaction{todayTransactionsCount > 1 ? "s" : ""})
             </span>
           </div>

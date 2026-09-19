@@ -27,67 +27,31 @@ export default function MiniCalendar({
   }
 
   return (
-    <div>
+    <div className="w-full">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#FAFAFA" }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs sm:text-sm font-bold text-[#FAFAFA]">
           Septembre 2026
         </span>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div className="flex items-center gap-1.5">
           {/* mini legend */}
-          <span
-            style={{
-              fontSize: 9,
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 4,
-              padding: "1px 5px",
-              color: "#f87171",
-            }}
-          >
+          <span className="text-[9px] font-bold bg-[#EF4444]/15 border border-[#EF4444]/30 rounded px-1.5 py-0.5 text-[#f87171]">
             Auj.
           </span>
-          <span
-            style={{
-              fontSize: 9,
-              background: "rgba(34,197,94,0.08)",
-              border: "1px solid rgba(34,197,94,0.2)",
-              borderRadius: 4,
-              padding: "1px 5px",
-              color: "#4ade80",
-            }}
-          >
-            Paie
-          </span>
+          {paydayDate > 0 && (
+            <span className="text-[9px] font-bold bg-[#10b981]/15 border border-[#10b981]/30 rounded px-1.5 py-0.5 text-[#4ade80]">
+              Paie
+            </span>
+          )}
         </div>
       </div>
 
       {/* Day headers */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          gap: 2,
-          marginBottom: 4,
-        }}
-      >
+      <div className="grid grid-cols-7 gap-1 mb-1 text-center">
         {DAYS_OF_WEEK.map((d) => (
           <div
             key={d}
-            style={{
-              textAlign: "center",
-              fontSize: 9,
-              fontWeight: 600,
-              color: "#52525B",
-              padding: "2px 0",
-            }}
+            className="text-[10px] font-bold text-[#71717A] py-0.5"
           >
             {d}
           </div>
@@ -95,65 +59,30 @@ export default function MiniCalendar({
       </div>
 
       {/* Days grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          gap: 2,
-        }}
-      >
+      <div className="grid grid-cols-7 gap-1">
         {cells.map((day, idx) => {
-          if (!day) return <div key={idx} />;
+          if (!day) return <div key={idx} className="aspect-square" />;
           const isToday = day === today;
-          const isPayday = day === paydayDate;
+          const isPayday = paydayDate > 0 && day === paydayDate;
           const hasExpense = expenseDays.includes(day);
 
-          let extraStyle: React.CSSProperties = {};
-          let cls = "cal-day";
-
+          let cellClass = "bg-transparent text-[#A1A1AA] hover:bg-[#27272A]/50";
           if (isToday) {
-            extraStyle = { background: "#EF4444", color: "white", fontWeight: 700 };
+            cellClass = "bg-[#EF4444] text-white font-extrabold shadow-sm shadow-[#EF4444]/40";
           } else if (isPayday) {
-            extraStyle = {
-              background: "rgba(34,197,94,0.12)",
-              border: "1px solid rgba(34,197,94,0.3)",
-              color: "#4ade80",
-            };
+            cellClass = "bg-[#10b981]/15 border border-[#10b981]/35 text-[#4ade80] font-bold";
           } else if (hasExpense) {
-            extraStyle = { color: "#FAFAFA" };
+            cellClass = "text-[#FAFAFA] font-semibold bg-[#18181B]";
           }
 
           return (
             <div
               key={idx}
-              className={cls}
-              style={{
-                width: 28,
-                height: 28,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 8,
-                fontSize: 11,
-                fontWeight: 500,
-                color: "#A1A1AA",
-                position: "relative",
-                ...extraStyle,
-              }}
+              className={`aspect-square flex items-center justify-center rounded-lg text-xs font-medium relative transition-colors ${cellClass}`}
             >
-              {day}
+              <span>{day}</span>
               {hasExpense && !isToday && !isPayday && (
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: 2,
-                    width: 3,
-                    height: 3,
-                    borderRadius: "50%",
-                    background: "#EF4444",
-                    opacity: 0.6,
-                  }}
-                />
+                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#EF4444] opacity-80" />
               )}
             </div>
           );

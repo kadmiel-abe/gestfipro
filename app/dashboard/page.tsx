@@ -43,6 +43,8 @@ import PayCycleCard from "../components/PayCycleCard";
 import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
+import LanguageSelector from "../components/LanguageSelector";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Dynamic imports for chart components (client-only)
 const CashflowChart = dynamic(() => import("../components/CashflowChart"), {
@@ -133,20 +135,25 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Nourriture");
   const [type, setType] = useState<"expense" | "income">("expense");
-  const [account, setAccount] = useState(accounts[0]?.name ?? "Espèces");
+  const [account, setAccount] = useState(accounts[0]?.name ?? "");
 
   const categories = ["Nourriture", "Transport", "Logement", "Loisirs", "Santé", "Éducation", "Vêtements", "Divers"];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!label.trim() || !amount) return;
+    const selectedAcc = account || accounts[0]?.name;
+    if (!selectedAcc) {
+      alert("Veuillez d'abord ajouter un compte financier dans l'onglet Comptes avant d'enregistrer une opération.");
+      return;
+    }
     onAdd({
       label,
       category,
       amount: type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount)),
       type,
       date: "À l'instant",
-      account,
+      account: selectedAcc,
       icon: type === "income" ? "⬇" : "⬆",
     });
     onClose();
@@ -254,7 +261,11 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
                   onChange={(e) => setAccount(e.target.value)}
                   style={{ appearance: "none", flex: 1 }}
                 >
-                  {accounts.map((a) => <option key={a.id}>{a.name}</option>)}
+                  {accounts.length === 0 ? (
+                    <option value="">Aucun compte configuré</option>
+                  ) : (
+                    accounts.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)
+                  )}
                 </select>
               </div>
             </div>
@@ -275,6 +286,7 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
 export default function GestFiProDashboard() {
   const supabase = createClient();
   const { theme, toggleTheme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
   const [showModal, setShowModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -291,15 +303,10 @@ export default function GestFiProDashboard() {
   // Profile fields (from Supabase profiles)
   const [userName, setUserName] = useState("");
   const [monthlySalary, setMonthlySalary] = useState(0);
-  const [paydayDate, setPaydayDate] = useState(28);
+  const [paydayDate, setPaydayDate] = useState(0);
 
   // Accounts (from Supabase accounts)
-  const [accounts, setAccounts] = useState<Account[]>([
-    { id: 1, name: "Espèces",      type: "Espèces",      balance: 0, colorClass: getAccountColor("Espèces"),      icon: "💵" },
-    { id: 2, name: "Wave",         type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Wave"),         icon: "🌊" },
-    { id: 3, name: "Orange Money", type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Orange Money"), icon: "🟠" },
-    { id: 4, name: "Banque",       type: "Banque",        balance: 0, colorClass: getAccountColor("Banque"),       icon: "🏦" },
-  ]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   // Transactions (from Supabase transactions)
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -309,44 +316,44 @@ export default function GestFiProDashboard() {
 
   const [quickInputText, setQuickInputText] = useState("");
 
+  // Extraire le prénom dynamiquement pour l'affichage
+  const firstName = React.useMemo(() => {
+    if (userName && userName.trim()) {
+      return userName.trim().split(" ")[0];
+    }
+    const meta = currentUser?.user_metadata;
+    const metaName = meta?.full_name || meta?.name || meta?.first_name || meta?.given_name;
+    if (metaName && typeof metaName === "string" && metaName.trim()) {
+      return metaName.trim().split(" ")[0];
+    }
+    if (currentUser?.email) {
+      const prefix = currentUser.email.split("@")[0].replace(/[._-]/g, " ").trim();
+      const first = prefix.split(" ")[0];
+      return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+    return "";
+  }, [userName, currentUser]);
+
+  const initials = React.useMemo(() => {
+    const target = userName || firstName || "U";
+    const parts = target.trim().split(" ");
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return target.substring(0, 2).toUpperCase();
+  }, [userName, firstName]);
+
   // ─── Data Loading from Supabase ───────────────────────────────────────────
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      let isNewUserPurge = false;
-      // Nettoyage automatique absolu pour repartir à 100% comme un nouvel utilisateur
-      if (typeof window !== "undefined") {
-        const hasCleanSlate = localStorage.getItem("gestfipro_clean_new_user_v5");
-        if (!hasCleanSlate) {
-          localStorage.removeItem("gestfipro_profile");
-          localStorage.removeItem("gestfipro_transactions");
-          localStorage.removeItem("gestfipro_accounts");
-          localStorage.removeItem("gestfipro_objectifs");
-          localStorage.setItem("gestfipro_clean_new_user_v5", "true");
-          isNewUserPurge = true;
-        }
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
       if (user) {
-        if (isNewUserPurge) {
-          // Remise à zéro complète en base Supabase pour repartir totalement à neuf
-          try {
-            await supabase.from("transactions").delete().eq("user_id", user.id);
-            await supabase.from("goals").delete().eq("user_id", user.id);
-            await supabase.from("accounts").update({ balance: 0 }).eq("user_id", user.id);
-            await supabase.from("profiles").upsert({
-              id: user.id,
-              full_name: "",
-              net_salary: 0,
-              payday_with_month: 28,
-            });
-          } catch (e) {
-            console.warn("Purge user error:", e);
-          }
-        }
+        // Extraire le nom depuis user_metadata (Google OAuth)
+        const meta = user.user_metadata;
+        const oAuthFullName = meta?.full_name || meta?.name || meta?.user_name || "";
 
         // 1. SELECT profiles
         const { data: prof } = await supabase
@@ -355,18 +362,36 @@ export default function GestFiProDashboard() {
           .eq("id", user.id)
           .maybeSingle();
 
-        if (prof && !isNewUserPurge) {
-          if (prof.full_name && !prof.full_name.includes("Kadmiel") && prof.full_name !== "Utilisateur") {
-            setUserName(prof.full_name);
-          } else {
-            setUserName("");
-          }
+        if (prof) {
+          const resolvedName = prof.full_name?.trim() || oAuthFullName || "";
+          setUserName(resolvedName);
           setMonthlySalary(Number(prof.net_salary) || 0);
-          setPaydayDate(prof.payday_with_month || (prof as any).pay_day || 28);
+          setPaydayDate(prof.payday_with_month || (prof as any).pay_day || 0);
+
+          // Synchroniser si le nom était vide en base mais disponible via OAuth
+          if (!prof.full_name && oAuthFullName) {
+            try {
+              await supabase.from("profiles").update({ full_name: oAuthFullName }).eq("id", user.id);
+            } catch (e) {
+              console.warn("Sync profile name error:", e);
+            }
+          }
         } else {
-          setUserName("");
+          const initialName = oAuthFullName || (user.email ? user.email.split("@")[0] : "");
+          setUserName(initialName);
           setMonthlySalary(0);
-          setPaydayDate(28);
+          setPaydayDate(0);
+
+          try {
+            await supabase.from("profiles").upsert({
+              id: user.id,
+              full_name: initialName,
+              net_salary: 0,
+              payday_with_month: null,
+            });
+          } catch (e) {
+            console.warn("Create profile error:", e);
+          }
         }
 
         // 2. SELECT accounts
@@ -375,7 +400,7 @@ export default function GestFiProDashboard() {
           .select("*")
           .eq("user_id", user.id);
 
-        if (accs && accs.length > 0 && !isNewUserPurge) {
+        if (accs && accs.length > 0) {
           setAccounts(accs.map((a) => ({
             id: a.id,
             name: a.name,
@@ -385,108 +410,69 @@ export default function GestFiProDashboard() {
             icon: a.name.includes("Wave") ? "🌊" : a.name.includes("Orange") ? "🟠" : a.name.includes("Banque") ? "🏦" : "💵",
           })));
         } else {
-          // Créer ou réinitialiser les 4 comptes initiaux avec solde à 0
-          const initialAccs = [
-            { user_id: user.id, name: "Espèces", type: "Espèces", balance: 0 },
-            { user_id: user.id, name: "Wave", type: "Mobile Money", balance: 0 },
-            { user_id: user.id, name: "Orange Money", type: "Mobile Money", balance: 0 },
-            { user_id: user.id, name: "Banque", type: "Banque", balance: 0 },
-          ];
-          if (!accs || accs.length === 0) {
-            await supabase.from("accounts").insert(initialAccs);
-          } else {
-            await supabase.from("accounts").update({ balance: 0 }).eq("user_id", user.id);
-          }
-          setAccounts([
-            { id: 1, name: "Espèces",      type: "Espèces",      balance: 0, colorClass: getAccountColor("Espèces"),      icon: "💵" },
-            { id: 2, name: "Wave",         type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Wave"),         icon: "🌊" },
-            { id: 3, name: "Orange Money", type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Orange Money"), icon: "🟠" },
-            { id: 4, name: "Banque",       type: "Banque",        balance: 0, colorClass: getAccountColor("Banque"),       icon: "🏦" },
-          ]);
+          setAccounts([]);
         }
 
         // 3. SELECT transactions
-        if (!isNewUserPurge) {
-          const { data: txs } = await supabase
-            .from("transactions")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("transaction_date", { ascending: false });
+        const { data: txs } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("transaction_date", { ascending: false });
 
-          if (txs) {
-            setTransactions(txs.map((t) => ({
-              id: t.id,
-              label: t.title || t.note || "Opération",
-              category: t.category || "Divers",
-              amount: Number(t.amount) || 0,
-              type: t.type,
-              date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "À l'instant",
-              account: t.note || "Compte",
-              icon: t.type === "income" ? "⬇" : "⬆",
-            })));
-          } else {
-            setTransactions([]);
-          }
+        if (txs) {
+          setTransactions(txs.map((t) => ({
+            id: t.id,
+            label: t.title || t.note || "Opération",
+            category: t.category || "Divers",
+            amount: Number(t.amount) || 0,
+            type: t.type,
+            date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "À l'instant",
+            account: t.note || "Compte",
+            icon: t.type === "income" ? "⬇" : "⬆",
+          })));
         } else {
           setTransactions([]);
         }
 
         // 4. SELECT goals
-        if (!isNewUserPurge) {
-          const { data: gls } = await supabase.from("goals").select("*").eq("user_id", user.id);
-          if (gls && gls.length > 0) {
-            setObjectives(gls.map((g) => ({
-              id: g.id,
-              title: g.title,
-              targetAmount: Number(g.target_amount),
-              currentAmount: Number(g.current_amount),
-              deadline: g.target_date || "31 Déc. 2026",
-              icon: "🎯",
-            })));
-          } else {
-            setObjectives([]);
-          }
+        const { data: gls } = await supabase.from("goals").select("*").eq("user_id", user.id);
+        if (gls && gls.length > 0) {
+          setObjectives(gls.map((g) => ({
+            id: g.id,
+            title: g.title,
+            targetAmount: Number(g.target_amount),
+            currentAmount: Number(g.current_amount),
+            deadline: g.target_date || "31 Déc. 2026",
+            icon: "🎯",
+          })));
         } else {
           setObjectives([]);
         }
       } else {
-        // Fallback local pour persistance hors connexion / non connecté
-        if (isNewUserPurge) {
-          setUserName("");
-          setMonthlySalary(0);
-          setPaydayDate(28);
-          setTransactions([]);
-          setObjectives([]);
-          setAccounts([
-            { id: 1, name: "Espèces",      type: "Espèces",      balance: 0, colorClass: getAccountColor("Espèces"),      icon: "💵" },
-            { id: 2, name: "Wave",         type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Wave"),         icon: "🌊" },
-            { id: 3, name: "Orange Money", type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Orange Money"), icon: "🟠" },
-            { id: 4, name: "Banque",       type: "Banque",        balance: 0, colorClass: getAccountColor("Banque"),       icon: "🏦" },
-          ]);
-        } else {
-          const savedProf = localStorage.getItem("gestfipro_profile");
-          if (savedProf) {
-            try {
-              const p = JSON.parse(savedProf);
-              if (p.userName) setUserName(p.userName);
-              if (p.monthlySalary !== undefined) setMonthlySalary(Number(p.monthlySalary));
-              if (p.paydayDate !== undefined) setPaydayDate(Number(p.paydayDate));
-            } catch (e) {}
-          }
-          const savedAccs = localStorage.getItem("gestfipro_accounts");
-          if (savedAccs) {
-            try {
-              const a = JSON.parse(savedAccs);
-              if (Array.isArray(a) && a.length > 0) setAccounts(a);
-            } catch (e) {}
-          }
-          const savedTxs = localStorage.getItem("gestfipro_transactions");
-          if (savedTxs) {
-            try {
-              const t = JSON.parse(savedTxs);
-              if (Array.isArray(t)) setTransactions(t);
-            } catch (e) {}
-          }
+        // Fallback local pour persistance hors connexion
+        const savedProf = localStorage.getItem("gestfipro_profile");
+        if (savedProf) {
+          try {
+            const p = JSON.parse(savedProf);
+            if (p.userName) setUserName(p.userName);
+            if (p.monthlySalary !== undefined) setMonthlySalary(Number(p.monthlySalary));
+            if (p.paydayDate !== undefined) setPaydayDate(Number(p.paydayDate));
+          } catch (e) {}
+        }
+        const savedAccs = localStorage.getItem("gestfipro_accounts");
+        if (savedAccs) {
+          try {
+            const a = JSON.parse(savedAccs);
+            if (Array.isArray(a) && a.length > 0) setAccounts(a);
+          } catch (e) {}
+        }
+        const savedTxs = localStorage.getItem("gestfipro_transactions");
+        if (savedTxs) {
+          try {
+            const t = JSON.parse(savedTxs);
+            if (Array.isArray(t)) setTransactions(t);
+          } catch (e) {}
         }
       }
     } catch (err) {
@@ -494,11 +480,39 @@ export default function GestFiProDashboard() {
     } finally {
       setIsLoadingData(false);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as TabKey | null;
+      const validTabs: TabKey[] = ["accueil", "comptes", "historique", "statistiques", "objectifs", "reglages", "guide"];
+      if (tabParam && validTabs.includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+      if (params.get("action") === "new_expense" || params.get("modal") === "expense") {
+        setShowModal(true);
+      }
+    }
+
+    // Écouter les changements d'état d'authentification Supabase
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        const meta = session.user.user_metadata;
+        const metaName = meta?.full_name || meta?.name || "";
+        if (metaName && !userName) {
+          setUserName(metaName);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [loadData, supabase, userName]);
 
   // ─── Computed values ──────────────────────────────────────────────────────
   const now = new Date();
@@ -507,20 +521,25 @@ export default function GestFiProDashboard() {
 
   const totalBalance = accounts.reduce((acc, a) => acc + (Number(a.balance) || 0), 0);
 
-  let daysRemaining = paydayDate - todayNum;
-  if (daysRemaining <= 0) {
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    daysRemaining += daysInMonth;
+  const isPaydayConfigured = Boolean(paydayDate && paydayDate > 0 && paydayDate <= 31);
+
+  let daysRemaining = 0;
+  if (isPaydayConfigured) {
+    daysRemaining = paydayDate - todayNum;
+    if (daysRemaining <= 0) {
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      daysRemaining += daysInMonth;
+    }
   }
 
-  const dailyBudget = daysRemaining > 0 ? Math.round(totalBalance / daysRemaining) : 0;
+  const dailyBudget = isPaydayConfigured && daysRemaining > 0 ? Math.round(totalBalance / daysRemaining) : 0;
 
   const todayExpenses = transactions
     .filter((t) => (t.type === "expense" || t.amount < 0) && (t.date?.startsWith("Auj") || t.date?.includes("instant")))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
-  const isBudgetCritical = dailyBudget < 10000;
-  const rhythmAlert = todayExpenses > dailyBudget;
+  const isBudgetCritical = isPaydayConfigured && dailyBudget < 10000;
+  const rhythmAlert = isPaydayConfigured && todayExpenses > dailyBudget;
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleAddTransaction = async (tx: Omit<Transaction, "id">) => {
@@ -571,11 +590,16 @@ export default function GestFiProDashboard() {
     e.preventDefault();
     if (!quickInputText.trim()) return;
 
-    // Analyse sommaire du texte saisi : ex "Déjeuner 3000 Wave"
-    const words = quickInputText.trim().split(" ");
+    if (accounts.length === 0) {
+      alert("Veuillez d'abord ajouter un compte financier dans l'onglet Comptes avant d'enregistrer une dépense.");
+      setActiveTab("comptes");
+      return;
+    }
+
+    // Analyse sommaire du texte saisi : ex "Déjeuner 3000"
     let parsedAmount = 5000;
     let parsedCategory = "Nourriture";
-    let parsedAccount = "Wave";
+    let parsedAccount = accounts[0].name;
     let parsedLabel = quickInputText;
 
     const numMatch = quickInputText.match(/\b\d+\b/);
@@ -583,10 +607,11 @@ export default function GestFiProDashboard() {
       parsedAmount = parseInt(numMatch[0], 10);
     }
 
-    if (quickInputText.toLowerCase().includes("esp")) parsedAccount = "Espèces";
-    else if (quickInputText.toLowerCase().includes("wave")) parsedAccount = "Wave";
-    else if (quickInputText.toLowerCase().includes("orange")) parsedAccount = "Orange Money";
-    else if (quickInputText.toLowerCase().includes("banque")) parsedAccount = "Banque";
+    // Détecter si l'utilisateur a mentionné un de ses propres comptes
+    const matchedAcc = accounts.find((a) => quickInputText.toLowerCase().includes(a.name.toLowerCase()));
+    if (matchedAcc) {
+      parsedAccount = matchedAcc.name;
+    }
 
     handleAddTransaction({
       label: parsedLabel,
@@ -604,13 +629,15 @@ export default function GestFiProDashboard() {
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 3000);
 
+    const cleanPayday = paydayDate > 0 && paydayDate <= 31 ? paydayDate : null;
+
     if (currentUser) {
       try {
         await supabase.from("profiles").upsert({
           id: currentUser.id,
           full_name: userName,
           net_salary: monthlySalary,
-          payday_with_month: paydayDate,
+          payday_with_month: cleanPayday,
           updated_at: new Date().toISOString(),
         });
       } catch (err) {
@@ -620,13 +647,20 @@ export default function GestFiProDashboard() {
 
     localStorage.setItem(
       "gestfipro_profile",
-      JSON.stringify({ userName, monthlySalary, paydayDate })
+      JSON.stringify({ userName, monthlySalary, paydayDate: cleanPayday || 0 })
     );
   };
 
   const handleAddAccount = async (name: string, balance: number, type: string = "Manuel") => {
     if (!name.trim()) return;
     const initialBal = Number(balance) || 0;
+
+    let detectedType = type;
+    const lower = name.toLowerCase();
+    if (lower.includes("wave")) detectedType = "wave";
+    else if (lower.includes("orange") || lower.includes("mtn") || lower.includes("moov") || lower.includes("mobile")) detectedType = "mobile_money";
+    else if (lower.includes("banque") || lower.includes("bank")) detectedType = "bank";
+    else if (lower.includes("espèce") || lower.includes("espece") || lower.includes("cash")) detectedType = "cash";
 
     if (currentUser) {
       try {
@@ -635,7 +669,7 @@ export default function GestFiProDashboard() {
           .insert({
             user_id: currentUser.id,
             name: name.trim(),
-            type: type,
+            type: detectedType,
             balance: initialBal,
           })
           .select()
@@ -663,7 +697,7 @@ export default function GestFiProDashboard() {
     const newAcc: Account = {
       id: Date.now() as any,
       name: name.trim(),
-      type: type as any,
+      type: detectedType as any,
       balance: initialBal,
       colorClass: getAccountColor(name.trim()),
       icon: "💳",
@@ -671,6 +705,82 @@ export default function GestFiProDashboard() {
     const updated = [...accounts, newAcc];
     setAccounts(updated);
     localStorage.setItem("gestfipro_accounts", JSON.stringify(updated));
+  };
+
+  const handleDeleteAccount = async (accId: string | number, accName: string) => {
+    if (!confirm(`Supprimer définitivement le compte "${accName}" ?`)) return;
+    const updated = accounts.filter((a) => a.id !== accId);
+    setAccounts(updated);
+    localStorage.setItem("gestfipro_accounts", JSON.stringify(updated));
+
+    if (currentUser) {
+      try {
+        await supabase.from("accounts").delete().eq("id", accId);
+      } catch (err) {
+        console.error("Erreur suppression compte Supabase :", err);
+      }
+    }
+  };
+
+  const handleEditAccountBalance = async (accId: string | number, accName: string, currentBal: number) => {
+    const val = prompt(`Nouveau solde pour "${accName}" (FCFA) :`, String(currentBal));
+    if (val === null || isNaN(Number(val)) || Number(val) < 0) return;
+    const newBal = Number(val);
+    const updated = accounts.map((a) => (a.id === accId ? { ...a, balance: newBal } : a));
+    setAccounts(updated);
+    localStorage.setItem("gestfipro_accounts", JSON.stringify(updated));
+
+    if (currentUser) {
+      try {
+        await supabase.from("accounts").update({ balance: newBal }).eq("id", accId);
+      } catch (err) {
+        console.error("Erreur mise à jour solde compte Supabase :", err);
+      }
+    }
+  };
+
+  const handleDeleteAllAccounts = async () => {
+    if (!confirm("Voulez-vous supprimer TOUS vos comptes ? Vous repartirez avec une liste de comptes totalement vide.")) return;
+    setAccounts([]);
+    localStorage.setItem("gestfipro_accounts", JSON.stringify([]));
+
+    if (currentUser) {
+      try {
+        await supabase.from("accounts").delete().eq("user_id", currentUser.id);
+      } catch (err) {
+        console.error("Erreur suppression tous les comptes Supabase :", err);
+      }
+    }
+  };
+
+  const handleDeduplicateAccounts = async () => {
+    if (!confirm("Voulez-vous fusionner et supprimer les comptes en double ?")) return;
+    const seen = new Set<string>();
+    const toKeep: Account[] = [];
+    const toDeleteIds: (string | number)[] = [];
+
+    for (const acc of accounts) {
+      const key = acc.name.trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        toKeep.push(acc);
+      } else {
+        toDeleteIds.push(acc.id);
+      }
+    }
+
+    setAccounts(toKeep);
+    localStorage.setItem("gestfipro_accounts", JSON.stringify(toKeep));
+
+    if (currentUser && toDeleteIds.length > 0) {
+      try {
+        for (const id of toDeleteIds) {
+          await supabase.from("accounts").delete().eq("id", id);
+        }
+      } catch (err) {
+        console.error("Erreur déduplication Supabase :", err);
+      }
+    }
   };
 
   const handleAddGoal = async (title: string, targetAmount: number) => {
@@ -755,29 +865,25 @@ export default function GestFiProDashboard() {
       localStorage.removeItem("gestfipro_transactions");
       localStorage.removeItem("gestfipro_accounts");
       localStorage.removeItem("gestfipro_objectifs");
-      localStorage.setItem("gestfipro_clean_new_user_v5", "true");
+      localStorage.removeItem("gestfipro_goals");
     }
     setUserName("");
     setMonthlySalary(0);
-    setPaydayDate(28);
+    setPaydayDate(0);
     setTransactions([]);
     setObjectives([]);
-    setAccounts([
-      { id: 1, name: "Espèces",      type: "Espèces",      balance: 0, colorClass: getAccountColor("Espèces"),      icon: "💵" },
-      { id: 2, name: "Wave",         type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Wave"),         icon: "🌊" },
-      { id: 3, name: "Orange Money", type: "Mobile Money",  balance: 0, colorClass: getAccountColor("Orange Money"), icon: "🟠" },
-      { id: 4, name: "Banque",       type: "Banque",        balance: 0, colorClass: getAccountColor("Banque"),       icon: "🏦" },
-    ]);
+    setAccounts([]);
+
     if (currentUser) {
       try {
         await supabase.from("transactions").delete().eq("user_id", currentUser.id);
         await supabase.from("goals").delete().eq("user_id", currentUser.id);
-        await supabase.from("accounts").update({ balance: 0 }).eq("user_id", currentUser.id);
+        await supabase.from("accounts").delete().eq("user_id", currentUser.id);
         await supabase.from("profiles").upsert({
           id: currentUser.id,
           full_name: "",
           net_salary: 0,
-          payday_with_month: 28,
+          payday_with_month: null,
         });
       } catch (err) {
         console.error("Erreur réinitialisation Supabase :", err);
@@ -788,12 +894,12 @@ export default function GestFiProDashboard() {
 
   // ─── Nav items — NAVIGATION section ──────────────────────────────────────
   const navItems: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "accueil",      label: "Accueil",      icon: <LayoutDashboard size={15} /> },
-    { key: "comptes",      label: "Comptes",      icon: <Wallet size={15} /> },
-    { key: "historique",   label: "Historique",   icon: <Clock size={15} /> },
-    { key: "statistiques", label: "Statistiques", icon: <BarChart3 size={15} /> },
-    { key: "objectifs",    label: "Objectifs",    icon: <PiggyBank size={15} /> },
-    { key: "reglages",     label: "Réglages",     icon: <Settings size={15} /> },
+    { key: "accueil",      label: t.dashboard.tabs.accueil,      icon: <LayoutDashboard size={15} /> },
+    { key: "comptes",      label: t.dashboard.tabs.comptes,      icon: <Wallet size={15} /> },
+    { key: "historique",   label: t.dashboard.tabs.historique,   icon: <Clock size={15} /> },
+    { key: "statistiques", label: t.dashboard.tabs.statistiques, icon: <BarChart3 size={15} /> },
+    { key: "objectifs",    label: t.dashboard.tabs.objectifs,    icon: <PiggyBank size={15} /> },
+    { key: "reglages",     label: t.dashboard.tabs.reglages,     icon: <Settings size={15} /> },
   ];
 
   // ─── Tool items — OUTILS section (Guide uniquement) ───────────────────────
@@ -821,7 +927,7 @@ export default function GestFiProDashboard() {
         background: "var(--bg-root)",
         color: "var(--text-primary)",
         overflow: "hidden",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
       {/* ══════════════════════ MOBILE DRAWER OVERLAY ═══════════════════════ */}
@@ -1123,82 +1229,105 @@ export default function GestFiProDashboard() {
             marginTop: 8,
           }}
         >
-          {/* Avatar initiales */}
-          <div
-            title={userName || "Utilisateur"}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #EF4444, #f97316)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 11,
-              fontWeight: 800,
-              color: "white",
-              flexShrink: 0,
-              boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
-            }}
-          >
-            {(userName || "U").substring(0, 2).toUpperCase()}
-          </div>
-          {!sidebarCollapsed ? (
-            <>
-              <div style={{ overflow: "hidden", flex: 1 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {userName || "Nouvel Utilisateur"}
-                </p>
-                <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Compte personnel</p>
-              </div>
-              <button
-                onClick={() => setActiveTab("reglages")}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
-                title="Paramètres"
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-              >
-                <Settings size={13} />
-              </button>
-              {currentUser && (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    window.location.href = "/login";
-                  }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
-                  title="Déconnexion"
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-                >
-                  <LogOut size={13} />
-                </button>
+          {isLoadingData ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "2px 4px" }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "#27272A",
+                  flexShrink: 0,
+                }}
+                className="animate-pulse"
+              />
+              {!sidebarCollapsed && (
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                  <div style={{ width: "70%", height: 11, background: "#27272A", borderRadius: 4 }} className="animate-pulse" />
+                  <div style={{ width: "45%", height: 8, background: "#1F1F23", borderRadius: 4 }} className="animate-pulse" />
+                </div>
               )}
-            </>
+            </div>
           ) : (
             <>
-              <button
-                onClick={() => setActiveTab("reglages")}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
-                title="Paramètres"
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+              {/* Avatar initiales */}
+              <div
+                title={userName || firstName || "Utilisateur"}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #EF4444, #f97316)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "white",
+                  flexShrink: 0,
+                  boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
+                }}
               >
-                <Settings size={14} />
-              </button>
-              {currentUser && (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    window.location.href = "/login";
-                  }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
-                  title="Déconnexion"
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-                >
-                  <LogOut size={14} />
-                </button>
+                {initials}
+              </div>
+              {!sidebarCollapsed ? (
+                <>
+                  <div style={{ overflow: "hidden", flex: 1 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {userName || firstName || "Utilisateur"}
+                    </p>
+                    <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Compte personnel</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("reglages")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
+                    title="Paramètres"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+                  >
+                    <Settings size={13} />
+                  </button>
+                  {currentUser && (
+                    <button
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        window.location.href = "/login";
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
+                      title="Déconnexion"
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+                    >
+                      <LogOut size={13} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setActiveTab("reglages")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
+                    title="Paramètres"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+                  >
+                    <Settings size={14} />
+                  </button>
+                  {currentUser && (
+                    <button
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        window.location.href = "/login";
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
+                      title="Déconnexion"
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+                    >
+                      <LogOut size={14} />
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
@@ -1278,8 +1407,9 @@ export default function GestFiProDashboard() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LanguageSelector align="right" />
             <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>Solde Consolidé</p>
+              <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>{t.dashboard.balance}</p>
               <p style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} FCFA</p>
             </div>
             <div style={{ width: 1, height: 32, background: "#27272A" }} />
@@ -1289,7 +1419,7 @@ export default function GestFiProDashboard() {
               style={{ padding: "7px 14px" }}
             >
               <Plus size={14} />
-              Saisie rapide
+              {t.dashboard.addTransaction}
             </button>
             <div style={{ position: "relative" }}>
               {/* ─── Bouton cloche ─── */}
@@ -1428,6 +1558,13 @@ export default function GestFiProDashboard() {
               }}
               accounts={accounts as any}
               transactions={transactions as any}
+              goals={objectives.map((o) => ({
+                id: String(o.id),
+                title: o.title,
+                target_amount: o.targetAmount,
+                current_amount: o.currentAmount,
+                target_date: o.deadline || null,
+              }))}
               isLoading={isLoadingData}
               onOpenModal={() => setShowModal(true)}
               onNavigate={(tab) => setActiveTab(tab as TabKey)}
@@ -1436,30 +1573,115 @@ export default function GestFiProDashboard() {
               setQuickInputText={setQuickInputText}
               todayExpenses={todayExpenses}
               totalBalance={totalBalance}
+              userId={currentUser?.id || null}
+              onTransactionAdded={() => loadData()}
             />
           )}
 
           {/* ════════════ TAB: COMPTES ════════════ */}
           {activeTab === "comptes" && (
             <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Comptes Financiers</h2>
-                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Gérez vos supports manuels (Espèces, Wave, Orange Money, Banque).</p>
+                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Gérez vos supports de trésorerie (Espèces, Wave, Orange Money, Banque...).</p>
                 </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    const name = prompt("Nom du compte :");
-                    const bal = prompt("Solde initial (FCFA) :");
-                    if (name && bal) {
-                      handleAddAccount(name, Number(bal));
-                    }
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  {accounts.length > 0 && (
+                    <>
+                      {new Set(accounts.map((a) => a.name.trim().toLowerCase())).size !== accounts.length && (
+                        <button
+                          onClick={handleDeduplicateAccounts}
+                          style={{
+                            background: "rgba(239, 68, 68, 0.12)",
+                            border: "1px solid rgba(239, 68, 68, 0.3)",
+                            color: "#EF4444",
+                            borderRadius: 10,
+                            padding: "8px 14px",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          ⚡ Nettoyer les doublons
+                        </button>
+                      )}
+                      <button
+                        onClick={handleDeleteAllAccounts}
+                        style={{
+                          background: "#27272A",
+                          border: "1px solid #3F3F46",
+                          color: "#A1A1AA",
+                          borderRadius: 10,
+                          padding: "8px 14px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                        title="Vider tous les comptes"
+                      >
+                        <Trash2 size={13} /> Tout effacer
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="btn-primary"
+                    onClick={() => {
+                      const name = prompt("Nom du compte (ex: Espèces, Wave, Orange Money, BOA, Ecobank...) :");
+                      if (!name || !name.trim()) return;
+                      const bal = prompt("Solde initial (FCFA) :", "0");
+                      if (bal !== null && !isNaN(Number(bal))) {
+                        handleAddAccount(name.trim(), Number(bal));
+                      }
+                    }}
+                  >
+                    <Plus size={14} /> Ajouter un compte
+                  </button>
+                </div>
+              </div>
+
+              {/* Alerte si doublons détectés */}
+              {accounts.length > 0 && new Set(accounts.map((a) => a.name.trim().toLowerCase())).size !== accounts.length && (
+                <div
+                  style={{
+                    background: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    borderRadius: 12,
+                    padding: "12px 16px",
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
                   }}
                 >
-                  <Plus size={14} /> Ajouter un compte
-                </button>
-              </div>
+                  <p style={{ fontSize: 12, color: "#FAFAFA", margin: 0 }}>
+                    ⚠️ <strong>Doublons détectés :</strong> Plusieurs comptes portent le même nom. Vous pouvez les fusionner automatiquement en 1 clic.
+                  </p>
+                  <button
+                    onClick={handleDeduplicateAccounts}
+                    style={{
+                      background: "#EF4444",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Nettoyer maintenant
+                  </button>
+                </div>
+              )}
 
               {/* Total balance bar */}
               <div
@@ -1489,58 +1711,104 @@ export default function GestFiProDashboard() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {accounts.map((acc) => (
-                  <div key={acc.id} className="card" style={{ padding: "20px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                       {/* ── Icône opérateur brandée ── */}
-                      <AccountIcon name={acc.name} type={acc.type} size={46} radius={13} />
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{acc.name}</p>
-                        <p style={{ fontSize: 11, color: "#A1A1AA" }}>{acc.type}</p>
-                        <div style={{ marginTop: 4 }}>
-                          <span className="badge" style={{ fontSize: 9 }}>Manuel</span>
+              {accounts.length === 0 ? (
+                <div
+                  className="card"
+                  style={{
+                    padding: "48px 24px",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 14,
+                    background: "#18181B",
+                    border: "1px dashed #3F3F46",
+                    borderRadius: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 14,
+                      background: "rgba(239, 68, 68, 0.1)",
+                      border: "1px solid rgba(239, 68, 68, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#EF4444",
+                    }}
+                  >
+                    <Wallet size={26} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 17, fontWeight: 800, color: "#FAFAFA", margin: "0 0 6px" }}>
+                      Aucun compte enregistré
+                    </h3>
+                    <p style={{ fontSize: 13, color: "#A1A1AA", margin: 0, maxWidth: 420 }}>
+                      Ajoutez vos comptes de trésorerie (Espèces, Wave, Orange Money, Banque...) pour suivre votre solde global.
+                    </p>
+                  </div>
+                  <button
+                    className="btn-primary"
+                    style={{ padding: "10px 20px" }}
+                    onClick={() => {
+                      const name = prompt("Nom du compte (ex: Espèces, Wave, Orange Money, Banque...) :");
+                      if (!name || !name.trim()) return;
+                      const bal = prompt("Solde initial (FCFA) :", "0");
+                      if (bal !== null && !isNaN(Number(bal))) {
+                        handleAddAccount(name.trim(), Number(bal));
+                      }
+                    }}
+                  >
+                    <Plus size={15} /> Ajouter mon premier compte
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  {accounts.map((acc) => (
+                    <div key={acc.id} className="card" style={{ padding: "20px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                         {/* ── Icône opérateur brandée ── */}
+                        <AccountIcon name={acc.name} type={acc.type} size={46} radius={13} />
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{acc.name}</p>
+                          <p style={{ fontSize: 11, color: "#A1A1AA" }}>{acc.type}</p>
+                          <div style={{ marginTop: 4 }}>
+                            <span className="badge" style={{ fontSize: 9 }}>Manuel</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <p style={{ fontSize: 16, fontWeight: 800, color: "#FAFAFA" }}>{fmt(acc.balance)}</p>
-                        <p style={{ fontSize: 10, color: "#A1A1AA" }}>FCFA</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ textAlign: "right" }}>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: "#FAFAFA" }}>{fmt(acc.balance)}</p>
+                          <p style={{ fontSize: 10, color: "#A1A1AA" }}>FCFA</p>
+                        </div>
+                        {/* Bouton éditer solde */}
+                        <button
+                          title="Modifier le solde"
+                          onClick={() => handleEditAccountBalance(acc.id, acc.name, acc.balance)}
+                          style={{ background: "#27272A", border: "none", borderRadius: 8, color: "#A1A1AA", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#EF4444"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "#27272A"; e.currentTarget.style.color = "#A1A1AA"; }}
+                        >
+                          ✏️
+                        </button>
+                        {/* Bouton supprimer */}
+                        <button
+                          onClick={() => handleDeleteAccount(acc.id, acc.name)}
+                          style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 4, display: "flex", transition: "color 0.15s" }}
+                          title="Supprimer ce compte"
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                      {/* Bouton éditer solde */}
-                      <button
-                        title="Modifier le solde"
-                        onClick={() => {
-                          const val = prompt(`Nouveau solde pour "${acc.name}" (FCFA) :`, String(acc.balance));
-                          if (val !== null && !isNaN(Number(val)) && Number(val) >= 0) {
-                            setAccounts((prev) => prev.map((a) => a.id === acc.id ? { ...a, balance: Number(val) } : a));
-                          }
-                        }}
-                        style={{ background: "#27272A", border: "none", borderRadius: 8, color: "#A1A1AA", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#EF4444"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "#27272A"; e.currentTarget.style.color = "#A1A1AA"; }}
-                      >
-                        ✏️
-                      </button>
-                      {/* Bouton supprimer */}
-                      <button
-                        onClick={() => {
-                          if (confirm(`Supprimer le compte "${acc.name}" ?`)) {
-                            setAccounts((prev) => prev.filter((a) => a.id !== acc.id));
-                          }
-                        }}
-                        style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 4, display: "flex", transition: "color 0.15s" }}
-                        title="Supprimer ce compte"
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1870,7 +2138,15 @@ export default function GestFiProDashboard() {
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                     Jour de versement de la paie
                   </label>
-                  <input className="input-field" type="number" value={paydayDate} onChange={(e) => setPaydayDate(Number(e.target.value))} min={1} max={31} />
+                  <input
+                    className="input-field"
+                    type="number"
+                    value={paydayDate || ""}
+                    onChange={(e) => setPaydayDate(Math.max(0, Math.min(31, Number(e.target.value))))}
+                    placeholder="Ex. 28 (1 à 31)"
+                    min={1}
+                    max={31}
+                  />
                   <p style={{ fontSize: 10, color: "#52525B", marginTop: 5 }}>La date de versement sert à calculer le budget quotidien et le compte à rebours.</p>
                 </div>
 
@@ -1879,11 +2155,15 @@ export default function GestFiProDashboard() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
                       <p style={{ fontSize: 10, color: "#A1A1AA" }}>Budget / jour actuel</p>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#EF4444" }}>{fmt(dailyBudget)} FCFA</p>
+                      <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#EF4444" : "#71717A" }}>
+                        {isPaydayConfigured ? `${fmt(dailyBudget)} FCFA` : "--"}
+                      </p>
                     </div>
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
                       <p style={{ fontSize: 10, color: "#A1A1AA" }}>Jours avant paie</p>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#818cf8" }}>{daysRemaining} jours</p>
+                      <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#818cf8" : "#71717A" }}>
+                        {isPaydayConfigured ? `${daysRemaining} jours` : "Non défini"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1974,6 +2254,77 @@ export default function GestFiProDashboard() {
                       </div>
                       {theme === "light" && (
                         <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Actif</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Section Langue (Français / English) ── */}
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
+                  <p className="section-label" style={{ marginBottom: 6 }}>
+                    {language === "en" ? "Application Language" : "Langue de l'application"}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
+                    {language === "en"
+                      ? "Choose your preferred language for the whole SaaS interface and dashboard."
+                      : "Choisissez votre langue préférée pour l'ensemble de l'interface GestFiPro."}
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("fr")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 14px",
+                        borderRadius: 12,
+                        background: language === "fr" ? "rgba(239,68,68,0.08)" : "var(--bg-root)",
+                        border: language === "fr" ? "1.5px solid #EF4444" : "1px solid var(--border)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        textAlign: "left",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 20 }}>🇫🇷</span>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Français</p>
+                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>FR (Afrique & Monde)</p>
+                        </div>
+                      </div>
+                      {language === "fr" && (
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Actif</span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("en")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 14px",
+                        borderRadius: 12,
+                        background: language === "en" ? "rgba(239,68,68,0.08)" : "var(--bg-root)",
+                        border: language === "en" ? "1.5px solid #EF4444" : "1px solid var(--border)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        textAlign: "left",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 20 }}>🇬🇧</span>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>English</p>
+                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>EN (International)</p>
+                        </div>
+                      </div>
+                      {language === "en" && (
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Active</span>
                       )}
                     </button>
                   </div>

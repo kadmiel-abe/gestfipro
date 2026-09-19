@@ -1,12 +1,20 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-sans",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#09090B",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -60,12 +68,14 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "./components/ThemeProvider";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import ScrollToTop from "./components/ScrollToTop";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${inter.variable} dark h-full`} suppressHydrationWarning>
+    <html lang="fr" className={`${poppins.variable} font-sans antialiased dark h-full`} suppressHydrationWarning>
       <head>
-        {/* Anti-flash script pour le thème */}
+        {/* Anti-flash script pour le thème et la langue */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -78,6 +88,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   document.documentElement.classList.add('dark');
                   document.documentElement.classList.remove('light');
                 }
+                const l = localStorage.getItem('gestfipro_lang');
+                if (l === 'en' || l === 'fr') {
+                  document.documentElement.lang = l;
+                }
               } catch (e) {}
             `,
           }}
@@ -89,7 +103,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <meta name="color-scheme" content="dark light" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            {children}
+            <ScrollToTop />
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

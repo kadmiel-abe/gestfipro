@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   motion,
   useScroll,
   useTransform,
+  useSpring,
   useInView,
   useMotionValue,
   animate,
@@ -35,6 +36,18 @@ import {
   Users,
   Check,
   Coins,
+  Building2,
+  Banknote,
+  ArrowUpRight,
+  ArrowDownRight,
+  Send,
+  Plus,
+  Quote,
+  Menu,
+  X,
+  Mail,
+  ShieldCheck,
+  ExternalLink,
 } from "lucide-react";
 
 type Language = "fr" | "en";
@@ -122,19 +135,193 @@ function AnimatedGauge({
   );
 }
 
+// ── VARIANTES D'ANIMATION AU SCROLL PROFESSIONNELLES & FLUIDES (STYLE APPLE / LINEAR) ──
+const smoothEase = [0.22, 1, 0.36, 1] as const;
+
+// Conteneur en cascade pour déclencher les enfants au défilement
+const scrollStaggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+// En-têtes de section (Badge -> Titre H2/H1 -> Sous-titre descriptif)
+const scrollTextFadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.65,
+      ease: smoothEase,
+    },
+  },
+};
+
+// Cartes interactives au scroll avec micro-échelle fluide et rebond amorti
+const scrollCardItem = {
+  hidden: { opacity: 0, y: 32, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.6,
+      ease: smoothEase,
+    },
+  },
+};
+
+// Badge / Éléments flottants au scroll
+const scrollBadgeItem = {
+  hidden: { opacity: 0, scale: 0.9, y: 12 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: smoothEase,
+    },
+  },
+};
+
 export default function GestFiProPanAfricanLanding() {
   const [lang, setLang] = useState<Language>("fr");
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>("XOF");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  // ── MOBILE MENU: BODY SCROLL LOCK ─────────────────────────────────────────
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.classList.add("mobile-menu-open");
+    } else {
+      document.body.classList.remove("mobile-menu-open");
+    }
+    return () => document.body.classList.remove("mobile-menu-open");
+  }, [mobileMenuOpen]);
+
+  // ── MOBILE MENU: FOCUS TRAP & KEYBOARD HANDLING ──────────────────────────
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileMenuOpen(false);
+        hamburgerBtnRef.current?.focus();
+        return;
+      }
+
+      if (e.key === "Tab" && mobileMenuRef.current) {
+        const focusableElements = mobileMenuRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        const firstEl = focusableElements[0];
+        const lastEl = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl?.focus();
+          }
+        } else {
+          if (document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl?.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Auto-focus first link when menu opens
+    requestAnimationFrame(() => {
+      const firstLink = mobileMenuRef.current?.querySelector<HTMLElement>("a[href]");
+      firstLink?.focus();
+    });
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    hamburgerBtnRef.current?.focus();
+  }, []);
 
   // Parallax global du Hero
   const { scrollY } = useScroll();
   const heroHaloY = useTransform(scrollY, [0, 800], [0, 140]);
   const heroTextY = useTransform(scrollY, [0, 600], [0, -20]);
 
+  // ── SCROLL 3D PERSPECTIVE ANIMATION DU DASHBOARD MOCKUP ───────────────────
+  const dashboardContainerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: dashboardScroll } = useScroll({
+    target: dashboardContainerRef,
+    offset: ["start end", "end start"],
+  });
+
+  const rotateXScroll = useTransform(dashboardScroll, [0, 0.45, 0.85, 1], [14, 0, 0, -6]);
+  const scaleScroll = useTransform(dashboardScroll, [0, 0.45, 0.85, 1], [0.92, 1.0, 1.0, 0.96]);
+  const opacityScroll = useTransform(dashboardScroll, [0, 1], [1.0, 1.0]); // 100% visible et opaque
+
+  const smoothRotateX = useSpring(rotateXScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
+  const smoothScale = useSpring(scaleScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
+  const smoothOpacity = useSpring(opacityScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
+
+  // Parallaxe des badges 3D flottants
+  const badge1Y = useTransform(dashboardScroll, [0, 1], [40, -45]);
+  const badge2Y = useTransform(dashboardScroll, [0, 1], [60, -35]);
+  const badge3Y = useTransform(dashboardScroll, [0, 1], [-25, 35]);
+
+  // ── SURVOL 3D INTERACTIF & SPOTLIGHT LUMINEUX (HOVER MOTION) ──────────────
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const spotlightX = useMotionValue(200);
+  const spotlightY = useMotionValue(150);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const mouseSpringX = useSpring(mouseX, { stiffness: 140, damping: 20 });
+  const mouseSpringY = useSpring(mouseY, { stiffness: 140, damping: 20 });
+
+  const tiltRotateX = useTransform(mouseSpringY, [-0.5, 0.5], ["5deg", "-5deg"]);
+  const tiltRotateY = useTransform(mouseSpringX, [-0.5, 0.5], ["-5deg", "5deg"]);
+
+  const handleDashboardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width - 0.5;
+    const yPct = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(xPct);
+    mouseY.set(yPct);
+    spotlightX.set(e.clientX - rect.left);
+    spotlightY.set(e.clientY - rect.top);
+    if (!isHovered) setIsHovered(true);
+  };
+
+  const handleDashboardMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+    setIsHovered(false);
+  };
+
   // Simulateur interactif
   const [simDays, setSimDays] = useState(12);
   const [simBalance, setSimBalance] = useState<number>(CURRENCIES["XOF"].defaultBalance);
+  const [spentToday, setSpentToday] = useState<number>(4500);
+  const [quickInput, setQuickInput] = useState<string>("");
+  const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterToast, setNewsletterToast] = useState<string | null>(null);
 
   const handleCurrencyChange = (curr: Currency) => {
     setSelectedCurrency(curr);
@@ -145,6 +332,42 @@ export default function GestFiProPanAfricanLanding() {
   const isBudgetCritical = simDays <= 4 || dailyBudget < 2000;
 
   const fmt = (n: number) => Math.round(n).toLocaleString(lang === "fr" ? "fr-FR" : "en-US");
+
+  // Date dynamique
+  const currentDateStr = "Lundi 14 Septembre";
+
+  // Saisie rapide interactive
+  const handleQuickSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = quickInput.trim();
+    if (!text) return;
+
+    const match = text.match(/\d+/);
+    const amount = match ? parseInt(match[0], 10) : 3000;
+    
+    setSpentToday((prev) => prev + amount);
+    setSimBalance((prev) => Math.max(0, prev - amount));
+    setQuickInput("");
+    setFeedbackToast(`+ ${fmt(amount)} ${selectedCurrency} ${lang === "fr" ? "enregistré !" : "logged!"}`);
+
+    setTimeout(() => {
+      setFeedbackToast(null);
+    }, 3500);
+  };
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes("@")) return;
+    setNewsletterToast(
+      lang === "fr"
+        ? "Merci pour votre inscription ! À très bientôt."
+        : "Thank you for subscribing! See you soon."
+    );
+    setNewsletterEmail("");
+    setTimeout(() => {
+      setNewsletterToast(null);
+    }, 4000);
+  };
 
   // Dictionnaire de traduction FR / EN
   const t = {
@@ -332,36 +555,122 @@ export default function GestFiProPanAfricanLanding() {
     },
   }[lang];
 
-  const panAfricanTestimonials = [
+  // ── TÉMOIGNAGES PANAFRICAINS AVEC AVATARS RÉELS & ANNEAUX COLORÉS ──────────
+  const testimonialsRow1 = [
+    {
+      name: "Emmanuel Okafor",
+      city: "Lagos, Nigeria",
+      flag: "🇳🇬",
+      avatar: "/avatars/avatar_emmanuel.jpg",
+      ringColor: "#10B981", // Anneau vert émeraude comme sur l'image
+      role: lang === "fr" ? "Directeur Commercial" : "Senior Consultant",
+      stars: 5,
+      verified: true,
+      text:
+        lang === "fr"
+          ? "Le calcul automatique de mon budget journalier a changé ma vie. Je sais exactement ce que je peux dépenser chaque jour sans me retrouver à sec avant la paie."
+          : "The automatic daily budget calculation completely changed my life. I know exactly what I can spend daily without running dry before payday.",
+    },
     {
       name: "Moussa Coulibaly",
       city: "Abidjan, Côte d'Ivoire",
       flag: "🇨🇮",
-      role: lang === "fr" ? "Cadre commercial" : "Sales Executive",
+      avatar: "/avatars/avatar_moussa.jpg",
+      ringColor: "#EF4444",
+      role: lang === "fr" ? "Cadre Commercial" : "Sales Executive",
+      stars: 5,
+      verified: true,
       text:
         lang === "fr"
-          ? "Avant, le 15 du mois j'étais déjà à découvert sans savoir pourquoi. Avec GestFiPro et mon budget/jour calculé en direct, je termine le mois avec plus de 50 000 FCFA d'épargne."
+          ? "Avant, le 15 du mois j'étais déjà à découvert sans savoir pourquoi. Avec GestFiPro et mon budget/jour en direct, je termine le mois avec plus de 50 000 FCFA d'épargne."
           : "Before, by the 15th I was already overspent without knowing why. With GestFiPro and my live daily budget, I finish each month saving over 50,000 FCFA.",
+    },
+    {
+      name: "Fatou Diallo",
+      city: "Dakar, Sénégal",
+      flag: "🇸🇳",
+      avatar: "/avatars/avatar_fatou.jpg",
+      ringColor: "#F59E0B",
+      role: lang === "fr" ? "Directrice Marketing" : "Marketing Director",
+      stars: 5,
+      verified: true,
+      text:
+        lang === "fr"
+          ? "Je centralise Wave, Orange Money et mes espèces en 3 secondes après chaque achat. Zéro mot de passe bancaire requis, une confidentialité totale !"
+          : "I log my Wave, Orange Money and cash in 3 seconds after every purchase. Zero bank passwords needed, total privacy!",
     },
     {
       name: "David Ochieng",
       city: "Nairobi, Kenya",
       flag: "🇰🇪",
-      role: lang === "fr" ? "Développeur logiciel" : "Software Engineer",
+      avatar: "/avatars/avatar_david.jpg",
+      ringColor: "#6366F1",
+      role: lang === "fr" ? "Développeur Logiciel" : "Software Engineer",
+      stars: 5,
+      verified: true,
       text:
         lang === "fr"
           ? "Je gère mon compte M-Pesa et mon compte bancaire KES en même temps. Le compte à rebours jusqu'au jour de paie a transformé ma gestion financière !"
           : "Managing my M-Pesa and local KES bank account together in one view is a game changer. The payday countdown completely transformed how I budget.",
     },
+  ];
+
+  const testimonialsRow2 = [
     {
       name: "Chidinma Nwosu",
       city: "Lagos, Nigeria",
       flag: "🇳🇬",
-      role: lang === "fr" ? "Comptable" : "Accountant",
+      avatar: "/avatars/avatar_chidinma.jpg",
+      ringColor: "#10B981",
+      role: lang === "fr" ? "Comptable Senior" : "Senior Accountant",
+      stars: 5,
+      verified: true,
       text:
         lang === "fr"
-          ? "Avec l'inflation en Naira, savoir exactement combien je peux dépenser par jour est une bénédiction. Zéro connexion bancaire, 100% sécurisé."
+          ? "Avec l'inflation et les fluctuations en Naira, savoir exactement combien je peux dépenser par jour est une bénédiction. 100% hors connexion bancaire."
           : "With Naira fluctuations, knowing exactly how much I can safely spend each day is a lifesaver. Zero bank login needed, 100% private.",
+    },
+    {
+      name: "Kofi Mensah",
+      city: "Accra, Ghana",
+      flag: "🇬🇭",
+      avatar: "/avatars/avatar_kofi.jpg",
+      ringColor: "#EF4444",
+      role: lang === "fr" ? "Entrepreneur Fintech" : "Fintech Founder",
+      stars: 5,
+      verified: true,
+      text:
+        lang === "fr"
+          ? "L'interface est ultra-fluide et réactive. C'est le premier outil pensé spécifiquement pour les habitudes de paiement et cycles de paie en Afrique."
+          : "The interface is ultra-slick and responsive. The first tool genuinely designed for African payment habits and pay cycles.",
+    },
+    {
+      name: "Amina Sow",
+      city: "Bamako, Mali",
+      flag: "🇲🇱",
+      avatar: "/avatars/avatar_fatou.jpg",
+      ringColor: "#F59E0B",
+      role: lang === "fr" ? "Responsable RH" : "HR Manager",
+      stars: 5,
+      verified: true,
+      text:
+        lang === "fr"
+          ? "J'ai recommandé GestFiPro à toute mon équipe. Plus aucun stress avant le virement de fin de mois grâce à la jauge de santé financière !"
+          : "I recommended GestFiPro to my whole team. No more pre-payday anxiety thanks to the financial health gauge!",
+    },
+    {
+      name: "Jean-Luc Bakayoko",
+      city: "Yamoussoukro, CI",
+      flag: "🇨🇮",
+      avatar: "/avatars/avatar_emmanuel.jpg",
+      ringColor: "#6366F1",
+      role: lang === "fr" ? "Ingénieur Réseaux" : "Telecom Engineer",
+      stars: 5,
+      verified: true,
+      text:
+        lang === "fr"
+          ? "Visualiser mes soldes Wave, Moov et Orange Money sur un seul tableau de bord me permet de planifier mes dépenses sans aucune mauvaise surprise."
+          : "Viewing my Wave, Moov and Orange Money balances in one single dashboard helps me plan expenses with zero surprises.",
     },
   ];
 
@@ -438,7 +747,7 @@ export default function GestFiProPanAfricanLanding() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="sticky top-0 z-50 flex items-center justify-between px-6 lg:px-16 py-4 border-b border-[#27272A]/70 backdrop-blur-xl bg-[#09090B]/85"
+        className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-16 py-3 sm:py-4 border-b border-[#27272A]/70 backdrop-blur-xl bg-[#09090B]/85"
       >
         {/* Logo Officiel logo.png - Redirection vers la section Hero */}
         <Link
@@ -452,14 +761,14 @@ export default function GestFiProPanAfricanLanding() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-          className="flex items-center gap-3 group cursor-pointer"
+          className="flex items-center gap-2 sm:gap-3 group cursor-pointer shrink-0"
           title={lang === "fr" ? "Retour au début" : "Back to top"}
         >
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="w-10 h-10 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-lg shadow-[#EF4444]/20 group-hover:border-[#EF4444]/60 transition-colors shrink-0 flex items-center justify-center"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-lg shadow-[#EF4444]/20 group-hover:border-[#EF4444]/60 transition-colors shrink-0 flex items-center justify-center"
           >
             <Image
               src="/icons/logo.png"
@@ -470,13 +779,13 @@ export default function GestFiProPanAfricanLanding() {
               priority
             />
           </motion.div>
-          <span className="text-xl font-black tracking-tight text-white group-hover:text-white transition-colors">
+          <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-white transition-colors">
             GestFi<span className="text-[#EF4444]">Pro</span>
           </span>
         </Link>
 
-        {/* Navigation desktop */}
-        <nav className="hidden md:flex items-center gap-7 text-sm text-[#A1A1AA]">
+        {/* Navigation desktop – visible uniquement au-dessus de lg (1024px) */}
+        <nav className="hidden lg:flex items-center gap-7 text-sm text-[#A1A1AA]">
           <a href="#defis" className="hover:text-white transition-colors">
             {lang === "fr" ? "Le Problème" : "The Problem"}
           </a>
@@ -494,11 +803,11 @@ export default function GestFiProPanAfricanLanding() {
           </a>
         </nav>
 
-        {/* Action Controls : Sélecteur Langue + Devises + Auth */}
-        <div className="flex items-center gap-3">
+        {/* Action Controls : Sélecteur Langue + Devises + Auth + Hamburger */}
+        <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* Sélecteur de Devises Panafricain */}
-          <div className="hidden sm:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
+          {/* Sélecteur de Devises Panafricain – hidden below lg */}
+          <div className="hidden lg:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
             <Coins className="w-3.5 h-3.5 text-[#EF4444] mr-1.5" />
             <select
               value={selectedCurrency}
@@ -539,10 +848,10 @@ export default function GestFiProPanAfricanLanding() {
             </button>
           </div>
 
-          {/* Liens Auth */}
+          {/* Liens Auth – hidden below lg */}
           <Link
             href="/login"
-            className="hidden sm:inline-block text-sm font-semibold text-[#A1A1AA] hover:text-white transition-colors px-2 py-1"
+            className="hidden lg:inline-block text-sm font-semibold text-[#A1A1AA] hover:text-white transition-colors px-2 py-1"
           >
             {lang === "fr" ? "Connexion" : "Sign In"}
           </Link>
@@ -550,7 +859,7 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(239, 68, 68, 0.55)" }}
             whileTap={{ scale: 0.97 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="inline-block rounded-xl"
+            className="hidden sm:inline-block rounded-xl"
           >
             <Link
               href="/onboarding"
@@ -560,20 +869,150 @@ export default function GestFiProPanAfricanLanding() {
               <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
+
+          {/* ── HAMBURGER BUTTON (mobile + tablet < 1024px) ── */}
+          <button
+            ref={hamburgerBtnRef}
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className={`lg:hidden flex flex-col items-center justify-center gap-[5px] w-10 h-10 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors ${
+              mobileMenuOpen ? "hamburger-open" : ""
+            }`}
+            aria-label={mobileMenuOpen ? (lang === "fr" ? "Fermer le menu" : "Close menu") : (lang === "fr" ? "Ouvrir le menu" : "Open menu")}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav-panel"
+          >
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+          </button>
         </div>
       </motion.header>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          MOBILE NAVIGATION SLIDE-IN PANEL (< 1024px)
+      ════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="mobile-nav-overlay lg:hidden"
+              onClick={closeMobileMenu}
+              aria-hidden="true"
+            />
+
+            {/* Slide-in panel */}
+            <motion.div
+              ref={mobileMenuRef}
+              id="mobile-nav-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label={lang === "fr" ? "Menu de navigation" : "Navigation menu"}
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="mobile-nav-panel lg:hidden"
+            >
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#27272A]">
+                <span className="text-lg font-bold text-white">
+                  GestFi<span className="text-[#EF4444]">Pro</span>
+                </span>
+                <button
+                  onClick={closeMobileMenu}
+                  className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 flex items-center justify-center text-[#A1A1AA] hover:text-white transition-colors"
+                  aria-label={lang === "fr" ? "Fermer le menu" : "Close menu"}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation links */}
+              <nav className="flex flex-col px-5 py-6 gap-1">
+                {[
+                  { href: "#defis", label: lang === "fr" ? "Le Problème" : "The Problem" },
+                  { href: "#features", label: lang === "fr" ? "Fonctionnalités" : "Features" },
+                  { href: "#how", label: lang === "fr" ? "Comment ça marche" : "How it works" },
+                  { href: "#testimonials", label: lang === "fr" ? "Témoignages" : "Reviews" },
+                  { href: "#faq", label: "FAQ" },
+                ].map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-semibold text-[#A1A1AA] hover:text-white hover:bg-[#18181B] transition-all"
+                  >
+                    <ArrowRight className="w-4 h-4 text-[#EF4444]" />
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+
+              {/* Currency selector (mobile) */}
+              <div className="px-5 py-3 border-t border-[#27272A]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#71717A] mb-2">
+                  {lang === "fr" ? "Devise" : "Currency"}
+                </p>
+                <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-sm">
+                  <Coins className="w-4 h-4 text-[#EF4444] mr-2" />
+                  <select
+                    value={selectedCurrency}
+                    onChange={(e) => { handleCurrencyChange(e.target.value as Currency); }}
+                    className="bg-transparent text-white font-bold cursor-pointer outline-none text-sm flex-1"
+                    aria-label="Currency selector"
+                  >
+                    <option value="XOF" className="bg-[#18181B]">XOF (CFA Ouest)</option>
+                    <option value="XAF" className="bg-[#18181B]">XAF (CFA Centre)</option>
+                    <option value="NGN" className="bg-[#18181B]">NGN (₦ Nigeria)</option>
+                    <option value="KES" className="bg-[#18181B]">KES (KSh Kenya)</option>
+                    <option value="ZAR" className="bg-[#18181B]">ZAR (R Afrique du Sud)</option>
+                    <option value="USD" className="bg-[#18181B]">USD ($)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Auth actions (mobile) */}
+              <div className="px-5 py-4 mt-auto border-t border-[#27272A] flex flex-col gap-3">
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="w-full text-center px-4 py-3 rounded-xl text-sm font-semibold text-[#A1A1AA] hover:text-white bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-all"
+                >
+                  {lang === "fr" ? "Connexion" : "Sign In"}
+                </Link>
+                <Link
+                  href="/onboarding"
+                  onClick={closeMobileMenu}
+                  className="w-full text-center px-4 py-3 rounded-xl bg-[#EF4444] text-white font-bold text-sm shadow-[0_0_25px_rgba(239,68,68,0.4)] hover:bg-[#DC2626] transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>{lang === "fr" ? "Commencer" : "Get Started"}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════════
           2. HERO SECTION PANAFRICAINE & DYNAMIQUE AVEC MOTION DESIGN
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="hero" className="relative pt-14 pb-20 px-6 lg:px-16 max-w-7xl mx-auto text-center scroll-mt-24">
+      <section id="hero" className="relative pt-8 sm:pt-14 pb-12 sm:pb-20 px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto text-center scroll-mt-24">
         
-        <motion.div style={{ y: heroTextY }}>
+        <motion.div
+          style={{ y: heroTextY }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
           {/* Badge supérieur Panafricain */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollBadgeItem}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#18181B] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] mb-8 hover:border-[#EF4444]/40 transition-colors shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#EF4444] animate-pulse" />
@@ -583,10 +1022,8 @@ export default function GestFiProPanAfricanLanding() {
 
           {/* Titre Principal */}
           <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight max-w-4xl mx-auto leading-[1.1] mb-6 text-[#FAFAFA]"
+            variants={scrollTextFadeUp}
+            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight max-w-4xl mx-auto leading-[1.1] mb-4 sm:mb-6 text-[#FAFAFA]"
           >
             {t.heroTitle1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#EF4444] via-[#f87171] to-rose-400">
@@ -596,20 +1033,16 @@ export default function GestFiProPanAfricanLanding() {
 
           {/* Sous-titre */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="text-base sm:text-xl text-[#A1A1AA] max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
+            variants={scrollTextFadeUp}
+            className="text-sm sm:text-base md:text-xl text-[#A1A1AA] max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed font-normal px-2 sm:px-0"
           >
             {t.heroSubtitle}
           </motion.p>
 
           {/* Double CTA avec micro-interactions hover / tap */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
+            variants={scrollTextFadeUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 sm:mb-14 px-2 sm:px-0"
           >
             <motion.div
               whileHover={{
@@ -651,10 +1084,8 @@ export default function GestFiProPanAfricanLanding() {
 
           {/* Micro-réassurance */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#A1A1AA] mb-14"
+            variants={scrollTextFadeUp}
+            className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-[11px] sm:text-xs text-[#A1A1AA] mb-8 sm:mb-14 px-2 sm:px-0"
           >
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-[#EF4444]" /> {t.microTrust1}
@@ -668,155 +1099,344 @@ export default function GestFiProPanAfricanLanding() {
           </motion.div>
         </motion.div>
 
-        {/* ── MOCKUP DASHBOARD INTERACTIF EN DIRECT AVEC FLOTTEMENT & JAUGES DYNAMIQUES ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mx-auto max-w-5xl"
+        {/* ── MOCKUP DASHBOARD INTERACTIF AVEC ANIMATION AU SCROLL 3D & SURVOL GYROSCOPIQUE ── */}
+        <div
+          ref={dashboardContainerRef}
+          onMouseMove={handleDashboardMouseMove}
+          onMouseLeave={handleDashboardMouseLeave}
+          style={{ perspective: 1400 }}
+          className="relative mx-auto max-w-5xl mt-4 sm:mt-6 select-none"
         >
-          {/* Flottement infini et subtil */}
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{
-              duration: 3.5,
-              ease: "easeInOut",
-              repeat: Infinity,
-            }}
-            className="rounded-2xl p-2 bg-gradient-to-b from-[#27272A] to-[#18181B] shadow-2xl shadow-black/90 border border-[#27272A]"
-          >
-            <div className="bg-[#09090B] rounded-xl p-6 lg:p-8 text-left overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-[#EF4444]/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Halo d'ambiance rouge crimson éclatant pour faire ressortir le dashboard */}
+          <div
+            className={`absolute -inset-6 bg-gradient-to-r from-[#EF4444]/30 via-[#EF4444]/45 to-[#EF4444]/30 rounded-3xl blur-3xl transition-all duration-500 pointer-events-none ${
+              isHovered ? "opacity-100 scale-105" : "opacity-85 scale-100"
+            }`}
+          />
 
-              {/* En-tête Mockup */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[#27272A]">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#A1A1AA]">
-                    {t.mockDaysLeft}
-                  </p>
-                  <h3 className="text-3xl font-black text-white flex items-center gap-3 mt-1">
-                    {/* Compteur interactif avec transition flip/fade */}
-                    <AnimatePresence mode="popLayout">
-                      <motion.span
-                        key={simDays}
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="inline-block"
-                      >
-                        {simDays}
-                      </motion.span>
-                    </AnimatePresence>{" "}
-                    {t.mockDaysCount}{" "}
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-[#10b981]/15 text-[#4ade80] font-bold border border-[#10b981]/30">
-                      ✓ {t.mockRhythm}
-                    </span>
-                  </h3>
+          {/* ── BADGES FLOTTANTS EN PARALLAXE 3D (AVANT-PLAN) ── */}
+          {/* Badge 1 : Flottant Haut-Gauche (Salaire) */}
+          <motion.div
+            style={{ y: badge1Y, zIndex: 30 }}
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] backdrop-blur-xl border border-[#3F3F46] shadow-2xl shadow-black/90 absolute -top-6 -left-6 text-xs text-white"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
+            <span className="font-bold text-[#4ADE80]">+{fmt(CURRENCIES[selectedCurrency].defaultBalance * 2)} {selectedCurrency}</span>
+            <span className="text-[#A1A1AA] text-[11px] font-medium">{lang === "fr" ? "Salaire reçu" : "Salary detected"}</span>
+          </motion.div>
+
+          {/* Badge 2 : Flottant Haut-Droite (Budget / Jour) */}
+          <motion.div
+            style={{ y: badge2Y, zIndex: 30 }}
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] backdrop-blur-xl border border-[#EF4444]/50 shadow-2xl shadow-[#EF4444]/20 absolute -top-5 -right-6 text-xs text-white"
+          >
+            <Zap className="w-4 h-4 text-[#EF4444]" />
+            <span className="font-extrabold text-[#EF4444]">{fmt(dailyBudget)} {selectedCurrency}</span>
+            <span className="text-[#A1A1AA] text-[11px] font-medium">/ {lang === "fr" ? "jour autorisé" : "safe day"}</span>
+          </motion.div>
+
+          {/* Badge 3 : Flottant Bas-Gauche (Confidentialité) */}
+          <motion.div
+            style={{ y: badge3Y, zIndex: 30 }}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] backdrop-blur-xl border border-[#3F3F46] shadow-2xl shadow-black/90 absolute -bottom-5 -left-4 text-xs text-[#A1A1AA]"
+          >
+            <Shield className="w-3.5 h-3.5 text-[#10B981]" />
+            <span className="text-[11px] font-medium text-white">100% {lang === "fr" ? "Manuel & Privé" : "Manual & Private"}</span>
+            <span className="text-[10px] text-[#71717A]">· {lang === "fr" ? "0 carte bancaire" : "0 bank link"}</span>
+          </motion.div>
+
+          {/* ── CADRE PRINCIPAL 3D DU DASHBOARD AVEC SCROLL PERSPECTIVE & SURVOL SOURIS ── */}
+          <motion.div
+            style={{
+              rotateX: isHovered ? tiltRotateX : smoothRotateX,
+              rotateY: isHovered ? tiltRotateY : 0,
+              scale: smoothScale,
+              opacity: 1, // 100% visible et opaque
+              transformStyle: "preserve-3d",
+            }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="relative rounded-2xl sm:rounded-3xl bg-[#09090B] border-2 border-[#3F3F46]/80 shadow-[0_30px_100px_-15px_rgba(0,0,0,0.95),0_0_45px_rgba(239,68,68,0.2)] overflow-hidden text-left transition-all duration-300 hover:border-[#EF4444]"
+          >
+            {/* Effet Spotlight interactif suivant la souris */}
+            {isHovered && (
+              <motion.div
+                className="pointer-events-none absolute -inset-px rounded-2xl sm:rounded-3xl opacity-100 transition-opacity duration-300"
+                style={{
+                  background: `radial-gradient(700px circle at ${spotlightX.get()}px ${spotlightY.get()}px, rgba(239, 68, 68, 0.2), transparent 60%)`,
+                }}
+              />
+            )}
+
+            {/* ══ TOP BAR DE TYPE APPLICATION SAAS / MACOS ════════════════════ */}
+            <div className="h-10 bg-[#121216] border-b border-[#27272A] px-4 flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#DC2626]/60 cursor-pointer" />
+                <span className="w-3 h-3 rounded-full bg-[#F59E0B] border border-[#D97706]/60 cursor-pointer" />
+                <span className="w-3 h-3 rounded-full bg-[#10B981] border border-[#059669]/60 cursor-pointer" />
+                <span className="ml-3 text-[11px] font-semibold text-[#71717A] tracking-wider uppercase hidden sm:inline-block">
+                  GestFiPro · Cycle de Paie Panafricain v2.4
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="text-[11px] font-medium text-[#A1A1AA]">
+                  {lang === "fr" ? "Données synchronisées en temps réel" : "Live real-time calculation"}
+                </span>
+              </div>
+            </div>
+
+            {/* ══ 1. HEADER DU DASHBOARD MOCKUP ══════════════════════════════ */}
+            <div className="p-5 sm:p-6 pb-4 border-b border-[#27272A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-b from-[#18181B]/70 to-transparent relative z-10">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-[#FAFAFA] flex items-center gap-2">
+                  {lang === "fr" ? "Bonjour Kadmiel" : "Hello Kadmiel"}{" "}
+                  <span className="inline-block animate-bounce">👋</span>
+                </h3>
+                <p className="text-xs font-medium text-[#A1A1AA] mt-1">
+                  {currentDateStr} · {lang === "fr" ? "Suivi budgétaire en temps réel" : "Live pay cycle tracking"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Badge animé rouge "● Cycle actif (J-XX)" */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs font-semibold text-[#EF4444] shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-ping" />
+                  <span>{lang === "fr" ? `Cycle actif (J-${simDays})` : `Active cycle (D-${simDays})`}</span>
                 </div>
-                <div className="sm:text-right">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#A1A1AA]">
-                    {t.mockDailyBudget}
-                  </p>
-                  <p className="text-3xl font-black text-[#4ade80] mt-1">
-                    <AnimatedNumber value={dailyBudget} formatter={fmt} /> {selectedCurrency}
-                  </p>
+
+                {/* Bouton + Nouvelle dépense */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickInput("Déjeuner 3500");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] active:scale-95 text-white text-xs font-bold transition-all shadow-lg shadow-[#EF4444]/25 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{lang === "fr" ? "Tester saisie" : "Quick log"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ══ 2. GRILLE PRINCIPALE (CARTE CYCLE + KPIS + COURBE SVG) ═══════ */}
+            <div className="p-5 sm:p-6 space-y-5 relative z-10">
+              
+              {/* Carte Phare : Cycle de Paie et Budget Journalier */}
+              <div className="rounded-2xl bg-[#18181B] border border-[#EF4444]/35 p-5 relative overflow-hidden shadow-lg shadow-black/40">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-[#EF4444]/15 via-transparent to-transparent pointer-events-none" />
+
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center text-[#EF4444]">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold tracking-tight text-[#FAFAFA]">
+                        {lang === "fr" ? "Cycle de Paie Intelligent" : "Smart Pay Cycle"}
+                      </h4>
+                      <p className="text-[11px] font-medium text-[#A1A1AA]">
+                        {lang === "fr" ? "Versement prévu le 28 du mois" : "Next payout scheduled on 28th"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] bg-[#09090B] px-2.5 py-1 rounded-md border border-[#27272A]">
+                    {lang === "fr" ? "Septembre 2026" : "September 2026"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Compteur interactif jours restants */}
+                  <div className="p-4 rounded-xl bg-[#09090B] border border-[#27272A] flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                        {t.mockDaysLeft}
+                      </span>
+                      <Clock className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                    </div>
+
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <AnimatePresence mode="popLayout">
+                        <motion.span
+                          key={simDays}
+                          initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="text-4xl font-extrabold tracking-tight tabular-nums text-[#FAFAFA]"
+                        >
+                          {simDays}
+                        </motion.span>
+                      </AnimatePresence>
+                      <span className="text-xs font-semibold text-[#A1A1AA]">
+                        {t.mockDaysCount}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[10px] font-medium text-[#71717A] mb-1.5">
+                        <span>{lang === "fr" ? `Jour ${30 - simDays} sur 30` : `Day ${30 - simDays} of 30`}</span>
+                        <span>{Math.round(((30 - simDays) / 30) * 100)}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#27272A] overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-[#EF4444] to-[#F87171]"
+                          initial={{ width: "0%" }}
+                          animate={{ width: `${Math.round(((30 - simDays) / 30) * 100)}%` }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Budget quotidien autorisé */}
+                  <div className="p-4 rounded-xl bg-[#09090B] border border-[#27272A] flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                        {t.mockDailyBudget}
+                      </span>
+                      <Zap className="w-3.5 h-3.5 text-[#EF4444]" />
+                    </div>
+
+                    <div className="mb-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={`text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums transition-colors duration-300 ${
+                          isBudgetCritical ? "text-[#EF4444]" : "text-[#4ADE80]"
+                        }`}>
+                          <AnimatedNumber value={dailyBudget} formatter={fmt} />
+                        </span>
+                        <span className="text-xs font-semibold text-[#A1A1AA]">
+                          {selectedCurrency} / {lang === "fr" ? "jour" : "day"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-[#A1A1AA] mt-1">
+                        ({fmt(simBalance)} ÷ {simDays} {lang === "fr" ? "jours" : "days"})
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#27272A]">
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-colors duration-300 ${
+                        isBudgetCritical
+                          ? "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30"
+                          : "bg-[#10B981]/15 text-[#34D399] border-[#10B981]/30"
+                      }`}>
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>{isBudgetCritical ? (lang === "fr" ? "Rythme serré" : "Tight runway") : t.mockRhythm}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* 3 Cartes Principales de suivi avec stagger, hover lift et jauges */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Grille 3 Cartes KPIs avec élévation 3D au survol */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {/* Carte 1 : Dépenses aujourd'hui */}
+                {/* KPI 1 : Dépenses du jour */}
                 <motion.div
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{
-                    y: -4,
-                    scale: 1.02,
-                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-                    transition: { duration: 0.25, ease: "easeOut" },
-                  }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
                   className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
                 >
                   <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockTodaySpent}</p>
                   <p className="text-2xl font-extrabold text-white">
-                    <AnimatedNumber value={dailyBudget * 0.3} formatter={fmt} /> {selectedCurrency}
+                    <AnimatedNumber value={spentToday} formatter={fmt} /> {selectedCurrency}
                   </p>
-                  <AnimatedGauge percentage={30} isCritical={false} className="mt-2.5" />
-                  <span className="text-[10px] text-[#4ade80] font-semibold block mt-1.5">
-                    ✓ {lang === "fr" ? "Sous le quota journalier" : "Well below daily limit"}
+                  <AnimatedGauge percentage={Math.min((spentToday / (dailyBudget || 1)) * 100, 100)} isCritical={spentToday > dailyBudget} className="mt-2.5" />
+                  <span className="text-[10px] text-[#4ADE80] font-semibold block mt-1.5">
+                    ✓ {lang === "fr" ? "Sous le quota journalier" : "Within safe daily limit"}
                   </span>
                 </motion.div>
 
-                {/* Carte 2 : Solde Total */}
+                {/* KPI 2 : Solde Total Consolidé */}
                 <motion.div
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{
-                    y: -4,
-                    scale: 1.02,
-                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-                    transition: { duration: 0.25, ease: "easeOut" },
-                  }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
                   className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
                 >
                   <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockTotalBalance}</p>
                   <p className="text-2xl font-extrabold text-white">
                     <AnimatedNumber value={simBalance} formatter={fmt} /> {selectedCurrency}
                   </p>
-                  <AnimatedGauge percentage={68} isCritical={false} className="mt-2.5" />
-                  <span className="text-[10px] text-[#A1A1AA] block mt-1.5">
-                    {t.mockAccounts}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#27272A] text-[#A1A1AA] font-semibold">Wave</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#27272A] text-[#A1A1AA] font-semibold">OM</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#27272A] text-[#A1A1AA] font-semibold">Cash</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#27272A] text-[#A1A1AA] font-semibold">Banque</span>
+                  </div>
                 </motion.div>
 
-                {/* Carte 3 : Santé Budgétaire avec transition critique de couleur */}
+                {/* KPI 3 : Santé Budgétaire */}
                 <motion.div
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{
-                    y: -4,
-                    scale: 1.02,
-                    boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-                    transition: { duration: 0.25, ease: "easeOut" },
-                  }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
                   className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
                 >
                   <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockSavingsGoal}</p>
                   <p className={`text-2xl font-extrabold transition-colors duration-300 ${
-                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10b981]"
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10B981]"
                   }`}>
                     {isBudgetCritical ? "28%" : "82%"}
                   </p>
-                  <AnimatedGauge
-                    percentage={isBudgetCritical ? 28 : 82}
-                    isCritical={isBudgetCritical}
-                    className="mt-2.5"
-                  />
+                  <AnimatedGauge percentage={isBudgetCritical ? 28 : 82} isCritical={isBudgetCritical} className="mt-2.5" />
                   <span className={`text-[10px] font-semibold block mt-1.5 transition-colors duration-300 ${
-                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10b981]"
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10B981]"
                   }`}>
                     {isBudgetCritical
-                      ? lang === "fr" ? "Alerte : Risque de fin de mois tendue" : "Alert: Month-end runway at risk"
-                      : lang === "fr" ? "Fin de mois sécurisée" : "Month-end runway secured"}
+                      ? (lang === "fr" ? "Alerte : Fin de mois tendue" : "Alert: Low runway")
+                      : (lang === "fr" ? "Fin de mois sécurisée" : "Month-end runway secured")}
                   </span>
                 </motion.div>
 
               </div>
 
-              {/* Simulateur interactif */}
-              <div className="bg-[#18181B]/70 border border-[#27272A] rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#A1A1AA]">
-                <span className="flex items-center gap-1.5 font-semibold text-[#FAFAFA]">
-                  <Sparkles className="w-3.5 h-3.5 text-[#EF4444]" /> {t.mockSimulatorLabel}
-                </span>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+              {/* ── COURBE SVG D'ÉVOLUTION DE LA TRÉSORERIE ── */}
+              <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[#EF4444]" />
+                    <span className="text-xs font-bold text-white">
+                      {lang === "fr" ? "Projection de trésorerie sur le cycle" : "Cashflow forecast over pay cycle"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/30">
+                    +15% {lang === "fr" ? "d'épargne projetée" : "projected savings"}
+                  </span>
+                </div>
+
+                <div className="h-16 w-full relative">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 420 70" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="heroCashflowGradLanding" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
+                        <stop offset="80%" stopColor="#EF4444" stopOpacity="0.05" />
+                        <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="18" x2="420" y2="18" stroke="#27272A" strokeDasharray="3 3" strokeWidth="1" opacity="0.6" />
+                    <line x1="0" y1="45" x2="420" y2="45" stroke="#27272A" strokeDasharray="3 3" strokeWidth="1" opacity="0.6" />
+                    <path d="M 0,35 Q 70,25 140,40 T 235,22 T 340,45 L 420,55 L 420,70 L 0,70 Z" fill="url(#heroCashflowGradLanding)" />
+                    <path d="M 0,35 Q 70,25 140,40 T 235,22 T 340,45 L 420,55" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="235" cy="22" r="6" fill="#EF4444" opacity="0.3" className="animate-ping" />
+                    <circle cx="235" cy="22" r="4" fill="#FFFFFF" stroke="#EF4444" strokeWidth="2" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* ── SIMULATEUR EN DIRECT & TEST SAISIE RAPIDE ── */}
+              <div className="bg-[#121216] border border-[#27272A] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                
+                {/* Curseur jours */}
+                <div className="flex items-center gap-3 w-full sm:w-auto text-xs text-[#A1A1AA]">
+                  <span className="flex items-center gap-1.5 font-semibold text-white">
+                    <Sparkles className="w-3.5 h-3.5 text-[#EF4444]" /> {t.mockSimulatorLabel}
+                  </span>
                   <span>{t.mockAdjustDays}</span>
                   <input
                     type="range"
@@ -824,155 +1444,206 @@ export default function GestFiProPanAfricanLanding() {
                     max={30}
                     value={simDays}
                     onChange={(e) => setSimDays(Number(e.target.value))}
-                    className="accent-[#EF4444] cursor-pointer w-32"
+                    className="accent-[#EF4444] cursor-pointer w-28"
                   />
-                  <span className="font-bold text-[#EF4444] w-12 text-right">{simDays} j</span>
+                  <span className="font-bold text-[#EF4444] w-10 text-right">{simDays} j</span>
                 </div>
+
+                {/* Formulaire de saisie rapide interactif */}
+                <form onSubmit={handleQuickSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    value={quickInput}
+                    onChange={(e) => setQuickInput(e.target.value)}
+                    placeholder={lang === "fr" ? "ex: taxi 2000, riz 3500..." : "e.g. lunch 3500, fuel 5000..."}
+                    className="bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#71717A] outline-none transition-colors w-full sm:w-48"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] active:scale-95 text-white text-xs font-bold transition-all shadow-md shadow-[#EF4444]/20 flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span>{lang === "fr" ? "Ajouter" : "Add"}</span>
+                    <Send className="w-3 h-3" />
+                  </button>
+                </form>
+
               </div>
+
+              {/* Toast interactif de confirmation */}
+              <AnimatePresence>
+                {feedbackToast && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#10B981] bg-[#10B981]/10 py-1.5 px-3 rounded-lg border border-[#10B981]/30 mx-auto w-fit"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{feedbackToast}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
             </div>
           </motion.div>
-        </motion.div>
+        </div>
 
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           3. SECTION "DES DÉFIS QUE VOUS CONNAISSEZ" (PANAFRICAIN)
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="defis" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+      <section id="defis" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A] scroll-mt-20">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
         >
-          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+          <motion.span
+            variants={scrollBadgeItem}
+            className="inline-block text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3.5 py-1 rounded-full border border-[#EF4444]/20"
+          >
             {t.defisBadge}
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight mt-4 mb-4 text-[#FAFAFA]">
+          </motion.span>
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight mt-4 mb-4 text-[#FAFAFA]"
+          >
             {t.defisTitle}
-          </h2>
-          <p className="text-base sm:text-lg text-[#A1A1AA]">
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-sm sm:text-base md:text-lg text-[#A1A1AA]"
+          >
             {t.defisSubtitle}
-          </p>
+          </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+        >
           
           {/* Défi 1 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.22)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
                 📱
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.defi1Title}</h3>
-              <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi1Title}</h3>
+              <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-2.5">
                 {t.defi1Sub}
               </p>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.defi1Desc}
               </p>
+            </div>
+            <div className="mt-5 pt-3 border-t border-[#27272A]/60 flex items-center text-[11px] font-semibold text-[#71717A] group-hover:text-[#A1A1AA] transition-colors">
+              <span>Wave · Orange Money · M-Pesa · MTN · Cash</span>
             </div>
           </motion.div>
 
           {/* Défi 2 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(245, 158, 11, 0.22)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-amber-500/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] text-xl font-bold mb-5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
                 💸
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.defi2Title}</h3>
-              <p className="text-xs text-[#f59e0b] font-semibold uppercase tracking-wider mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi2Title}</h3>
+              <p className="text-xs text-[#f59e0b] font-semibold uppercase tracking-wider mb-2.5">
                 {t.defi2Sub}
               </p>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.defi2Desc}
               </p>
+            </div>
+            <div className="mt-5 pt-3 border-t border-[#27272A]/60 flex items-center text-[11px] font-semibold text-[#71717A] group-hover:text-[#A1A1AA] transition-colors">
+              <span>Micro-dépenses non tracées = découvert</span>
             </div>
           </motion.div>
 
           {/* Défi 3 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(168, 85, 247, 0.22)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/50 transition-colors flex flex-col justify-between"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-purple-500/60 transition-all flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold mb-5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
                 📉
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.defi3Title}</h3>
-              <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi3Title}</h3>
+              <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-2.5">
                 {t.defi3Sub}
               </p>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.defi3Desc}
               </p>
             </div>
+            <div className="mt-5 pt-3 border-t border-[#27272A]/60 flex items-center text-[11px] font-semibold text-[#71717A] group-hover:text-[#A1A1AA] transition-colors">
+              <span>Stress d'attente du virement de paie</span>
+            </div>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Bannière de transition */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollCardItem}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-[#EF4444]/15 via-[#18181B] to-[#18181B] border border-[#EF4444]/30 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4"
+          className="mt-8 sm:mt-12 p-5 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#EF4444]/15 via-[#18181B] to-[#18181B] border border-[#EF4444]/30 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 shadow-xl"
         >
           <div>
-            <h4 className="text-lg font-bold text-white">
+            <h4 className="text-base sm:text-lg font-bold text-white">
               {t.defisTransition}
             </h4>
-            <p className="text-xs text-[#A1A1AA] mt-1">
+            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1">
               {lang === "fr"
                 ? "Wave, Orange Money, M-Pesa, MTN, Moov, Espèces, Banque : tout est agrégé simplement."
                 : "Wave, Orange Money, M-Pesa, MTN, Moov, Cash, Bank: all aggregated in one safe view."}
             </p>
           </div>
           <motion.div
-            whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(239, 68, 68, 0.5)" }}
+            whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(239, 68, 68, 0.55)" }}
             whileTap={{ scale: 0.97 }}
             transition={{ duration: 0.2 }}
+            className="w-full sm:w-auto shrink-0"
           >
             <Link
               href="/onboarding"
-              className="px-6 py-3 rounded-xl bg-[#EF4444] text-white font-bold text-sm hover:bg-[#DC2626] transition-colors shrink-0 flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#EF4444] text-white font-bold text-sm hover:bg-[#DC2626] transition-colors flex items-center justify-center gap-2"
             >
-              {lang === "fr" ? "Démarrer maintenant" : "Start now"} <ArrowRight className="w-4 h-4" />
+              <span>{lang === "fr" ? "Démarrer maintenant" : "Start now"}</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
         </motion.div>
@@ -981,44 +1652,59 @@ export default function GestFiProPanAfricanLanding() {
       {/* ═══════════════════════════════════════════════════════════════════
           4. BENTO GRID DES 4 FONCTIONNALITÉS CLÉS DU MVP
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="features" className="py-24 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+      <section id="features" className="py-12 sm:py-24 px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A] scroll-mt-20">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-2xl mx-auto mb-12 sm:mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4 text-white">
+          <motion.span
+            variants={scrollBadgeItem}
+            className="inline-block text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3.5 py-1 rounded-full border border-[#EF4444]/20"
+          >
+            {lang === "fr" ? "Fonctionnalités Panafricaines" : "Pan-African Features"}
+          </motion.span>
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-4 mb-3 text-white"
+          >
             {t.bentoTitle}
-          </h2>
-          <p className="text-[#A1A1AA] text-base">
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-sm sm:text-base text-[#A1A1AA]"
+          >
             {t.bentoSubtitle}
-          </p>
+          </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+        >
           
           {/* Bento 1 : Cycle de Paie Intelligent */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
-                <Calendar className="w-6 h-6" />
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.bento1Title}</h3>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento1Title}</h3>
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.bento1Desc}
               </p>
             </div>
@@ -1029,331 +1715,450 @@ export default function GestFiProPanAfricanLanding() {
 
           {/* Bento 2 : Saisie Rapide < 3s */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(74, 222, 128, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#4ade80]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6" />
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#4ade80] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.bento2Title}</h3>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento2Title}</h3>
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.bento2Desc}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#4ade80] font-semibold flex items-center gap-1.5">
-              <span>⚡ {lang === "fr" ? "Sans prise de tête" : "Friction-free tracking"}</span>
+              <span>⚡ {lang === "fr" ? "Sans prise de tête ni friction" : "Friction-free tracking"}</span>
             </div>
           </motion.div>
 
           {/* Bento 3 : Sécurité & Confidentialité */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(56, 189, 248, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#38bdf8]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
-                <Shield className="w-6 h-6" />
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[#38bdf8] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+                <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.bento3Title}</h3>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento3Title}</h3>
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.bento3Desc}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#38bdf8] font-semibold flex items-center gap-1.5">
-              <span>🔒 {lang === "fr" ? "0 identifiant bancaire stocké" : "0 bank credentials stored"}</span>
+              <span>🔒 {lang === "fr" ? "0 identifiant ni mot de passe bancaire" : "0 bank credentials stored"}</span>
             </div>
           </motion.div>
 
           {/* Bento 4 : Visualisation & Santé */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
-              scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.18)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              y: -6,
+              scale: 1.015,
+              boxShadow: "0 20px 40px -15px rgba(245, 158, 11, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-8 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/50 transition-colors group"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#f59e0b]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-6 group-hover:scale-110 transition-transform">
-                <PieChart className="w-6 h-6" />
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+                <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.bento4Title}</h3>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento4Title}</h3>
+              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
                 {t.bento4Desc}
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#f59e0b] font-semibold flex items-center gap-1.5">
-              <span>📊 {lang === "fr" ? "Répartition par catégorie automatique" : "Automatic category breakdown"}</span>
+              <span>📊 {lang === "fr" ? "Alerte de rythme et répartition auto" : "Automatic pace alerts"}</span>
             </div>
           </motion.div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           5. SECTION "COMMENT ÇA MARCHE" (30 SECONDES CHRONO)
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="how" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A] bg-[#09090B]/60">
+      <section id="how" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A] bg-[#09090B]/60 scroll-mt-20">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-2xl mx-auto mb-12 sm:mb-16"
         >
-          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+          <motion.span
+            variants={scrollBadgeItem}
+            className="inline-block text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3.5 py-1 rounded-full border border-[#EF4444]/20"
+          >
             {t.howBadge}
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 mb-4 text-white">
+          </motion.span>
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight mt-4 mb-3 text-white"
+          >
             {t.howTitle}
-          </h2>
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-xs sm:text-sm text-[#A1A1AA]"
+          >
+            {lang === "fr" ? "Un parcours guidé ultra-rapide pour démarrer sans friction." : "A quick 4-step workflow to master your money."}
+          </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <motion.div
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        >
           
           {/* Étape 1 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
+              y: -6,
               scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
-            {/* Icône animée à l'entrée (scale, rotate, fade-in) */}
-            <motion.div
-              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
-              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
-            >
-              <Users className="w-5 h-5" />
-            </motion.div>
-            <h3 className="text-lg font-bold text-white mb-2">{t.step1Title}</h3>
-            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step1Desc}</p>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                  <Users className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-extrabold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-0.5 rounded-full border border-[#EF4444]/20">
+                  01
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2">{t.step1Title}</h3>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step1Desc}</p>
+            </div>
           </motion.div>
 
           {/* Étape 2 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
+              y: -6,
               scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
-            <motion.div
-              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
-              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
-            >
-              <Wallet className="w-5 h-5" />
-            </motion.div>
-            <h3 className="text-lg font-bold text-white mb-2">{t.step2Title}</h3>
-            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step2Desc}</p>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-extrabold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-0.5 rounded-full border border-[#EF4444]/20">
+                  02
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2">{t.step2Title}</h3>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step2Desc}</p>
+            </div>
           </motion.div>
 
           {/* Étape 3 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
+              y: -6,
               scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
-            <motion.div
-              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
-              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
-            >
-              <Zap className="w-5 h-5" />
-            </motion.div>
-            <h3 className="text-lg font-bold text-white mb-2">{t.step3Title}</h3>
-            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step3Desc}</p>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-extrabold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-0.5 rounded-full border border-[#EF4444]/20">
+                  03
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2">{t.step3Title}</h3>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step3Desc}</p>
+            </div>
           </motion.div>
 
           {/* Étape 4 */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            variants={scrollCardItem}
             whileHover={{
-              y: -4,
+              y: -6,
               scale: 1.02,
-              boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-              transition: { duration: 0.25, ease: "easeOut" },
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+              transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-6 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 transition-colors"
+            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
-            <motion.div
-              initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
-              whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4"
-            >
-              <TrendingUp className="w-5 h-5" />
-            </motion.div>
-            <h3 className="text-lg font-bold text-white mb-2">{t.step4Title}</h3>
-            <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step4Desc}</p>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-extrabold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-0.5 rounded-full border border-[#EF4444]/20">
+                  04
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2">{t.step4Title}</h3>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">{t.step4Desc}</p>
+            </div>
           </motion.div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          6. TÉMOIGNAGES PANAFRICAINS GÉOLOCALISÉS
+          6. TÉMOIGNAGES PANAFRICAINS AVEC AVATARS RÉELS & DÉFILEMENT INFINI
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="testimonials" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto border-t border-[#27272A]">
+      <section id="testimonials" className="py-12 sm:py-24 max-w-full overflow-hidden border-t border-[#27272A] relative bg-[#09090B] scroll-mt-20">
+        
+        {/* En-tête de section */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-2xl mx-auto mb-14"
+          className="text-center max-w-3xl mx-auto px-4 sm:px-6 mb-12 sm:mb-16"
         >
-          <div className="inline-flex items-center gap-2 text-xs font-bold text-[#f59e0b] mb-2">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <span className="text-white ml-1">4.9 / 5</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-3">
+          <motion.div
+            variants={scrollBadgeItem}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-xs font-bold text-[#f59e0b] mb-4"
+          >
+            <div className="flex items-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-white ml-1 font-extrabold">4.9 / 5</span>
+            <span className="text-[#A1A1AA]">· {lang === "fr" ? "+12 000 salariés actifs" : "+12,000 active users"}</span>
+          </motion.div>
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight text-white mb-4"
+          >
             {t.testiTitle}
-          </h2>
-          <p className="text-[#A1A1AA] text-base">{t.testiSubtitle}</p>
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-[#A1A1AA] text-sm sm:text-base md:text-lg max-w-2xl mx-auto"
+          >
+            {t.testiSubtitle}
+          </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {panAfricanTestimonials.map((item, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{
-                y: -4,
-                scale: 1.02,
-                boxShadow: "0 12px 30px -10px rgba(239, 68, 68, 0.15)",
-                transition: { duration: 0.25, ease: "easeOut" },
-              }}
-              className="p-7 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/40 transition-colors"
-            >
-              <p className="text-sm text-[#FAFAFA] leading-relaxed mb-6 italic">
-                "{item.text}"
-              </p>
-              <div className="pt-4 border-t border-[#27272A] flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                    {item.name} <span>{item.flag}</span>
-                  </h3>
-                  <p className="text-xs text-[#A1A1AA]">{item.city}</p>
+        {/* ── MASQUES DE DÉGRADÉ GAUCHE / DROITE POUR INFINITY EFFECT ── */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-36 md:w-48 bg-gradient-to-r from-[#09090B] via-[#09090B]/80 to-transparent z-20" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-36 md:w-48 bg-gradient-to-l from-[#09090B] via-[#09090B]/80 to-transparent z-20" />
+
+        {/* ── DUAL MARQUEE CONTAINER ── */}
+        <div className="flex flex-col gap-5 sm:gap-6 w-full select-none pause-hover">
+          
+          {/* ══ LIGNE 1 : DÉFILEMENT DE DROITE VERS GAUCHE (LEFTWARD) ══ */}
+          <div className="flex overflow-hidden relative w-full">
+            <div className="animate-marquee-left flex gap-4 sm:gap-6">
+              {[...testimonialsRow1, ...testimonialsRow1, ...testimonialsRow1, ...testimonialsRow1].map((item, idx) => (
+                <div
+                  key={`row1-${idx}`}
+                  className="w-[280px] sm:w-[350px] md:w-[400px] shrink-0 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] hover:border-[#EF4444]/60 hover:shadow-2xl hover:shadow-[#EF4444]/15 transition-all duration-300 flex flex-col justify-between group"
+                >
+                  {/* Note étoiles + Badge vérifié */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-1">
+                      {[...Array(item.stars)].map((_, s) => (
+                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/25">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
+                    </span>
+                  </div>
+
+                  {/* Avis utilisateur */}
+                  <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
+                    "{item.text}"
+                  </p>
+
+                  {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
+                  <div className="pt-3.5 border-t border-[#27272A] flex items-center gap-3">
+                    <div
+                      className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] shrink-0 transition-transform duration-300 group-hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${item.ringColor}, ${item.ringColor}80)`,
+                        boxShadow: `0 0 14px ${item.ringColor}30`,
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full overflow-hidden bg-[#18181B] relative">
+                        <Image
+                          src={item.avatar}
+                          alt={item.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                        <span>{item.name}</span>
+                        <span className="text-sm">{item.flag}</span>
+                      </h4>
+                      <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#A1A1AA] mt-0.5">
+                        <span className="truncate">{item.city}</span>
+                        <span>·</span>
+                        <span className="text-[11px] font-medium text-[#EF4444] truncate">{item.role}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2.5 py-1 rounded-full">
-                  {item.role}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+              ))}
+            </div>
+          </div>
+
+          {/* ══ LIGNE 2 : DÉFILEMENT DE GAUCHE VERS DROITE (RIGHTWARD) ══ */}
+          <div className="flex overflow-hidden relative w-full">
+            <div className="animate-marquee-right flex gap-4 sm:gap-6">
+              {[...testimonialsRow2, ...testimonialsRow2, ...testimonialsRow2, ...testimonialsRow2].map((item, idx) => (
+                <div
+                  key={`row2-${idx}`}
+                  className="w-[280px] sm:w-[350px] md:w-[400px] shrink-0 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] hover:border-[#EF4444]/60 hover:shadow-2xl hover:shadow-[#EF4444]/15 transition-all duration-300 flex flex-col justify-between group"
+                >
+                  {/* Note étoiles + Badge vérifié */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-1">
+                      {[...Array(item.stars)].map((_, s) => (
+                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/25">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
+                    </span>
+                  </div>
+
+                  {/* Avis utilisateur */}
+                  <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
+                    "{item.text}"
+                  </p>
+
+                  {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
+                  <div className="pt-3.5 border-t border-[#27272A] flex items-center gap-3">
+                    <div
+                      className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] shrink-0 transition-transform duration-300 group-hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${item.ringColor}, ${item.ringColor}80)`,
+                        boxShadow: `0 0 14px ${item.ringColor}30`,
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full overflow-hidden bg-[#18181B] relative">
+                        <Image
+                          src={item.avatar}
+                          alt={item.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                        <span>{item.name}</span>
+                        <span className="text-sm">{item.flag}</span>
+                      </h4>
+                      <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#A1A1AA] mt-0.5">
+                        <span className="truncate">{item.city}</span>
+                        <span>·</span>
+                        <span className="text-[11px] font-medium text-[#EF4444] truncate">{item.role}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
+
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           7. SÉCURITÉ & VIE PRIVÉE
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="py-16 px-6 lg:px-16 max-w-5xl mx-auto">
+      <section className="py-10 sm:py-16 px-4 sm:px-6 lg:px-16 max-w-5xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollCardItem}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-3xl bg-gradient-to-b from-[#18181B] to-[#09090B] border border-[#27272A] p-8 sm:p-12 text-center"
+          className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#18181B] to-[#09090B] border border-[#27272A] p-5 sm:p-8 md:p-12 text-center shadow-2xl"
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="w-14 h-14 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center mx-auto mb-6 text-[#10b981]"
+            variants={scrollBadgeItem}
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center mx-auto mb-5 sm:mb-6 text-[#10b981] shadow-lg shadow-[#10b981]/20"
           >
-            <Lock className="w-7 h-7" />
+            <Lock className="w-6 h-6 sm:w-7 sm:h-7" />
           </motion.div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mb-3">
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-xl sm:text-2xl md:text-3xl font-black text-white mb-3"
+          >
             {t.secTitle}
-          </h2>
-          <p className="text-sm sm:text-base text-[#A1A1AA] max-w-2xl mx-auto mb-8 leading-relaxed">
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-xs sm:text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto mb-8 leading-relaxed"
+          >
             {t.secDesc}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold text-white">
+          </motion.p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs font-semibold text-white">
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              🔒 100% Manuel & Privé
+              <ShieldCheck className="w-4 h-4 text-[#10b981]" />
+              <span>100% Manuel & Privé</span>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              🛡️ Chiffrement AES-256
+              <Lock className="w-4 h-4 text-[#10b981]" />
+              <span>Chiffrement AES-256</span>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]"
+              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              💳 Zéro carte bancaire demandée
+              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
+              <span>Zéro carte bancaire requise</span>
             </motion.div>
           </div>
         </motion.div>
@@ -1362,45 +2167,59 @@ export default function GestFiProPanAfricanLanding() {
       {/* ═══════════════════════════════════════════════════════════════════
           8. FAQ INTERACTIVE AVEC ANIMATION D'ACCORDÉON
       ════════════════════════════════════════════════════════════════════ */}
-      <section id="faq" className="py-20 px-6 lg:px-16 max-w-4xl mx-auto border-t border-[#27272A]">
+      <section id="faq" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-16 max-w-4xl mx-auto border-t border-[#27272A] scroll-mt-20">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-14"
+          className="text-center mb-10 sm:mb-14"
         >
-          <span className="text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3 py-1 rounded-full border border-[#EF4444]/20">
+          <motion.span
+            variants={scrollBadgeItem}
+            className="inline-block text-xs font-bold uppercase tracking-widest text-[#EF4444] bg-[#EF4444]/10 px-3.5 py-1 rounded-full border border-[#EF4444]/20"
+          >
             FAQ
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mt-4 mb-2">
+          </motion.span>
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white mt-4 mb-2"
+          >
             {t.faqTitle}
-          </h2>
-          <p className="text-sm text-[#A1A1AA]">{t.faqSubtitle}</p>
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-xs sm:text-sm text-[#A1A1AA]"
+          >
+            {t.faqSubtitle}
+          </motion.p>
         </motion.div>
 
-        <div className="space-y-4">
+        <motion.div
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="space-y-3 sm:space-y-4"
+        >
           {panAfricanFaqs.map((faq, i) => {
             const isOpen = openFaq === i;
             return (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.45, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-xl bg-[#18181B] border border-[#27272A] overflow-hidden transition-colors"
+                variants={scrollCardItem}
+                className="rounded-xl sm:rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/40 overflow-hidden transition-colors"
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-white hover:text-[#EF4444] transition-colors"
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-white hover:text-[#EF4444] transition-colors cursor-pointer"
                 >
                   <span>{faq.q}</span>
                   <motion.div
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
-                    <ChevronDown className={`w-5 h-5 ${isOpen ? "text-[#EF4444]" : "text-[#A1A1AA]"}`} />
+                    <ChevronDown className={`w-5 h-5 shrink-0 ${isOpen ? "text-[#EF4444]" : "text-[#A1A1AA]"}`} />
                   </motion.div>
                 </button>
                 <AnimatePresence>
@@ -1412,7 +2231,7 @@ export default function GestFiProPanAfricanLanding() {
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-[#A1A1AA] leading-relaxed border-t border-[#27272A]/40">
+                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 text-xs sm:text-sm text-[#A1A1AA] leading-relaxed border-t border-[#27272A]/40">
                         {faq.a}
                       </div>
                     </motion.div>
@@ -1421,30 +2240,39 @@ export default function GestFiProPanAfricanLanding() {
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           9. CTA FINAL (HIGH-CONVERSION) AVEC GLOW & MICRO-INTERACTIONS
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 lg:px-16 max-w-5xl mx-auto text-center relative">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 lg:px-16 max-w-5xl mx-auto text-center relative">
         <div className="absolute left-1/2 -top-24 -translate-x-1/2 w-[600px] h-[350px] bg-[#EF4444]/20 blur-[130px] rounded-full pointer-events-none -z-10" />
 
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={scrollCardItem}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-3xl bg-gradient-to-b from-[#18181B] to-[#09090B] border border-[#27272A] p-10 sm:p-16 relative overflow-hidden shadow-2xl"
+          className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#18181B] via-[#151518] to-[#09090B] border border-[#27272A] p-6 sm:p-10 md:p-16 relative overflow-hidden shadow-2xl"
         >
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-6">
+          <motion.h2
+            variants={scrollTextFadeUp}
+            className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight text-white mb-4 sm:mb-6"
+          >
             {t.ctaFinalTitle}
-          </h2>
-          <p className="text-base sm:text-lg text-[#A1A1AA] max-w-2xl mx-auto mb-10 leading-relaxed">
+          </motion.h2>
+          <motion.p
+            variants={scrollTextFadeUp}
+            className="text-sm sm:text-base md:text-lg text-[#A1A1AA] max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed"
+          >
             {t.ctaFinalSubtitle}
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <motion.div
+            variants={scrollTextFadeUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+          >
             <motion.div
               whileHover={{
                 scale: 1.03,
@@ -1456,10 +2284,10 @@ export default function GestFiProPanAfricanLanding() {
             >
               <Link
                 href="/onboarding"
-                className="w-full sm:w-auto px-9 py-4 rounded-xl text-base font-bold text-white bg-[#EF4444] hover:bg-[#dc2626] shadow-xl shadow-[#EF4444]/30 transition-colors flex items-center justify-center gap-2 group"
+                className="w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-xl text-sm sm:text-base font-bold text-white bg-[#EF4444] hover:bg-[#dc2626] shadow-xl shadow-[#EF4444]/30 transition-colors flex items-center justify-center gap-2 group"
               >
                 <span>{t.ctaFinalBtn}</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1.5 transition-transform" />
               </Link>
             </motion.div>
 
@@ -1475,94 +2303,290 @@ export default function GestFiProPanAfricanLanding() {
             >
               <Link
                 href="/dashboard"
-                className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] transition-all flex items-center justify-center"
+                className="w-full sm:w-auto px-7 sm:px-8 py-3.5 sm:py-4 rounded-xl text-sm sm:text-base font-semibold text-white bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] transition-all flex items-center justify-center"
               >
                 {t.ctaFinalDemo}
               </Link>
             </motion.div>
-          </div>
+          </motion.div>
 
-          <p className="text-xs text-[#71717A] mt-6">
+          <p className="text-[11px] sm:text-xs text-[#71717A] mt-6">
             ✓ 100% {lang === "fr" ? "Gratuit" : "Free"} · {lang === "fr" ? "Zéro carte bancaire" : "No credit card"} · {lang === "fr" ? "Prêt en 30 secondes" : "Ready in 30 seconds"}
           </p>
         </motion.div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          10. FOOTER PANAFRICAIN
+          10. FOOTER PANAFRICAIN OPTIMISÉ, RESPONSIVE & MULTI-COLONNES
       ════════════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-[#27272A] py-12 px-6 lg:px-16 text-xs text-[#A1A1AA]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Logo Footer redirigeant vers la section Hero */}
-          <Link
-            href="#hero"
-            onClick={(e) => {
-              e.preventDefault();
-              const heroEl = document.getElementById("hero");
-              if (heroEl) {
-                heroEl.scrollIntoView({ behavior: "smooth" });
-              } else {
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }
-            }}
-            className="flex items-center gap-3 group cursor-pointer"
-            title={lang === "fr" ? "Retour au début" : "Back to top"}
+      <footer className="border-t border-[#27272A] bg-gradient-to-b from-[#09090B] to-[#040405] pt-12 sm:pt-16 pb-8 px-4 sm:px-6 lg:px-16 text-xs text-[#A1A1AA]">
+        <div className="max-w-7xl mx-auto">
+          
+          {/* ── BANNIÈRE NEWSLETTER / COMMUNAUTÉ ── */}
+          <motion.div
+            variants={scrollCardItem}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            className="p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#18181B] via-[#1f1616] to-[#18181B] border border-[#EF4444]/25 shadow-xl mb-12 sm:mb-16 flex flex-col lg:flex-row items-center justify-between gap-6"
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-              className="w-8 h-8 rounded-lg overflow-hidden bg-[#18181B] border border-[#27272A] shadow-sm flex items-center justify-center shrink-0 group-hover:border-[#EF4444]/60 transition-colors"
-            >
-              <Image
-                src="/icons/logo.png"
-                alt="GestFiPro"
-                width={32}
-                height={32}
-                className="w-full h-full object-contain"
-              />
-            </motion.div>
-            <div>
-              <span className="text-sm font-bold text-white group-hover:text-white transition-colors">
-                GestFi<span className="text-[#EF4444]">Pro</span>
+            <div className="text-center lg:text-left max-w-xl">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 text-[11px] font-bold text-[#EF4444] mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{lang === "fr" ? "Communauté GestFiPro" : "GestFiPro Community"}</span>
               </span>
-              <p className="text-[11px] text-[#71717A]">
+              <h3 className="text-lg sm:text-2xl font-bold text-white tracking-tight">
+                {lang === "fr" ? "Recevez nos conseils de paie chaque mois" : "Get smart pay-cycle tips every month"}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1.5 leading-relaxed">
                 {lang === "fr"
-                  ? "Gestion financière par cycle de paie en Afrique"
-                  : "Pay-cycle financial management across Africa"}
+                  ? "Rejoignez plus de 12 000 salariés africains qui maîtrisent leur budget sans stress de fin de mois."
+                  : "Join 12,000+ African workers mastering their budget with zero end-of-month stress."}
               </p>
             </div>
-          </Link>
 
-          <div className="flex flex-wrap items-center gap-6">
-            <a href="#features" className="hover:text-white transition-colors">
-              {lang === "fr" ? "Fonctionnalités" : "Features"}
-            </a>
-            <a href="#defis" className="hover:text-white transition-colors">
-              {lang === "fr" ? "Le Problème" : "The Problem"}
-            </a>
-            <a href="#how" className="hover:text-white transition-colors">
-              {lang === "fr" ? "Comment ça marche" : "How it works"}
-            </a>
-            <a href="#faq" className="hover:text-white transition-colors">
-              FAQ
-            </a>
-            <Link href="/guide" className="hover:text-white transition-colors">
-              Guide
-            </Link>
-            <Link href="/login" className="hover:text-white transition-colors">
-              {lang === "fr" ? "Connexion" : "Login"}
-            </Link>
-            <Link href="/dashboard" className="hover:text-white transition-colors">
-              {lang === "fr" ? "Application" : "Dashboard"}
-            </Link>
+            <div className="w-full lg:w-auto">
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5 w-full sm:w-auto">
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#71717A] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="email"
+                    required
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    placeholder={lang === "fr" ? "Votre adresse email..." : "Your email address..."}
+                    className="w-full sm:w-72 pl-10 pr-4 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] text-white text-xs placeholder-[#71717A] outline-none transition-colors"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold transition-all shadow-lg shadow-[#EF4444]/25 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>{lang === "fr" ? "S'inscrire" : "Subscribe"}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </form>
+
+              {newsletterToast && (
+                <motion.p
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-xs font-semibold text-[#4ADE80] mt-2 text-center lg:text-left flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{newsletterToast}</span>
+                </motion.p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* ── GRILLE PRINCIPALE DU FOOTER (5 COLONNES) ── */}
+          <motion.div
+            variants={scrollStaggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 sm:gap-10 pb-12"
+          >
+            
+            {/* Col 1 : Branding & Statut */}
+            <motion.div variants={scrollTextFadeUp} className="sm:col-span-2 md:col-span-3 lg:col-span-1">
+              <Link
+                href="#hero"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const heroEl = document.getElementById("hero");
+                  if (heroEl) {
+                    heroEl.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                className="flex items-center gap-2.5 group cursor-pointer"
+                title={lang === "fr" ? "Retour au début" : "Back to top"}
+              >
+                <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-sm flex items-center justify-center shrink-0 group-hover:border-[#EF4444]/60 transition-colors">
+                  <Image
+                    src="/icons/logo.png"
+                    alt="GestFiPro"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-base font-bold text-white group-hover:text-white transition-colors">
+                  GestFi<span className="text-[#EF4444]">Pro</span>
+                </span>
+              </Link>
+
+              <p className="text-xs text-[#71717A] mt-3 leading-relaxed">
+                {lang === "fr"
+                  ? "La 1ère plateforme panafricaine de gestion financière par cycle de paie. 100% manuelle, confidentielle et sans liaison bancaire."
+                  : "The #1 Pan-African pay-cycle financial platform. 100% manual, confidential with zero banking connection."}
+              </p>
+
+              {/* Indicateur Statut système en direct */}
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#18181B] border border-[#27272A] text-[11px] text-[#A1A1AA]">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span>{lang === "fr" ? "Systèmes 100% opérationnels" : "All systems operational"}</span>
+              </div>
+            </motion.div>
+
+            {/* Col 2 : Produit */}
+            <motion.div variants={scrollTextFadeUp}>
+              <p className="text-xs font-bold uppercase tracking-wider text-white mb-3 sm:mb-4">
+                {lang === "fr" ? "Fonctionnalités" : "Product"}
+              </p>
+              <ul className="space-y-2.5 text-xs text-[#A1A1AA]">
+                <li>
+                  <a href="#features" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Cycle de paie intelligent" : "Smart pay cycle"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Saisie rapide < 3s" : "Quick expense log"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Suivi multi-comptes" : "Multi-account tracking"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Jauge de santé budgétaire" : "Budget health score"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#hero" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Simulateur de budget" : "Live simulator"}
+                  </a>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Col 3 : Ressources */}
+            <motion.div variants={scrollTextFadeUp}>
+              <p className="text-xs font-bold uppercase tracking-wider text-white mb-3 sm:mb-4">
+                {lang === "fr" ? "Ressources" : "Resources"}
+              </p>
+              <ul className="space-y-2.5 text-xs text-[#A1A1AA]">
+                <li>
+                  <Link href="/guide" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Guide du salarié" : "User guide"}
+                  </Link>
+                </li>
+                <li>
+                  <a href="#faq" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Questions fréquentes (FAQ)" : "FAQ & Help"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#defis" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Pourquoi GestFiPro ?" : "Why GestFiPro?"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#how" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Comment ça marche" : "How it works"}
+                  </a>
+                </li>
+                <li>
+                  <Link href="/dashboard" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Démo interactive" : "Interactive demo"}
+                  </Link>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Col 4 : Couverture Panafricaine & Devises */}
+            <motion.div variants={scrollTextFadeUp}>
+              <p className="text-xs font-bold uppercase tracking-wider text-white mb-3 sm:mb-4">
+                {lang === "fr" ? "Couverture Afrique" : "Coverage"}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 text-xs text-[#A1A1AA] mb-4">
+                <span className="flex items-center gap-1.5">🇨🇮 Côte d'Ivoire</span>
+                <span className="flex items-center gap-1.5">🇸🇳 Sénégal</span>
+                <span className="flex items-center gap-1.5">🇳🇬 Nigeria</span>
+                <span className="flex items-center gap-1.5">🇰🇪 Kenya</span>
+                <span className="flex items-center gap-1.5">🇿🇦 Afrique du Sud</span>
+                <span className="flex items-center gap-1.5">🇨🇲 Cameroun</span>
+                <span className="flex items-center gap-1.5">🇬🇭 Ghana</span>
+                <span className="flex items-center gap-1.5">🇲🇱 Mali</span>
+              </div>
+              <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider mb-1.5">
+                {lang === "fr" ? "Devises" : "Currencies"}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {["XOF", "XAF", "NGN", "KES", "ZAR", "USD"].map((c) => (
+                  <span
+                    key={c}
+                    className="px-2 py-0.5 rounded bg-[#18181B] border border-[#27272A] text-[10px] font-bold text-[#A1A1AA]"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Col 5 : Légal & Accès Rapide */}
+            <motion.div variants={scrollTextFadeUp}>
+              <p className="text-xs font-bold uppercase tracking-wider text-white mb-3 sm:mb-4">
+                {lang === "fr" ? "Accès & Légal" : "Access & Legal"}
+              </p>
+              <ul className="space-y-2.5 text-xs text-[#A1A1AA]">
+                <li>
+                  <Link href="/login" className="hover:text-white hover:translate-x-0.5 inline-block transition-all font-semibold text-[#EF4444]">
+                    {lang === "fr" ? "Se connecter" : "Sign In"} →
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/onboarding" className="hover:text-white hover:translate-x-0.5 inline-block transition-all">
+                    {lang === "fr" ? "Créer un compte gratuit" : "Create free account"}
+                  </Link>
+                </li>
+                <li>
+                  <span className="text-[#71717A] block">
+                    {lang === "fr" ? "Confidentialité souveraine" : "Sovereign privacy"}
+                  </span>
+                </li>
+                <li>
+                  <span className="text-[#71717A] block">
+                    {lang === "fr" ? "Conditions d'utilisation" : "Terms of service"}
+                  </span>
+                </li>
+                <li>
+                  <span className="text-[#71717A] block">
+                    {lang === "fr" ? "Sécurité AES-256" : "AES-256 Security"}
+                  </span>
+                </li>
+              </ul>
+            </motion.div>
+
+          </motion.div>
+
+          {/* ── BARRE INFÉRIEURE DU FOOTER (SUB-FOOTER) ── */}
+          <div className="mt-8 pt-6 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#71717A]">
+            <p>
+              © 2026 GestFiPro. {lang === "fr" ? "Tous droits réservés. Développé pour la liberté financière en Afrique." : "All rights reserved. Designed for financial peace of mind in Africa."}
+            </p>
+
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                title={lang === "fr" ? "Remonter en haut" : "Scroll to top"}
+              >
+                <span>{lang === "fr" ? "Haut de page" : "Back to top"}</span>
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-[#27272A]/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#71717A]">
-          <p>© 2026 GestFiPro. {lang === "fr" ? "Tous droits réservés. Pensé pour une liberté financière universelle." : "All rights reserved. Designed for financial peace of mind."}</p>
-          <p>
-            🇨🇮 Côte d'Ivoire · 🇸🇳 Sénégal · 🇳🇬 Nigeria · 🇰🇪 Kenya · 🇿🇦 South Africa · 🇨🇲 Cameroun · 🇬🇭 Ghana · 🇲🇱 Mali
-          </p>
         </div>
       </footer>
     </div>

@@ -191,7 +191,7 @@ export default function GuidePage() {
         minHeight: "100vh",
         background: "#09090B",
         color: "#FAFAFA",
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
       {/* ── Header barre ────────────────────────────────────────────────────── */}

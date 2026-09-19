@@ -2,7 +2,7 @@ export interface Profile {
   id: string;
   full_name: string | null;
   net_salary: number;
-  payday_with_month: number;
+  payday_with_month: number | null;
   created_at?: string;
   updated_at?: string;
 }

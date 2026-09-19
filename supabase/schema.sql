@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT,
     net_salary NUMERIC(15, 2) DEFAULT 0 NOT NULL,
-    payday_with_month INTEGER DEFAULT 28 NOT NULL CHECK (payday_with_month BETWEEN 1 AND 31),
+    payday_with_month INTEGER CHECK (payday_with_month IS NULL OR (payday_with_month BETWEEN 1 AND 31)),
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -22,13 +22,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Si la table existait déjà avec d'autres colonnes (ex: pay_day)
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS net_salary NUMERIC(15, 2) DEFAULT 0 NOT NULL;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS payday_with_month INTEGER DEFAULT 28;
-DO $$ 
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'pay_day') THEN
-        UPDATE public.profiles SET payday_with_month = COALESCE(payday_with_month, pay_day, 28);
-    END IF;
-END $$;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS payday_with_month INTEGER;
+ALTER TABLE public.profiles ALTER COLUMN payday_with_month DROP DEFAULT;
+ALTER TABLE public.profiles ALTER COLUMN payday_with_month DROP NOT NULL;
 
 -- ------------------------------------------------------------------------------
 -- 3. TABLE : ACCOUNTS
@@ -40,8 +36,19 @@ CREATE TABLE IF NOT EXISTS public.accounts (
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     balance NUMERIC(15, 2) DEFAULT 0 NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT accounts_user_id_name_key UNIQUE (user_id, name)
 );
+
+-- Si la table existait déjà sans contrainte UNIQUE
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'accounts_user_id_name_key'
+    ) THEN
+        ALTER TABLE public.accounts ADD CONSTRAINT accounts_user_id_name_key UNIQUE (user_id, name);
+    END IF;
+END $$;
 
 -- Index pour accélérer les requêtes par utilisateur
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON public.accounts(user_id);
@@ -151,17 +158,9 @@ BEGIN
         new.id,
         COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
         COALESCE((new.raw_user_meta_data->>'net_salary')::numeric, 0),
-        COALESCE((new.raw_user_meta_data->>'payday_with_month')::integer, 28)
+        (new.raw_user_meta_data->>'payday_with_month')::integer
     )
     ON CONFLICT (id) DO NOTHING;
-
-    -- Création automatique des 4 comptes de base recommandés GestFiPro
-    INSERT INTO public.accounts (user_id, name, type, balance)
-    VALUES
-        (new.id, 'Espèces', 'cash', 0),
-        (new.id, 'Wave', 'wave', 0),
-        (new.id, 'Orange Money', 'orange_money', 0),
-        (new.id, 'Banque', 'bank', 0);
 
     RETURN new;
 END;

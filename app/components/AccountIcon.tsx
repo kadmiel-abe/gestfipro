@@ -94,7 +94,7 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
         fontSize: Math.round(size * 0.4),
         fontWeight: 800,
         color: "#818cf8",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
       {initial}

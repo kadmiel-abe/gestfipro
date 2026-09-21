@@ -1952,7 +1952,7 @@ export default function GestFiProPanAfricanLanding() {
           >
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
+                <Star key={i} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
               ))}
             </div>
             <span className="text-white ml-1 font-extrabold">4.9 / 5</span>
@@ -1991,7 +1991,7 @@ export default function GestFiProPanAfricanLanding() {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-1">
                       {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
+                        <Star key={s} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
                       ))}
                     </div>
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
@@ -2054,7 +2054,7 @@ export default function GestFiProPanAfricanLanding() {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-1">
                       {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
+                        <Star key={s} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
                       ))}
                     </div>
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">

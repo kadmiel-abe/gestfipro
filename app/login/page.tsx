@@ -359,7 +359,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
               className="w-14 h-14 rounded-2xl overflow-hidden bg-[#09090B] border border-[#27272A] p-2 flex items-center justify-center shadow-lg hover:border-[#EF4444]/50 transition-colors mb-4 group"
             >
               <Image
-                src="/brand-logo.jpg"
+                src="/logo.png"
                 alt="GestFiPro Logo"
                 width={48}
                 height={48}

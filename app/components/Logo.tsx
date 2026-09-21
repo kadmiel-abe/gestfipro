@@ -124,12 +124,12 @@ export function SidebarLogoIcon({
         }}
       >
         <Image
-          src="/logo-icon.png"
+          src="/logo.png"
           alt="GestFiPro"
           width={size}
           height={size}
           style={{
-            objectFit: "cover",
+            objectFit: "contain",
             objectPosition: "center",
             width: "100%",
             height: "100%",

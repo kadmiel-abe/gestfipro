@@ -58,7 +58,7 @@ export default function DashboardLayout({ children, onOpenNewExpense }: Dashboar
           <Link href="/dashboard" className="flex items-center gap-3 px-2 py-2 group">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#09090B] border border-[#27272A] flex items-center justify-center group-hover:border-[#EF4444]/60 transition-colors shrink-0">
               <Image
-                src="/brand-logo.jpg"
+                src="/logo.png"
                 alt="GestFiPro"
                 width={40}
                 height={40}
@@ -129,7 +129,7 @@ export default function DashboardLayout({ children, onOpenNewExpense }: Dashboar
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#09090B] border border-[#27272A] flex items-center justify-center shrink-0">
             <Image
-              src="/brand-logo.jpg"
+              src="/logo.png"
               alt="GestFiPro"
               width={32}
               height={32}
@@ -191,7 +191,7 @@ export default function DashboardLayout({ children, onOpenNewExpense }: Dashboar
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#09090B] border border-[#27272A] flex items-center justify-center">
                       <Image
-                        src="/brand-logo.jpg"
+                        src="/logo.png"
                         alt="GestFiPro"
                         width={32}
                         height={32}

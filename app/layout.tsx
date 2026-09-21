@@ -31,10 +31,10 @@ export const metadata: Metadata = {
   // ── Favicon & App Icons ───────────────────────────────────────────────────
   icons: {
     icon: [
-      { url: "/logo-icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/logo.png", type: "image/png", sizes: "512x512" },
     ],
-    shortcut: "/logo-icon.png",
-    apple: "/logo-icon.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
 
   // ── OpenGraph ─────────────────────────────────────────────────────────────
@@ -97,8 +97,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
         {/* Favicon inline en fallback SVG */}
-        <link rel="icon" href="/logo-icon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo-icon.png" />
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="theme-color" content="#09090B" />
         <meta name="color-scheme" content="dark light" />
       </head>

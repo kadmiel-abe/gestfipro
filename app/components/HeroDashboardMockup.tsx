@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -183,9 +184,14 @@ export default function HeroDashboardMockup() {
             <span className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#DC2626]" />
             <span className="w-3 h-3 rounded-full bg-[#3F3F46] border border-[#52525B]" />
             <span className="w-3 h-3 rounded-full bg-[#27272A] border border-[#3F3F46]" />
-            <span className="ml-3 text-[11px] font-semibold text-[#71717A] tracking-wider uppercase hidden sm:inline-block">
-              GestFiPro · Dashboard v2.4
-            </span>
+            <div className="ml-3 flex items-center gap-1.5 hidden sm:flex">
+              <div className="w-4 h-4 rounded overflow-hidden flex items-center justify-center">
+                <Image src="/logo.png" alt="GestFiPro" width={16} height={16} className="w-full h-full object-contain" />
+              </div>
+              <span className="text-[11px] font-semibold text-[#71717A] tracking-wider uppercase">
+                GestFiPro · Dashboard v2.4
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

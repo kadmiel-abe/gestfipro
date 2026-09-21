@@ -771,7 +771,7 @@ export default function GestFiProPanAfricanLanding() {
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-lg shadow-[#EF4444]/20 group-hover:border-[#EF4444]/60 transition-colors shrink-0 flex items-center justify-center"
           >
             <Image
-              src="/icons/logo.png"
+              src="/logo.png"
               alt="GestFiPro"
               width={40}
               height={40}
@@ -2407,7 +2407,7 @@ export default function GestFiProPanAfricanLanding() {
               >
                 <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#18181B] border border-[#27272A] shadow-sm flex items-center justify-center shrink-0 group-hover:border-[#EF4444]/60 transition-colors">
                   <Image
-                    src="/icons/logo.png"
+                    src="/logo.png"
                     alt="GestFiPro"
                     width={32}
                     height={32}

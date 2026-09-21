@@ -336,7 +336,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
         </Link>
 
         <div className="flex items-center gap-2 text-xs text-[#71717A]">
-          <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
           <span>Système 100% opérationnel</span>
         </div>
       </header>
@@ -439,9 +439,9 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
-                className="mb-5 p-3.5 rounded-xl bg-[#10B981]/10 border border-[#10B981]/30 text-xs text-[#34D399] flex items-start gap-2.5 font-medium"
+                className="mb-5 p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#FAFAFA] flex items-start gap-2.5 font-medium"
               >
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#10B981]" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#EF4444]" />
                 <span className="leading-snug">{successMsg}</span>
               </motion.div>
             )}
@@ -595,7 +595,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
 
           {/* ── NOTE DE RÉASSURANCE ── */}
           <div className="mt-6 pt-4 border-t border-[#27272A] flex items-center justify-center gap-2 text-[11px] text-[#71717A] text-center font-medium">
-            <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-[#EF4444] shrink-0" />
             <span>Connexion sécurisée SSL • Accès direct au tableau de bord</span>
           </div>
         </motion.div>
@@ -641,12 +641,12 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
                 <div
                   className={`mb-4 p-3 rounded-xl text-xs flex items-start gap-2 ${
                     resetStatus.type === "success"
-                      ? "bg-[#10B981]/10 border border-[#10B981]/30 text-[#34D399]"
+                      ? "bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#FAFAFA]"
                       : "bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#f87171]"
                   }`}
                 >
                   {resetStatus.type === "success" ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#10B981]" />
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#EF4444]" />
                   ) : (
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#EF4444]" />
                   )}

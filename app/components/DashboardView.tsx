@@ -478,10 +478,10 @@ export default function DashboardView({
                           borderRadius: 9,
                           background: isExpense
                             ? "rgba(239,68,68,0.1)"
-                            : "rgba(34,197,94,0.1)",
+                            : "rgba(255,255,255,0.08)",
                           color: isExpense
                             ? "#EF4444"
-                            : "#4ade80",
+                            : "#FAFAFA",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -574,7 +574,7 @@ export default function DashboardView({
                         fontWeight: 700,
                         color: isExpense
                           ? "#EF4444"
-                          : "#4ade80",
+                          : "#FAFAFA",
                         whiteSpace: "nowrap",
                         marginLeft: 12,
                       }}
@@ -696,15 +696,15 @@ export default function DashboardView({
 
             const categoryColorMap: Record<string, string> = {
               Nourriture: "#EF4444",
-              Transport: "#6366F1",
-              Logement: "#8B5CF6",
-              Factures: "#F59E0B",
-              Loisirs: "#F59E0B",
-              Santé: "#EC4899",
-              Éducation: "#14B8A6",
-              Vêtements: "#3B82F6",
-              Divers: "#10B981",
-              Autres: "#10B981",
+              Transport: "#DC2626",
+              Logement: "#B91C1C",
+              Factures: "#F87171",
+              Loisirs: "#F87171",
+              Santé: "#FAFAFA",
+              Éducation: "#E4E4E7",
+              Vêtements: "#A1A1AA",
+              Divers: "#71717A",
+              Autres: "#71717A",
             };
 
             // Agréger par catégorie

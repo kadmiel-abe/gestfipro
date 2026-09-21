@@ -39,7 +39,7 @@ export default function MiniCalendar({
             Auj.
           </span>
           {paydayDate > 0 && (
-            <span className="text-[9px] font-bold bg-[#10b981]/15 border border-[#10b981]/30 rounded px-1.5 py-0.5 text-[#4ade80]">
+            <span className="text-[9px] font-bold bg-white/10 border border-white/20 rounded px-1.5 py-0.5 text-[#FAFAFA]">
               Paie
             </span>
           )}
@@ -70,7 +70,7 @@ export default function MiniCalendar({
           if (isToday) {
             cellClass = "bg-[#EF4444] text-white font-extrabold shadow-sm shadow-[#EF4444]/40";
           } else if (isPayday) {
-            cellClass = "bg-[#10b981]/15 border border-[#10b981]/35 text-[#4ade80] font-bold";
+            cellClass = "bg-white/10 border border-white/25 text-[#FAFAFA] font-bold";
           } else if (hasExpense) {
             cellClass = "text-[#FAFAFA] font-semibold bg-[#18181B]";
           }

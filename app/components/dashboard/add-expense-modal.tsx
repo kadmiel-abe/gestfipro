@@ -366,11 +366,11 @@ export default function AddExpenseModal({
                 borderRadius: 10,
                 border:
                   type === "income"
-                    ? "1px solid rgba(16,185,129,0.5)"
+                    ? "1px solid rgba(255,255,255,0.3)"
                     : "1px solid #27272A",
                 background:
-                  type === "income" ? "rgba(16,185,129,0.1)" : "#09090B",
-                color: type === "income" ? "#34D399" : "#A1A1AA",
+                  type === "income" ? "rgba(255,255,255,0.08)" : "#09090B",
+                color: type === "income" ? "#FAFAFA" : "#A1A1AA",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -567,10 +567,10 @@ export default function AddExpenseModal({
               borderRadius: 12,
               border: "none",
               background: success
-                ? "#10B981"
+                ? "#EF4444"
                 : type === "expense"
                 ? "#EF4444"
-                : "#10B981",
+                : "#DC2626",
               color: "#FFFFFF",
               fontSize: 14,
               fontWeight: 700,
@@ -581,11 +581,7 @@ export default function AddExpenseModal({
               justifyContent: "center",
               gap: 8,
               fontFamily: "inherit",
-              boxShadow: success
-                ? "0 4px 16px rgba(16,185,129,0.3)"
-                : type === "expense"
-                ? "0 4px 16px rgba(239,68,68,0.3)"
-                : "0 4px 16px rgba(16,185,129,0.3)",
+              boxShadow: "0 4px 16px rgba(239,68,68,0.3)",
               transition: "all 0.2s ease",
             }}
           >

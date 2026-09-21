@@ -222,7 +222,7 @@ export default function TestDbPage() {
 
         {/* Message de succès après action */}
         {actionSuccess && (
-          <div className="p-3.5 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/30 text-xs text-[#22C55E] flex items-center gap-2 font-medium">
+          <div className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444] flex items-center gap-2 font-medium">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{actionSuccess}</span>
           </div>
@@ -243,7 +243,7 @@ export default function TestDbPage() {
               </div>
             </div>
             {sessionUser ? (
-              <CheckCircle2 className="w-6 h-6 text-[#22C55E] shrink-0" />
+              <CheckCircle2 className="w-6 h-6 text-[#EF4444] shrink-0" />
             ) : (
               <XCircle className="w-6 h-6 text-[#EF4444] shrink-0" />
             )}
@@ -267,7 +267,7 @@ export default function TestDbPage() {
               </h2>
             </div>
             {profile ? (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#22C55E]">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#EF4444]">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Lecture OK</span>
               </div>
@@ -287,11 +287,11 @@ export default function TestDbPage() {
               </div>
               <div className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]">
                 <span className="text-[10px] uppercase font-bold text-[#71717A] block mb-1">Salaire Net</span>
-                <span className="text-xs font-bold text-[#22C55E]">{formatCFA(profile.net_salary)}</span>
+                <span className="text-xs font-bold text-[#FAFAFA]">{formatCFA(profile.net_salary)}</span>
               </div>
               <div className="p-3 rounded-xl bg-[#09090B] border border-[#27272A]">
                 <span className="text-[10px] uppercase font-bold text-[#71717A] block mb-1">Jour de paie</span>
-                <span className="text-xs font-bold text-[#38BDF8]">
+                <span className="text-xs font-bold text-[#FAFAFA]">
                   {profile.payday_with_month ? `Le ${profile.payday_with_month} du mois` : "Non configuré"}
                 </span>
               </div>
@@ -319,7 +319,7 @@ export default function TestDbPage() {
               </h2>
             </div>
             {accounts.length > 0 ? (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#22C55E]">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#EF4444]">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{accounts.length} compte(s)</span>
               </div>
@@ -366,7 +366,7 @@ export default function TestDbPage() {
               </h2>
             </div>
             {transactions.length > 0 ? (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#22C55E]">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#EF4444]">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{transactions.length} transaction(s)</span>
               </div>
@@ -392,7 +392,7 @@ export default function TestDbPage() {
                   </div>
                   <span
                     className={`font-bold ${
-                      t.type === "income" ? "text-[#22C55E]" : "text-[#EF4444]"
+                      t.type === "income" ? "text-[#FAFAFA]" : "text-[#EF4444]"
                     }`}
                   >
                     {t.type === "income" ? "+" : "-"}

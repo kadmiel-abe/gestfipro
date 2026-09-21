@@ -21,14 +21,14 @@ const CIRC = 2 * Math.PI * R;
 
 const defaultColorMap: Record<string, string> = {
   "Nourriture": "#EF4444",
-  "Transport": "#6366f1",
-  "Logement": "#8b5cf6",
-  "Loisirs": "#f59e0b",
-  "Santé": "#ec4899",
-  "Éducation": "#14b8a6",
-  "Vêtements": "#3b82f6",
-  "Divers": "#10b981",
-  "Autres": "#10b981",
+  "Transport": "#DC2626",
+  "Logement": "#B91C1C",
+  "Loisirs": "#F87171",
+  "Santé": "#FAFAFA",
+  "Éducation": "#E4E4E7",
+  "Vêtements": "#A1A1AA",
+  "Divers": "#71717A",
+  "Autres": "#71717A",
 };
 
 export default function DonutChart({ transactions = [] }: DonutChartProps) {

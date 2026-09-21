@@ -271,17 +271,17 @@ export default function SettingsPage() {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              background: "rgba(16, 185, 129, 0.12)",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
+              background: "rgba(239, 68, 68, 0.12)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
               borderRadius: 12,
               padding: "14px 18px",
               marginBottom: 20,
-              color: "#10B981",
+              color: "#FAFAFA",
               fontSize: 14,
               fontWeight: 600,
             }}
           >
-            <CheckCircle2 size={18} />
+            <CheckCircle2 size={18} color="#EF4444" />
             Paramètres enregistrés avec succès ! La PaydayCard sera mise à jour.
           </div>
         )}
@@ -524,7 +524,7 @@ export default function SettingsPage() {
                   <p
                     style={{
                       fontSize: 11,
-                      color: isConfigured ? (daysRemaining <= 5 ? "#EF4444" : "#10B981") : "#71717A",
+                      color: isConfigured ? (daysRemaining <= 5 ? "#EF4444" : "#FAFAFA") : "#71717A",
                       fontWeight: 700,
                       margin: "4px 0 0",
                     }}

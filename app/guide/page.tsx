@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 const steps = [
   {
     number: "01",
-    icon: <Wallet size={22} color="#6366f1" />,
-    iconBg: "#6366f118",
-    iconBorder: "#6366f140",
-    accentColor: "#6366f1",
+    icon: <Wallet size={22} color="#EF4444" />,
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
+    accentColor: "#EF4444",
     title: "Configurer vos comptes manuels",
     description:
       "GestFiPro fonctionne sans connexion bancaire. Vous saisissez vos soldes manuellement pour garder le contrôle total de vos données.",
@@ -64,10 +64,10 @@ const steps = [
   },
   {
     number: "02",
-    icon: <Settings size={22} color="#f59e0b" />,
-    iconBg: "#f59e0b18",
-    iconBorder: "#f59e0b40",
-    accentColor: "#f59e0b",
+    icon: <Settings size={22} color="#FAFAFA" />,
+    iconBg: "rgba(255,255,255,0.08)",
+    iconBorder: "rgba(255,255,255,0.2)",
+    accentColor: "#FAFAFA",
     title: "Définir votre salaire et cycle de paie",
     description:
       "La fonctionnalité clé de GestFiPro repose sur votre cycle de paie. Ces paramètres permettent le calcul automatique de votre budget journalier.",
@@ -101,8 +101,8 @@ const steps = [
   {
     number: "03",
     icon: <CalendarDays size={22} color="#EF4444" />,
-    iconBg: "#EF444418",
-    iconBorder: "#EF444440",
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
     accentColor: "#EF4444",
     title: "Comprendre le compteur « Jours avant la paie »",
     description:
@@ -111,7 +111,7 @@ const steps = [
       {
         label: "Badge « Cycle de paie actif »",
         detail:
-          "Le badge vert dans l'en-tête du tableau de bord affiche le nombre de jours restants avant votre prochaine paie (ex: J-18).",
+          "Le badge dans l'en-tête du tableau de bord affiche le nombre de jours restants avant votre prochaine paie (ex: J-18).",
       },
       {
         label: "Carte Budget/Jour",
@@ -131,7 +131,7 @@ const steps = [
       {
         label: "Indicateur de Rythme",
         detail:
-          "Compare vos dépenses du jour à votre budget journalier. En rouge si vous avez dépassé, en vert si vous êtes dans les clous.",
+          "Compare vos dépenses du jour à votre budget journalier. En rouge si vous avez dépassé, en blanc si vous êtes dans les clous.",
       },
     ],
     tip: {
@@ -141,10 +141,10 @@ const steps = [
   },
   {
     number: "04",
-    icon: <Zap size={22} color="#10b981" />,
-    iconBg: "#10b98118",
-    iconBorder: "#10b98140",
-    accentColor: "#10b981",
+    icon: <Zap size={22} color="#DC2626" />,
+    iconBg: "rgba(220,38,38,0.12)",
+    iconBorder: "rgba(220,38,38,0.25)",
+    accentColor: "#DC2626",
     title: "Saisir vos dépenses et revenus rapidement",
     description:
       "GestFiPro est conçu pour une saisie ultra-rapide. Chaque transaction prend moins de 10 secondes à enregistrer.",

@@ -106,7 +106,7 @@ export default function PayCycleCard({
               Cycle actif (J-{daysRemaining})
             </span>
           ) : (
-            <span className="badge inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-amber-500/10 text-amber-500 border border-amber-500/30 self-start sm:self-auto">
+            <span className="badge inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-[#27272A] text-[#A1A1AA] border border-[#3F3F46] self-start sm:self-auto">
               Jour non défini
             </span>
           )}
@@ -224,7 +224,7 @@ export default function PayCycleCard({
             <span className="text-[11px] text-[#A1A1AA] font-bold uppercase tracking-wider">
               Dépenses aujourd'hui
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+            <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center text-[#EF4444]">
               <TrendingDown className="w-4 h-4" />
             </div>
           </div>

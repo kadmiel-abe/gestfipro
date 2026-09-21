@@ -87,15 +87,15 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
         width: size,
         height: size,
         borderRadius: radius,
-        background: "rgba(99,102,241,0.15)",
-        border: "1px solid rgba(99,102,241,0.3)",
+        background: "rgba(239,68,68,0.12)",
+        border: "1px solid rgba(239,68,68,0.25)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
         fontSize: Math.round(size * 0.4),
         fontWeight: 800,
-        color: "#818cf8",
+        color: "#EF4444",
         fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
@@ -111,16 +111,16 @@ const COLORS: Record<Exclude<ResolvedType, "custom">, string> = {
   orange: "#FF7A00",
   mtn:    "#FFCC00",
   moov:   "#0066CC",
-  cash:   "#1A9E6A",
-  bank:   "#6D52E8",
+  cash:   "#EF4444",
+  bank:   "#FAFAFA",
 };
 
 export function getAccountColor(name: string, type = ""): string {
   const r = resolveAccountType(name, type);
-  return r !== "custom" ? COLORS[r] : "#6366f1";
+  return r !== "custom" ? COLORS[r] : "#EF4444";
 }
 
 export function getAccountBg(name: string, type = ""): string {
   const r = resolveAccountType(name, type);
-  return r !== "custom" ? `${COLORS[r]}18` : "rgba(99,102,241,0.12)";
+  return r !== "custom" ? `${COLORS[r]}18` : "rgba(239,68,68,0.12)";
 }

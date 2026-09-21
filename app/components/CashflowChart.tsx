@@ -106,8 +106,8 @@ export default function CashflowChart({ transactions = [], totalBalance = 0 }: C
               <stop offset="100%" stopColor="#EF4444" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="depensesGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+              <stop offset="0%" stopColor="#FAFAFA" stopOpacity={0.15} />
+              <stop offset="100%" stopColor="#FAFAFA" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -148,11 +148,11 @@ export default function CashflowChart({ transactions = [], totalBalance = 0 }: C
           <Area
             type="monotone"
             dataKey="depenses"
-            stroke="#6366f1"
+            stroke="#A1A1AA"
             strokeWidth={2}
             fill="url(#depensesGrad)"
             dot={false}
-            activeDot={{ r: 4, fill: "#6366f1", stroke: "#18181B", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "#FAFAFA", stroke: "#18181B", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

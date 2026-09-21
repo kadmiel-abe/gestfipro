@@ -104,7 +104,7 @@ export default function PaydayCard({
           height: 2,
           background: isConfigured
             ? "linear-gradient(90deg, transparent 0%, #EF4444 50%, transparent 100%)"
-            : "linear-gradient(90deg, transparent 0%, #F59E0B 50%, transparent 100%)",
+            : "linear-gradient(90deg, transparent 0%, #52525B 50%, transparent 100%)",
           opacity: 0.7,
         }}
       />
@@ -126,15 +126,15 @@ export default function PaydayCard({
               width: 34,
               height: 34,
               borderRadius: 10,
-              background: isConfigured ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
-              border: isConfigured ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(245,158,11,0.25)",
+              background: isConfigured ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)",
+              border: isConfigured ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.15)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <CalendarClock size={17} color={isConfigured ? "#EF4444" : "#F59E0B"} />
+            <CalendarClock size={17} color={isConfigured ? "#EF4444" : "#FAFAFA"} />
           </div>
           <div>
             <h3
@@ -192,11 +192,11 @@ export default function PaydayCard({
               gap: 5,
               padding: "4px 10px",
               borderRadius: 8,
-              background: "rgba(245,158,11,0.12)",
-              border: "1px solid rgba(245,158,11,0.3)",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.15)",
               fontSize: 11,
               fontWeight: 700,
-              color: "#F59E0B",
+              color: "#FAFAFA",
               letterSpacing: "0.01em",
               cursor: onNavigate ? "pointer" : "default",
               whiteSpace: "nowrap",
@@ -226,7 +226,7 @@ export default function PaydayCard({
             borderRadius: 99,
             background: isUrgent
               ? "linear-gradient(90deg, #EF4444, #F87171)"
-              : "linear-gradient(90deg, #EF4444, #F97316)",
+              : "linear-gradient(90deg, #EF4444, #DC2626)",
             transition: "width 0.6s ease",
           }}
         />

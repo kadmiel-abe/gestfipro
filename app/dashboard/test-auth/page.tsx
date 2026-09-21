@@ -65,7 +65,7 @@ export default function TestAuthPage() {
             <p className="text-xs text-[#A1A1AA]">{sessionInfo?.user?.email || 'Non connecté'}</p>
           </div>
           {sessionInfo ? (
-            <CheckCircle2 className="text-green-500 w-6 h-6" />
+            <CheckCircle2 className="text-[#EF4444] w-6 h-6" />
           ) : (
             <XCircle className="text-[#EF4444] w-6 h-6" />
           )}
@@ -80,7 +80,7 @@ export default function TestAuthPage() {
             </p>
           </div>
           {profileInfo ? (
-            <CheckCircle2 className="text-green-500 w-6 h-6" />
+            <CheckCircle2 className="text-[#EF4444] w-6 h-6" />
           ) : (
             <XCircle className="text-[#EF4444] w-6 h-6" />
           )}

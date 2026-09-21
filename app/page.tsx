@@ -123,7 +123,7 @@ function AnimatedGauge({
     <div className={`w-full h-1.5 rounded-full bg-[#27272A] overflow-hidden ${className}`}>
       <motion.div
         className={`h-full rounded-full transition-colors duration-300 ${
-          isCritical ? "bg-[#EF4444]" : "bg-[#10b981]"
+          isCritical ? "bg-[#EF4444]" : "bg-[#FAFAFA]"
         }`}
         initial={{ scaleX: 0 }}
         whileInView={{ scaleX: Math.min(Math.max(percentage / 100, 0), 1) }}
@@ -562,7 +562,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Lagos, Nigeria",
       flag: "🇳🇬",
       avatar: "/avatars/avatar_emmanuel.jpg",
-      ringColor: "#10B981", // Anneau vert émeraude comme sur l'image
+      ringColor: "#EF4444",
       role: lang === "fr" ? "Directeur Commercial" : "Senior Consultant",
       stars: 5,
       verified: true,
@@ -576,7 +576,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Abidjan, Côte d'Ivoire",
       flag: "🇨🇮",
       avatar: "/avatars/avatar_moussa.jpg",
-      ringColor: "#EF4444",
+      ringColor: "#DC2626",
       role: lang === "fr" ? "Cadre Commercial" : "Sales Executive",
       stars: 5,
       verified: true,
@@ -590,7 +590,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Dakar, Sénégal",
       flag: "🇸🇳",
       avatar: "/avatars/avatar_fatou.jpg",
-      ringColor: "#F59E0B",
+      ringColor: "#FAFAFA",
       role: lang === "fr" ? "Directrice Marketing" : "Marketing Director",
       stars: 5,
       verified: true,
@@ -604,7 +604,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Nairobi, Kenya",
       flag: "🇰🇪",
       avatar: "/avatars/avatar_david.jpg",
-      ringColor: "#6366F1",
+      ringColor: "#EF4444",
       role: lang === "fr" ? "Développeur Logiciel" : "Software Engineer",
       stars: 5,
       verified: true,
@@ -621,7 +621,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Lagos, Nigeria",
       flag: "🇳🇬",
       avatar: "/avatars/avatar_chidinma.jpg",
-      ringColor: "#10B981",
+      ringColor: "#EF4444",
       role: lang === "fr" ? "Comptable Senior" : "Senior Accountant",
       stars: 5,
       verified: true,
@@ -635,7 +635,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Accra, Ghana",
       flag: "🇬🇭",
       avatar: "/avatars/avatar_kofi.jpg",
-      ringColor: "#EF4444",
+      ringColor: "#DC2626",
       role: lang === "fr" ? "Entrepreneur Fintech" : "Fintech Founder",
       stars: 5,
       verified: true,
@@ -649,7 +649,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Bamako, Mali",
       flag: "🇲🇱",
       avatar: "/avatars/avatar_fatou.jpg",
-      ringColor: "#F59E0B",
+      ringColor: "#FAFAFA",
       role: lang === "fr" ? "Responsable RH" : "HR Manager",
       stars: 5,
       verified: true,
@@ -663,7 +663,7 @@ export default function GestFiProPanAfricanLanding() {
       city: "Yamoussoukro, CI",
       flag: "🇨🇮",
       avatar: "/avatars/avatar_emmanuel.jpg",
-      ringColor: "#6366F1",
+      ringColor: "#EF4444",
       role: lang === "fr" ? "Ingénieur Réseaux" : "Telecom Engineer",
       stars: 5,
       verified: true,
@@ -1077,7 +1077,7 @@ export default function GestFiProPanAfricanLanding() {
                 className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#18181B] border border-[#27272A] text-white font-semibold hover:bg-[#27272A]/80 transition-all text-base flex items-center justify-center gap-2.5"
               >
                 <span>{t.ctaSecondary}</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] animate-ping" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] animate-ping" />
               </Link>
             </motion.div>
           </motion.div>
@@ -1122,8 +1122,8 @@ export default function GestFiProPanAfricanLanding() {
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] backdrop-blur-xl border border-[#3F3F46] shadow-2xl shadow-black/90 absolute -top-6 -left-6 text-xs text-white"
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
-            <span className="font-bold text-[#4ADE80]">+{fmt(CURRENCIES[selectedCurrency].defaultBalance * 2)} {selectedCurrency}</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] animate-ping" />
+            <span className="font-bold text-white">+{fmt(CURRENCIES[selectedCurrency].defaultBalance * 2)} {selectedCurrency}</span>
             <span className="text-[#A1A1AA] text-[11px] font-medium">{lang === "fr" ? "Salaire reçu" : "Salary detected"}</span>
           </motion.div>
 
@@ -1146,7 +1146,7 @@ export default function GestFiProPanAfricanLanding() {
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
             className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] backdrop-blur-xl border border-[#3F3F46] shadow-2xl shadow-black/90 absolute -bottom-5 -left-4 text-xs text-[#A1A1AA]"
           >
-            <Shield className="w-3.5 h-3.5 text-[#10B981]" />
+            <Shield className="w-3.5 h-3.5 text-[#EF4444]" />
             <span className="text-[11px] font-medium text-white">100% {lang === "fr" ? "Manuel & Privé" : "Manual & Private"}</span>
             <span className="text-[10px] text-[#71717A]">· {lang === "fr" ? "0 carte bancaire" : "0 bank link"}</span>
           </motion.div>
@@ -1177,15 +1177,15 @@ export default function GestFiProPanAfricanLanding() {
             <div className="h-10 bg-[#121216] border-b border-[#27272A] px-4 flex items-center justify-between relative z-10">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#DC2626]/60 cursor-pointer" />
-                <span className="w-3 h-3 rounded-full bg-[#F59E0B] border border-[#D97706]/60 cursor-pointer" />
-                <span className="w-3 h-3 rounded-full bg-[#10B981] border border-[#059669]/60 cursor-pointer" />
+                <span className="w-3 h-3 rounded-full bg-[#3F3F46] border border-[#52525B]/60 cursor-pointer" />
+                <span className="w-3 h-3 rounded-full bg-[#27272A] border border-[#3F3F46]/60 cursor-pointer" />
                 <span className="ml-3 text-[11px] font-semibold text-[#71717A] tracking-wider uppercase hidden sm:inline-block">
                   GestFiPro · Cycle de Paie Panafricain v2.4
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
                 <span className="text-[11px] font-medium text-[#A1A1AA]">
                   {lang === "fr" ? "Données synchronisées en temps réel" : "Live real-time calculation"}
                 </span>
@@ -1308,7 +1308,7 @@ export default function GestFiProPanAfricanLanding() {
                     <div className="mb-2">
                       <div className="flex items-baseline gap-1.5">
                         <span className={`text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums transition-colors duration-300 ${
-                          isBudgetCritical ? "text-[#EF4444]" : "text-[#4ADE80]"
+                          isBudgetCritical ? "text-[#EF4444]" : "text-[#FAFAFA]"
                         }`}>
                           <AnimatedNumber value={dailyBudget} formatter={fmt} />
                         </span>
@@ -1325,7 +1325,7 @@ export default function GestFiProPanAfricanLanding() {
                       <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-colors duration-300 ${
                         isBudgetCritical
                           ? "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30"
-                          : "bg-[#10B981]/15 text-[#34D399] border-[#10B981]/30"
+                          : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30"
                       }`}>
                         <CheckCircle2 className="w-3 h-3" />
                         <span>{isBudgetCritical ? (lang === "fr" ? "Rythme serré" : "Tight runway") : t.mockRhythm}</span>
@@ -1349,8 +1349,8 @@ export default function GestFiProPanAfricanLanding() {
                     <AnimatedNumber value={spentToday} formatter={fmt} /> {selectedCurrency}
                   </p>
                   <AnimatedGauge percentage={Math.min((spentToday / (dailyBudget || 1)) * 100, 100)} isCritical={spentToday > dailyBudget} className="mt-2.5" />
-                  <span className="text-[10px] text-[#4ADE80] font-semibold block mt-1.5">
-                    ✓ {lang === "fr" ? "Sous le quota journalier" : "Within safe daily limit"}
+                  <span className="text-[10px] text-[#A1A1AA] font-semibold block mt-1.5">
+                    <span className="text-[#EF4444] font-bold">✓</span> {lang === "fr" ? "Sous le quota journalier" : "Within safe daily limit"}
                   </span>
                 </motion.div>
 
@@ -1380,13 +1380,13 @@ export default function GestFiProPanAfricanLanding() {
                 >
                   <p className="text-xs text-[#A1A1AA] mb-1 font-medium">{t.mockSavingsGoal}</p>
                   <p className={`text-2xl font-extrabold transition-colors duration-300 ${
-                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10B981]"
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#FAFAFA]"
                   }`}>
                     {isBudgetCritical ? "28%" : "82%"}
                   </p>
                   <AnimatedGauge percentage={isBudgetCritical ? 28 : 82} isCritical={isBudgetCritical} className="mt-2.5" />
                   <span className={`text-[10px] font-semibold block mt-1.5 transition-colors duration-300 ${
-                    isBudgetCritical ? "text-[#EF4444]" : "text-[#10B981]"
+                    isBudgetCritical ? "text-[#EF4444]" : "text-[#A1A1AA]"
                   }`}>
                     {isBudgetCritical
                       ? (lang === "fr" ? "Alerte : Fin de mois tendue" : "Alert: Low runway")
@@ -1405,7 +1405,7 @@ export default function GestFiProPanAfricanLanding() {
                       {lang === "fr" ? "Projection de trésorerie sur le cycle" : "Cashflow forecast over pay cycle"}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/30">
+                  <span className="text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/30">
                     +15% {lang === "fr" ? "d'épargne projetée" : "projected savings"}
                   </span>
                 </div>
@@ -1476,7 +1476,7 @@ export default function GestFiProPanAfricanLanding() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#10B981] bg-[#10B981]/10 py-1.5 px-3 rounded-lg border border-[#10B981]/30 mx-auto w-fit"
+                    className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#EF4444] bg-[#EF4444]/10 py-1.5 px-3 rounded-lg border border-[#EF4444]/30 mx-auto w-fit"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>{feedbackToast}</span>
@@ -1563,17 +1563,17 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{
               y: -6,
               scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(245, 158, 11, 0.22)",
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.22)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-amber-500/60 transition-all flex flex-col justify-between h-full group cursor-default"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
                 💸
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi2Title}</h3>
-              <p className="text-xs text-[#f59e0b] font-semibold uppercase tracking-wider mb-2.5">
+              <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-2.5">
                 {t.defi2Sub}
               </p>
               <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
@@ -1591,17 +1591,17 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{
               y: -6,
               scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(168, 85, 247, 0.22)",
+              boxShadow: "0 20px 40px -15px rgba(220, 38, 38, 0.22)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-purple-500/60 transition-all flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#DC2626]/60 transition-all flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
                 📉
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi3Title}</h3>
-              <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-2.5">
+              <p className="text-xs text-[#DC2626] font-semibold uppercase tracking-wider mb-2.5">
                 {t.defi3Sub}
               </p>
               <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
@@ -1719,13 +1719,13 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{
               y: -6,
               scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(74, 222, 128, 0.25)",
+              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#4ade80]/60 transition-all group cursor-default"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#4ade80] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
                 <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento2Title}</h3>
@@ -1733,7 +1733,7 @@ export default function GestFiProPanAfricanLanding() {
                 {t.bento2Desc}
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#4ade80] font-semibold flex items-center gap-1.5">
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#EF4444] font-semibold flex items-center gap-1.5">
               <span>⚡ {lang === "fr" ? "Sans prise de tête ni friction" : "Friction-free tracking"}</span>
             </div>
           </motion.div>
@@ -1744,13 +1744,13 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{
               y: -6,
               scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(56, 189, 248, 0.25)",
+              boxShadow: "0 20px 40px -15px rgba(255, 255, 255, 0.15)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#38bdf8]/60 transition-all group cursor-default"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-white/40 transition-all group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[#38bdf8] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
                 <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento3Title}</h3>
@@ -1758,7 +1758,7 @@ export default function GestFiProPanAfricanLanding() {
                 {t.bento3Desc}
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#38bdf8] font-semibold flex items-center gap-1.5">
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-white font-semibold flex items-center gap-1.5">
               <span>🔒 {lang === "fr" ? "0 identifiant ni mot de passe bancaire" : "0 bank credentials stored"}</span>
             </div>
           </motion.div>
@@ -1769,13 +1769,13 @@ export default function GestFiProPanAfricanLanding() {
             whileHover={{
               y: -6,
               scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(245, 158, 11, 0.25)",
+              boxShadow: "0 20px 40px -15px rgba(220, 38, 38, 0.25)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#f59e0b]/60 transition-all group cursor-default"
+            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#DC2626]/60 transition-all group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#f59e0b] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
                 <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento4Title}</h3>
@@ -1783,7 +1783,7 @@ export default function GestFiProPanAfricanLanding() {
                 {t.bento4Desc}
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#f59e0b] font-semibold flex items-center gap-1.5">
+            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#DC2626] font-semibold flex items-center gap-1.5">
               <span>📊 {lang === "fr" ? "Alerte de rythme et répartition auto" : "Automatic pace alerts"}</span>
             </div>
           </motion.div>
@@ -1948,11 +1948,11 @@ export default function GestFiProPanAfricanLanding() {
         >
           <motion.div
             variants={scrollBadgeItem}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-xs font-bold text-[#f59e0b] mb-4"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs font-bold text-[#EF4444] mb-4"
           >
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <Star key={i} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
               ))}
             </div>
             <span className="text-white ml-1 font-extrabold">4.9 / 5</span>
@@ -1991,10 +1991,10 @@ export default function GestFiProPanAfricanLanding() {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-1">
                       {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <Star key={s} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
                       ))}
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/25">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
                       <Check className="w-3 h-3 stroke-[3]" />
                       <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
                     </span>
@@ -2054,10 +2054,10 @@ export default function GestFiProPanAfricanLanding() {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-1">
                       {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <Star key={s} className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />
                       ))}
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full border border-[#10B981]/25">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
                       <Check className="w-3 h-3 stroke-[3]" />
                       <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
                     </span>
@@ -2122,7 +2122,7 @@ export default function GestFiProPanAfricanLanding() {
         >
           <motion.div
             variants={scrollBadgeItem}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center mx-auto mb-5 sm:mb-6 text-[#10b981] shadow-lg shadow-[#10b981]/20"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center mx-auto mb-5 sm:mb-6 text-[#EF4444] shadow-lg shadow-[#EF4444]/20"
           >
             <Lock className="w-6 h-6 sm:w-7 sm:h-7" />
           </motion.div>
@@ -2140,24 +2140,24 @@ export default function GestFiProPanAfricanLanding() {
           </motion.p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs font-semibold text-white">
             <motion.div
-              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              whileHover={{ scale: 1.03, borderColor: "rgba(239, 68, 68, 0.5)", transition: { duration: 0.2 } }}
               className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              <ShieldCheck className="w-4 h-4 text-[#10b981]" />
+              <ShieldCheck className="w-4 h-4 text-[#EF4444]" />
               <span>100% Manuel & Privé</span>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              whileHover={{ scale: 1.03, borderColor: "rgba(239, 68, 68, 0.5)", transition: { duration: 0.2 } }}
               className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              <Lock className="w-4 h-4 text-[#10b981]" />
+              <Lock className="w-4 h-4 text-[#EF4444]" />
               <span>Chiffrement AES-256</span>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.03, borderColor: "rgba(16, 185, 129, 0.5)", transition: { duration: 0.2 } }}
+              whileHover={{ scale: 1.03, borderColor: "rgba(239, 68, 68, 0.5)", transition: { duration: 0.2 } }}
               className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-center gap-2 cursor-default transition-colors"
             >
-              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
+              <CheckCircle2 className="w-4 h-4 text-[#EF4444]" />
               <span>Zéro carte bancaire requise</span>
             </motion.div>
           </div>
@@ -2371,9 +2371,9 @@ export default function GestFiProPanAfricanLanding() {
                 <motion.p
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-xs font-semibold text-[#4ADE80] mt-2 text-center lg:text-left flex items-center gap-1.5"
+                  className="text-xs font-semibold text-[#FAFAFA] mt-2 text-center lg:text-left flex items-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#EF4444]" />
                   <span>{newsletterToast}</span>
                 </motion.p>
               )}
@@ -2427,7 +2427,7 @@ export default function GestFiProPanAfricanLanding() {
 
               {/* Indicateur Statut système en direct */}
               <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#18181B] border border-[#27272A] text-[11px] text-[#A1A1AA]">
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
                 <span>{lang === "fr" ? "Systèmes 100% opérationnels" : "All systems operational"}</span>
               </div>
             </motion.div>

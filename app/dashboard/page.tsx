@@ -215,9 +215,9 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
                 flex: 1,
                 padding: "8px 0",
                 borderRadius: 10,
-                border: type === "income" ? "1px solid rgba(34,197,94,0.4)" : "1px solid #27272A",
-                background: type === "income" ? "rgba(34,197,94,0.08)" : "#09090B",
-                color: type === "income" ? "#4ade80" : "#A1A1AA",
+                border: type === "income" ? "1px solid rgba(255,255,255,0.3)" : "1px solid #27272A",
+                background: type === "income" ? "rgba(255,255,255,0.08)" : "#09090B",
+                color: type === "income" ? "#FAFAFA" : "#A1A1AA",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -1257,7 +1257,7 @@ export default function GestFiProDashboard() {
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #EF4444, #f97316)",
+                  background: "linear-gradient(135deg, #EF4444, #DC2626)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1869,7 +1869,7 @@ export default function GestFiProDashboard() {
                               width: 38,
                               height: 38,
                               borderRadius: 10,
-                              background: tx.type === "income" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
+                              background: tx.type === "income" ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.08)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1890,7 +1890,7 @@ export default function GestFiProDashboard() {
                             </div>
                           </div>
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: tx.type === "income" ? "#4ade80" : "#FAFAFA" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>
                           {tx.type === "income" ? "+" : ""}{fmt(tx.amount)} FCFA
                         </span>
                       </div>
@@ -1952,13 +1952,13 @@ export default function GestFiProDashboard() {
                       }
                       const colorMap: Record<string, string> = {
                         "Nourriture": "#EF4444",
-                        "Transport": "#6366f1",
-                        "Logement": "#8b5cf6",
-                        "Loisirs": "#f59e0b",
-                        "Santé": "#ec4899",
-                        "Éducation": "#14b8a6",
-                        "Vêtements": "#3b82f6",
-                        "Divers": "#10b981",
+                        "Transport": "#DC2626",
+                        "Logement": "#B91C1C",
+                        "Loisirs": "#F87171",
+                        "Santé": "#FAFAFA",
+                        "Éducation": "#E4E4E7",
+                        "Vêtements": "#A1A1AA",
+                        "Divers": "#71717A",
                       };
                       return Object.entries(catTotals).map(([cat, amount]) => {
                         const pct = totalExp > 0 ? Math.round((amount / totalExp) * 100) : 0;
@@ -1972,7 +1972,7 @@ export default function GestFiProDashboard() {
                               </div>
                               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                                 <span style={{ fontSize: 11, color: "#A1A1AA" }}>{fmt(amount)} FCFA</span>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>{pct}%</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "#EF4444" }}>{pct}%</span>
                               </div>
                             </div>
                             <div className="progress-track">
@@ -2061,9 +2061,9 @@ export default function GestFiProDashboard() {
                               fontWeight: 800,
                               padding: "4px 10px",
                               borderRadius: 99,
-                              background: pct >= 100 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-                              border: `1px solid ${pct >= 100 ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.2)"}`,
-                              color: pct >= 100 ? "#4ade80" : "#f87171",
+                              background: pct >= 100 ? "rgba(255,255,255,0.1)" : "rgba(239,68,68,0.08)",
+                              border: `1px solid ${pct >= 100 ? "rgba(255,255,255,0.25)" : "rgba(239,68,68,0.2)"}`,
+                              color: pct >= 100 ? "#FAFAFA" : "#f87171",
                             }}
                           >
                             {pct}%
@@ -2082,7 +2082,7 @@ export default function GestFiProDashboard() {
                               className="progress-fill"
                               style={{
                                 width: `${pct}%`,
-                                background: pct >= 100 ? "#4ade80" : "linear-gradient(90deg, #EF4444, #f97316)",
+                                background: pct >= 100 ? "#FAFAFA" : "linear-gradient(90deg, #EF4444, #DC2626)",
                               }}
                             />
                           </div>
@@ -2437,7 +2437,7 @@ export default function GestFiProDashboard() {
                   step: "01",
                   icon: "🏦",
                   title: "Configurer vos comptes manuels",
-                  color: "#6366f1",
+                  color: "#EF4444",
                   content: [
                     "Rendez-vous dans l'onglet **Comptes** via la barre latérale.",
                     "GestFiPro supporte 4 types de comptes : **Espèces**, **Wave**, **Orange Money** et **Banque**.",
@@ -2451,7 +2451,7 @@ export default function GestFiProDashboard() {
                   step: "02",
                   icon: "💰",
                   title: "Définir votre salaire et cycle de paie",
-                  color: "#f59e0b",
+                  color: "#FAFAFA",
                   content: [
                     "Allez dans **Réglages** (icône engrenage en bas de la sidebar).",
                     "Saisissez votre **salaire net mensuel** en FCFA — celui que vous recevez réellement.",
@@ -2479,7 +2479,7 @@ export default function GestFiProDashboard() {
                   step: "04",
                   icon: "⚡",
                   title: "Saisir vos dépenses et revenus",
-                  color: "#10b981",
+                  color: "#DC2626",
                   content: [
                     "Cliquez sur **Saisie rapide** (bouton rouge dans l'en-tête) ou sur le champ en bas de l'écran.",
                     "Pour chaque transaction, renseignez : **libellé**, **montant**, **catégorie** (Nourriture, Transport, etc.) et **compte débité**.",

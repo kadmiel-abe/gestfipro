@@ -36,11 +36,11 @@ function fmt(n: number): string {
 // ─── Couleurs par progression ────────────────────────────────────────────────
 
 function getProgressColor(pct: number): string {
-  if (pct >= 100) return "#10B981";
-  if (pct >= 75) return "#14B8A6";
-  if (pct >= 50) return "#F59E0B";
-  if (pct >= 25) return "#EF4444";
-  return "#EF4444";
+  if (pct >= 100) return "#FAFAFA";
+  if (pct >= 75) return "#EF4444";
+  if (pct >= 50) return "#EF4444";
+  if (pct >= 25) return "#DC2626";
+  return "#B91C1C";
 }
 
 // ─── Modal de création d'objectif ────────────────────────────────────────────
@@ -157,7 +157,7 @@ function CreateGoalModal({
             right: 0,
             height: 2,
             background:
-              "linear-gradient(90deg, transparent, #10B981, transparent)",
+              "linear-gradient(90deg, transparent, #EF4444, transparent)",
           }}
         />
 
@@ -202,7 +202,7 @@ function CreateGoalModal({
               transition: "all 0.15s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#10B981";
+              e.currentTarget.style.borderColor = "#EF4444";
               e.currentTarget.style.color = "#FAFAFA";
             }}
             onMouseLeave={(e) => {
@@ -268,7 +268,7 @@ function CreateGoalModal({
                   transform: "translateY(-50%)",
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#10B981",
+                  color: "#EF4444",
                   pointerEvents: "none",
                 }}
               >
@@ -321,7 +321,7 @@ function CreateGoalModal({
               padding: "13px 0",
               borderRadius: 12,
               border: "none",
-              background: success ? "#10B981" : "#10B981",
+              background: success ? "#EF4444" : "#EF4444",
               color: "#FFFFFF",
               fontSize: 14,
               fontWeight: 700,
@@ -332,7 +332,7 @@ function CreateGoalModal({
               justifyContent: "center",
               gap: 8,
               fontFamily: "inherit",
-              boxShadow: "0 4px 16px rgba(16,185,129,0.3)",
+              boxShadow: "0 4px 16px rgba(239,68,68,0.3)",
               transition: "all 0.2s ease",
             }}
           >
@@ -441,15 +441,15 @@ export default function GoalsCard({
                 width: 30,
                 height: 30,
                 borderRadius: 8,
-                background: "rgba(16,185,129,0.1)",
-                border: "1px solid rgba(16,185,129,0.2)",
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <Target size={14} color="#10B981" />
+              <Target size={14} color="#EF4444" />
             </div>
             <div>
               <h3
@@ -475,7 +475,7 @@ export default function GoalsCard({
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: "#10B981",
+                  color: "#EF4444",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -486,7 +486,7 @@ export default function GoalsCard({
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.background =
-                    "rgba(16,185,129,0.08)")
+                    "rgba(239,68,68,0.08)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "transparent")
@@ -503,9 +503,9 @@ export default function GoalsCard({
                 gap: 5,
                 padding: "6px 12px",
                 borderRadius: 8,
-                background: "rgba(16,185,129,0.1)",
-                border: "1px solid rgba(16,185,129,0.25)",
-                color: "#10B981",
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                color: "#EF4444",
                 fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -513,12 +513,12 @@ export default function GoalsCard({
                 transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(16,185,129,0.2)";
-                e.currentTarget.style.borderColor = "rgba(16,185,129,0.4)";
+                e.currentTarget.style.background = "rgba(239,68,68,0.2)";
+                e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(16,185,129,0.1)";
-                e.currentTarget.style.borderColor = "rgba(16,185,129,0.25)";
+                e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                e.currentTarget.style.borderColor = "rgba(239,68,68,0.25)";
               }}
             >
               <Plus size={12} />
@@ -554,9 +554,9 @@ export default function GoalsCard({
                 marginTop: 14,
                 padding: "8px 20px",
                 borderRadius: 10,
-                background: "rgba(16,185,129,0.1)",
-                border: "1px solid rgba(16,185,129,0.25)",
-                color: "#10B981",
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                color: "#EF4444",
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -638,7 +638,7 @@ export default function GoalsCard({
                         }}
                       >
                         {isComplete ? (
-                          <CheckCircle2 size={14} color="#10B981" />
+                          <CheckCircle2 size={14} color="#EF4444" />
                         ) : (
                           <TrendingUp size={13} color={progressColor} />
                         )}
@@ -702,7 +702,7 @@ export default function GoalsCard({
                         height: "100%",
                         borderRadius: 99,
                         background: isComplete
-                          ? "linear-gradient(90deg, #10B981, #34D399)"
+                          ? "linear-gradient(90deg, #EF4444, #FAFAFA)"
                           : `linear-gradient(90deg, ${progressColor}, ${progressColor}cc)`,
                         transition: "width 0.6s ease",
                       }}
@@ -730,9 +730,9 @@ export default function GoalsCard({
                         style={{
                           fontSize: 10,
                           fontWeight: 600,
-                          color: "#10B981",
+                          color: "#EF4444",
                           background: "none",
-                          border: "1px solid rgba(16,185,129,0.2)",
+                          border: "1px solid rgba(239,68,68,0.2)",
                           borderRadius: 6,
                           padding: "3px 10px",
                           cursor: "pointer",
@@ -741,7 +741,7 @@ export default function GoalsCard({
                         }}
                         onMouseEnter={(e) =>
                           (e.currentTarget.style.background =
-                            "rgba(16,185,129,0.08)")
+                            "rgba(239,68,68,0.08)")
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.background = "transparent")
@@ -756,7 +756,7 @@ export default function GoalsCard({
                         style={{
                           fontSize: 10,
                           fontWeight: 700,
-                          color: "#10B981",
+                          color: "#EF4444",
                           display: "flex",
                           alignItems: "center",
                           gap: 4,
@@ -811,7 +811,7 @@ export default function GoalsCard({
                         style={{
                           padding: "7px 14px",
                           borderRadius: 8,
-                          background: "#10B981",
+                          background: "#EF4444",
                           border: "none",
                           color: "#fff",
                           fontSize: 12,

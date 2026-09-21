@@ -95,10 +95,10 @@ export default function HeroDashboardMockup() {
 
   // Comptes manuels définis (Total = 360 000 FCFA)
   const accounts = [
-    { name: "Wave", type: "Mobile Money", balance: 120000, color: "#0BBFD6", icon: Smartphone, share: "33%" },
-    { name: "Banque", type: "Compte courant", balance: 100000, color: "#818CF8", icon: Building2, share: "28%" },
-    { name: "Orange Money", type: "Mobile Money", balance: 95000, color: "#FF7A00", icon: Smartphone, share: "26%" },
-    { name: "Espèces", type: "Cash physique", balance: 45000, color: "#10B981", icon: Banknote, share: "13%" },
+    { name: "Wave", type: "Mobile Money", balance: 120000, color: "#EF4444", icon: Smartphone, share: "33%" },
+    { name: "Banque", type: "Compte courant", balance: 100000, color: "#FAFAFA", icon: Building2, share: "28%" },
+    { name: "Orange Money", type: "Mobile Money", balance: 95000, color: "#DC2626", icon: Smartphone, share: "26%" },
+    { name: "Espèces", type: "Cash physique", balance: 45000, color: "#F87171", icon: Banknote, share: "13%" },
   ];
 
   // Calcul dynamique du budget journalier
@@ -181,15 +181,15 @@ export default function HeroDashboardMockup() {
         <div className="h-10 bg-[#121216] border-b border-[#27272A] px-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#EF4444] border border-[#DC2626]" />
-            <span className="w-3 h-3 rounded-full bg-[#F59E0B] border border-[#D97706]" />
-            <span className="w-3 h-3 rounded-full bg-[#10B981] border border-[#059669]" />
+            <span className="w-3 h-3 rounded-full bg-[#3F3F46] border border-[#52525B]" />
+            <span className="w-3 h-3 rounded-full bg-[#27272A] border border-[#3F3F46]" />
             <span className="ml-3 text-[11px] font-semibold text-[#71717A] tracking-wider uppercase hidden sm:inline-block">
               GestFiPro · Dashboard v2.4
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
             <span className="text-[11px] font-medium text-[#A1A1AA]">
               Données synchronisées en temps réel
             </span>
@@ -319,7 +319,7 @@ export default function HeroDashboardMockup() {
 
                   {/* Badge "Rythme équilibré" */}
                   <div className="pt-2 border-t border-[#27272A]">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/30">
                       <CheckCircle2 className="w-3 h-3" />
                       <span>Rythme équilibré</span>
                     </span>
@@ -361,11 +361,11 @@ export default function HeroDashboardMockup() {
                     {fmt(spentToday)}{" "}
                     <span className="text-xs font-medium text-[#A1A1AA]">FCFA</span>
                   </div>
-                  <span className="text-[11px] font-medium text-[#10B981] mt-1 flex items-center gap-1">
-                    <span>✓ {transactionCount} transactions enregistrées</span>
+                  <span className="text-[11px] font-medium text-[#A1A1AA] mt-1 flex items-center gap-1">
+                    <span className="text-[#EF4444] font-semibold">✓</span> {transactionCount} transactions enregistrées
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-[#09090B] border border-[#27272A] flex items-center justify-center text-[#F59E0B]">
+                <div className="w-10 h-10 rounded-xl bg-[#09090B] border border-[#27272A] flex items-center justify-center text-[#EF4444]">
                   <TrendingDown className="w-5 h-5" />
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function HeroDashboardMockup() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#10B981]/15 border border-[#10B981]/30 text-[10px] font-bold text-[#34D399]">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-[10px] font-bold text-[#EF4444]">
                   <CheckCircle2 className="w-3 h-3" />
                   <span>Trésorerie saine (+10k)</span>
                 </div>
@@ -547,7 +547,7 @@ export default function HeroDashboardMockup() {
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                        isIncome ? "bg-[#10B981]/15 text-[#10B981]" : "bg-[#EF4444]/15 text-[#EF4444]"
+                        isIncome ? "bg-white/10 text-white" : "bg-[#EF4444]/15 text-[#EF4444]"
                       }`}
                     >
                       {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
@@ -565,7 +565,7 @@ export default function HeroDashboardMockup() {
                   <div className="text-right">
                     <span
                       className={`text-xs font-bold tracking-tight tabular-nums ${
-                        isIncome ? "text-[#10B981]" : "text-[#FAFAFA]"
+                        isIncome ? "text-white" : "text-[#FAFAFA]"
                       }`}
                     >
                       {isIncome ? "+" : ""}{fmt(tx.amount)} FCFA
@@ -606,7 +606,7 @@ export default function HeroDashboardMockup() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
-                className="mt-2.5 flex items-center justify-center gap-1.5 text-xs font-bold text-[#10B981]"
+                className="mt-2.5 flex items-center justify-center gap-1.5 text-xs font-bold text-[#EF4444]"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>{feedbackToast}</span>

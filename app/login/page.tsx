@@ -53,9 +53,20 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
+      const redirectedFrom = params.get("redirectedFrom");
+      const targetDest = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
 
-      if (params.get("error") === "oauth_failed") {
-        setError("La connexion avec Google a échoué. Veuillez réessayer ou utiliser votre email.");
+      const errParam = params.get("error");
+      const detailsParam = params.get("details") || params.get("error_description");
+
+      if (errParam === "oauth_failed") {
+        setError(
+          detailsParam
+            ? `La connexion avec Google a échoué (${detailsParam}). Veuillez réessayer.`
+            : "La connexion avec Google a échoué. Veuillez réessayer ou utiliser votre adresse email."
+        );
+      } else if (errParam) {
+        setError(detailsParam ? `${errParam}: ${detailsParam}` : `Erreur : ${errParam}`);
       }
 
       if (
@@ -69,15 +80,23 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
         setIsSignUp(true);
       }
 
-      // Vérifier si une session est déjà valide (uniquement si l'utilisateur n'a pas été redirigé ici par le middleware)
-      const redirectedFrom = params.get("redirectedFrom");
-      if (!redirectedFrom) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            window.location.href = "/dashboard";
-          }
-        });
-      }
+      // 1. Vérifier la session existante immédiatement
+      supabase.auth.getSession().then(({ data }: { data: { session: any } }) => {
+        if (data?.session?.user) {
+          window.location.href = targetDest;
+        }
+      });
+
+      // 2. Écouter tout changement d'état d'authentification (ex: retour d'OAuth)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
+        if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+          window.location.href = targetDest;
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [supabase, initialSignUp]);
 
@@ -88,7 +107,10 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
       setError(null);
       setSuccessMsg(null);
 
-      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const redirectedFrom = params?.get("redirectedFrom");
+      const targetNext = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
+      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(targetNext)}`;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -102,10 +124,12 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
       });
 
       if (oauthError) {
+        console.error("Google signInWithOAuth error:", oauthError);
         setError(oauthError.message || "Erreur de redirection Google.");
         setGoogleLoading(false);
       }
     } catch (err: any) {
+      console.error("Google login exception:", err);
       setError(err?.message || "Une erreur est survenue lors de la connexion Google.");
       setGoogleLoading(false);
     }

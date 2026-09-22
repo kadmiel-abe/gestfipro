@@ -401,7 +401,7 @@ export default function GestFiProDashboard() {
           .eq("user_id", user.id);
 
         if (accs && accs.length > 0) {
-          setAccounts(accs.map((a) => ({
+          setAccounts(accs.map((a: any) => ({
             id: a.id,
             name: a.name,
             type: a.type,
@@ -421,7 +421,7 @@ export default function GestFiProDashboard() {
           .order("transaction_date", { ascending: false });
 
         if (txs) {
-          setTransactions(txs.map((t) => ({
+          setTransactions(txs.map((t: any) => ({
             id: t.id,
             label: t.title || t.note || "Opération",
             category: t.category || "Divers",
@@ -438,7 +438,7 @@ export default function GestFiProDashboard() {
         // 4. SELECT goals
         const { data: gls } = await supabase.from("goals").select("*").eq("user_id", user.id);
         if (gls && gls.length > 0) {
-          setObjectives(gls.map((g) => ({
+          setObjectives(gls.map((g: any) => ({
             id: g.id,
             title: g.title,
             targetAmount: Number(g.target_amount),
@@ -497,8 +497,8 @@ export default function GestFiProDashboard() {
       }
     }
 
-    // Écouter les changements d'état d'authentification Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Écouter les changements d'état d'authentification Supabase (session hydratée, token rafraîchi, login)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       if (session?.user) {
         setCurrentUser(session.user);
         const meta = session.user.user_metadata;
@@ -506,6 +506,11 @@ export default function GestFiProDashboard() {
         if (metaName && !userName) {
           setUserName(metaName);
         }
+        if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+          loadData();
+        }
+      } else if (event === "SIGNED_OUT") {
+        setCurrentUser(null);
       }
     });
 
@@ -1346,22 +1351,9 @@ export default function GestFiProDashboard() {
       >
         {/* ── TOP HEADER ─────────────────────────────────────────────────── */}
         <header
-          style={{
-            height: 60,
-            borderBottom: "1px solid #27272A",
-            padding: "0 28px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            background: "rgba(9,9,11,0.9)",
-            backdropFilter: "blur(12px)",
-            flexShrink: 0,
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
+          className="h-[60px] border-b border-[#27272A] px-3 sm:px-6 flex items-center justify-between bg-[#09090B]/90 backdrop-blur-md shrink-0 sticky top-0 z-20 w-full"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             {/* ── Bouton menu (Mobile: ouvre drawer / Desktop: toggle collapse) ── */}
             <button
               onClick={() => {
@@ -1373,7 +1365,7 @@ export default function GestFiProDashboard() {
               }}
               title="Basculer la barre latérale"
               aria-label="Basculer la barre latérale"
-              className="hamburger-btn"
+              className="hamburger-btn shrink-0"
               style={{
                 background: "#18181B",
                 border: "1px solid #27272A",
@@ -1390,36 +1382,35 @@ export default function GestFiProDashboard() {
             </button>
 
             {/* ── Logo icon dans le header (caché sur desktop) ── */}
-            <span className="header-logo-icon">
-              <SidebarLogoIcon size={32} onClick={() => setActiveTab("accueil")} />
+            <span className="header-logo-icon shrink-0">
+              <SidebarLogoIcon size={30} onClick={() => setActiveTab("accueil")} />
             </span>
 
             <span
-              className="badge badge-success"
-              style={{ gap: 6 }}
+              className="badge badge-success shrink-0 text-[11px] sm:text-xs py-1 px-2.5 flex items-center gap-1.5"
             >
               <span
-                className="pulse-dot"
+                className="pulse-dot shrink-0"
                 style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", display: "inline-block" }}
               />
-              Cycle de paie actif (J-{daysRemaining})
+              <span className="hidden sm:inline">Cycle de paie actif </span>
+              <span>(J-{daysRemaining})</span>
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <LanguageSelector align="right" />
-            <div style={{ textAlign: "right" }}>
+            <div className="hidden md:block text-right">
               <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>{t.dashboard.balance}</p>
-              <p style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} FCFA</p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} FCFA</p>
             </div>
-            <div style={{ width: 1, height: 32, background: "#27272A" }} />
+            <div className="hidden md:block w-px h-7 bg-[#27272A]" />
             <button
               onClick={() => setShowModal(true)}
-              className="btn-primary"
-              style={{ padding: "7px 14px" }}
+              className="btn-primary py-1.5 px-2.5 sm:px-3.5 text-xs shrink-0 flex items-center gap-1.5"
             >
               <Plus size={14} />
-              {t.dashboard.addTransaction}
+              <span className="hidden sm:inline">{t.dashboard.addTransaction}</span>
             </button>
             <div style={{ position: "relative" }}>
               {/* ─── Bouton cloche ─── */}
@@ -1462,11 +1453,11 @@ export default function GestFiProDashboard() {
               {/* ─── Panneau liste notifications ─── */}
               {showNotifications && (
                 <div
+                  className="w-[min(320px,calc(100vw-24px))]"
                   style={{
                     position: "absolute",
                     top: 44,
                     right: 0,
-                    width: 310,
                     background: "#18181B",
                     border: "1px solid #27272A",
                     borderRadius: 14,
@@ -1545,7 +1536,7 @@ export default function GestFiProDashboard() {
         </header>
 
         {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 0 80px 0" }}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 w-full">
 
           {/* ════════════ TAB: ACCUEIL ════════════ */}
           {activeTab === "accueil" && (
@@ -1580,7 +1571,7 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: COMPTES ════════════ */}
           {activeTab === "comptes" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
+            <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Comptes Financiers</h2>
@@ -1765,7 +1756,7 @@ export default function GestFiProDashboard() {
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {accounts.map((acc) => (
                     <div key={acc.id} className="card" style={{ padding: "20px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1814,7 +1805,7 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: HISTORIQUE ════════════ */}
           {activeTab === "historique" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
+            <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Historique des Transactions</h2>
                 <p style={{ fontSize: 13, color: "#A1A1AA" }}>Retrouvez l'ensemble de vos mouvements financiers.</p>
@@ -1914,7 +1905,7 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: STATISTIQUES ════════════ */}
           {activeTab === "statistiques" && (
-            <div style={{ padding: "24px 28px", maxWidth: 1000 }}>
+            <div className="p-3 sm:p-6 max-w-5xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Statistiques Avancées</h2>
                 <p style={{ fontSize: 13, color: "#A1A1AA" }}>Analysez vos habitudes de dépenses par catégorie ce mois-ci.</p>
@@ -1932,7 +1923,7 @@ export default function GestFiProDashboard() {
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="card" style={{ padding: "22px 24px" }}>
                     <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Répartition par Poste</h3>
                     <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>Dépenses en FCFA — Cycle en cours</p>
@@ -1987,7 +1978,7 @@ export default function GestFiProDashboard() {
                     })()}
                   </div>
 
-                  <div className="card" style={{ padding: "22px 24px", gridColumn: "1 / 3" }}>
+                  <div className="card p-4 sm:p-6 lg:col-span-2">
                     <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Évolution du Solde — Cycle en cours</h3>
                     <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>Tendance de votre trésorerie</p>
                     <CashflowChart transactions={transactions} totalBalance={totalBalance} />
@@ -1999,8 +1990,8 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: OBJECTIFS ════════════ */}
           {activeTab === "objectifs" && (
-            <div style={{ padding: "24px 28px", maxWidth: 900 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Objectifs Financiers</h2>
                   <p style={{ fontSize: 13, color: "#A1A1AA" }}>Définissez vos cibles d'épargne et suivez votre progression.</p>
@@ -2041,7 +2032,7 @@ export default function GestFiProDashboard() {
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {objectives.map((obj) => {
                     const pct = Math.min(Math.round((obj.currentAmount / obj.targetAmount) * 100), 100);
                     const remaining = obj.targetAmount - obj.currentAmount;
@@ -2115,7 +2106,7 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: RÉGLAGES ════════════ */}
           {activeTab === "reglages" && (
-            <div style={{ padding: "24px 28px", maxWidth: 560 }}>
+            <div className="p-3 sm:p-6 max-w-xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Paramètres</h2>
                 <p style={{ fontSize: 13, color: "#A1A1AA" }}>Configurez votre profil et votre cycle de paie.</p>
@@ -2152,7 +2143,7 @@ export default function GestFiProDashboard() {
 
                 <div style={{ borderTop: "1px solid #27272A", paddingTop: 18 }}>
                   <p className="section-label" style={{ marginBottom: 12 }}>Informations calculées</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
                       <p style={{ fontSize: 10, color: "#A1A1AA" }}>Budget / jour actuel</p>
                       <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#EF4444" : "#71717A" }}>
@@ -2174,7 +2165,7 @@ export default function GestFiProDashboard() {
                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
                     Sélectionnez le mode d'affichage de GestFiPro (géré via la classe <code>dark</code> sur <code>&lt;html&gt;</code>).
                   </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setTheme("dark")}
@@ -2269,7 +2260,7 @@ export default function GestFiProDashboard() {
                       ? "Choose your preferred language for the whole SaaS interface and dashboard."
                       : "Choisissez votre langue préférée pour l'ensemble de l'interface GestFiPro."}
                   </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setLanguage("fr")}
@@ -2406,7 +2397,7 @@ export default function GestFiProDashboard() {
 
           {/* ════════════ TAB: GUIDE ════════════ */}
           {activeTab === "guide" && (
-            <div style={{ padding: "24px 28px", maxWidth: 780 }}>
+            <div className="p-3 sm:p-6 max-w-3xl w-full mx-auto space-y-5">
 
               {/* En-tête */}
               <div style={{ marginBottom: 32 }}>

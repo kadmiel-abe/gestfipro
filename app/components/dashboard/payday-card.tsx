@@ -232,14 +232,8 @@ export default function PaydayCard({
         />
       </div>
 
-      {/* ── GRILLE 2 COLONNES ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 14,
-        }}
-      >
+      {/* ── GRILLE RESPONSIVE ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {/* ── Colonne 1 : Jours avant la paie ── */}
         <div
           style={{

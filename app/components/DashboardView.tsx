@@ -110,7 +110,7 @@ export default function DashboardView({
     : "Bonjour 👋";
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-5">
+    <div className="w-full max-w-[1400px] mx-auto space-y-5 px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
       {/* ── BANNIÈRE SALUTATION + SALAIRE ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

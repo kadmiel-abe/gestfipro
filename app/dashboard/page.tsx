@@ -1420,17 +1420,17 @@ export default function GestFiProDashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="hidden lg:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
-              <span className="mr-1.5 text-[#EF4444]">💱</span>
+            <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-1.5 py-1 text-xs shrink-0">
+              <span className="mr-1 text-[#EF4444] text-[10px] sm:text-xs">💱</span>
               <select
                 value={selectedCurrency}
                 onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
-                className="bg-transparent text-white font-bold cursor-pointer outline-none text-xs"
+                className="bg-transparent text-white font-bold cursor-pointer outline-none text-[10px] sm:text-xs max-w-[82px] sm:max-w-[120px]"
                 aria-label="Currency selector"
               >
                 {Object.entries(CURRENCY_OPTIONS).map(([code, config]) => (
                   <option key={code} value={code} className="bg-[#18181B]">
-                    {config.label}
+                    {code}
                   </option>
                 ))}
               </select>
@@ -2299,6 +2299,26 @@ export default function GestFiProDashboard() {
                     {t.dashboard.settingsPage.languageLabel}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", borderRadius: 12, background: "var(--bg-root)", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: 16 }}>💱</span>
+                      <div style={{ flex: 1 }}>
+                        <label htmlFor="dashboard-currency-setting" style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          {isEn ? "Currency" : "Devise"}
+                        </label>
+                        <select
+                          id="dashboard-currency-setting"
+                          value={selectedCurrency}
+                          onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
+                          style={{ width: "100%", borderRadius: 10, background: "#09090B", border: "1px solid var(--border)", color: "#FAFAFA", padding: "8px 10px", fontSize: 12, fontWeight: 700, fontFamily: "inherit", outline: "none" }}
+                        >
+                          {Object.entries(CURRENCY_OPTIONS).map(([code, config]) => (
+                            <option key={code} value={code} style={{ background: "#09090B" }}>
+                              {config.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setLanguage("fr")}

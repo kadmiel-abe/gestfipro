@@ -17,14 +17,14 @@ export default function ScrollToTop() {
     const handleScroll = () => {
       const scrollY = window.scrollY || document.documentElement.scrollTop;
       const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      
+
       if (docHeight > 0) {
         const progress = Math.min(100, Math.max(0, (scrollY / docHeight) * 100));
         setScrollProgress(progress);
       }
 
-      // Apparaît dès que l'utilisateur a scrollé plus de 280px
-      setIsVisible(scrollY > 280);
+      const threshold = isLandingLikePage ? 60 : 280;
+      setIsVisible(scrollY > threshold);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -55,7 +55,7 @@ export default function ScrollToTop() {
           transition={{ type: "spring", stiffness: 300, damping: 26 }}
           className={
             isLandingLikePage
-              ? "fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 select-none"
+              ? "fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-50 select-none"
               : "fixed bottom-5 right-3 sm:bottom-6 sm:right-5 z-50 select-none"
           }
         >

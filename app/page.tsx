@@ -816,21 +816,21 @@ export default function GestFiProPanAfricanLanding() {
         {/* Action Controls : Sélecteur Langue + Devises + Auth + Hamburger */}
         <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* Sélecteur de Devises Panafricain – hidden below lg */}
-          <div className="hidden lg:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
-            <Coins className="w-3.5 h-3.5 text-[#EF4444] mr-1.5" />
+          {/* Sélecteur de devises visible sur tous les écrans */}
+          <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs shrink-0 max-w-[150px] sm:max-w-[180px]">
+            <Coins className="w-3.5 h-3.5 text-[#EF4444] mr-1.5 shrink-0" />
             <select
               value={selectedCurrency}
               onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
-              className="bg-transparent text-white font-bold cursor-pointer outline-none text-xs"
+              className="bg-transparent text-white font-bold cursor-pointer outline-none text-[10px] sm:text-xs truncate max-w-[110px] sm:max-w-[130px]"
               aria-label="Currency selector"
             >
-              <option value="XOF" className="bg-[#18181B]">XOF (CFA Ouest)</option>
-              <option value="XAF" className="bg-[#18181B]">XAF (CFA Centre)</option>
-              <option value="NGN" className="bg-[#18181B]">NGN (₦ Nigeria)</option>
-              <option value="KES" className="bg-[#18181B]">KES (KSh Kenya)</option>
-              <option value="ZAR" className="bg-[#18181B]">ZAR (R Afrique du Sud)</option>
-              <option value="USD" className="bg-[#18181B]">USD ($)</option>
+              <option value="XOF" className="bg-[#18181B]">XOF</option>
+              <option value="XAF" className="bg-[#18181B]">XAF</option>
+              <option value="NGN" className="bg-[#18181B]">NGN</option>
+              <option value="KES" className="bg-[#18181B]">KES</option>
+              <option value="ZAR" className="bg-[#18181B]">ZAR</option>
+              <option value="USD" className="bg-[#18181B]">USD</option>
             </select>
           </div>
 

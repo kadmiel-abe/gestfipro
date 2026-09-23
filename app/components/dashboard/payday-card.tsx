@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { CalendarClock, Wallet, TrendingDown, Settings, AlertCircle } from "lucide-react";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,8 @@ export default function PaydayCard({
   currency = "FCFA",
   onNavigate,
 }: PaydayCardProps) {
-  const { t, isEn } = useLanguage();
+  const { t, isEn, currency: globalCurrency, language } = useLanguage();
+  const activeCurrency = (currency && currency !== "FCFA" ? currency : globalCurrency) as any;
   const isConfigured = Boolean(paydayDate && paydayDate > 0 && paydayDate <= 31);
 
   const { daysRemaining, dailyBudget, isUrgent, progressPercent } = useMemo(() => {
@@ -427,7 +428,7 @@ export default function PaydayCard({
                 fontWeight: 600,
               }}
             >
-              {t.dashboard.balance} : {fmt(totalBalance)} {currency}
+              {t.dashboard.balance} : {formatCurrencyValue(totalBalance, activeCurrency, language === "en" ? "en-US" : "fr-FR")}
             </span>
           </div>
         </div>

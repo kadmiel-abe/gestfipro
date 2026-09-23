@@ -5,16 +5,38 @@ import { Language, Translations } from "./types";
 import { fr } from "./dictionaries/fr";
 import { en } from "./dictionaries/en";
 
-export type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+export type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
-export const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> = {
-  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF" },
-  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF" },
-  NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN" },
-  KES: { label: "KES (KSh Kenya)", shortLabel: "KES" },
-  ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR" },
-  USD: { label: "USD ($)", shortLabel: "USD" },
+export const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string; symbol: string; digits: number }> = {
+  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF", symbol: "XOF", digits: 0 },
+  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF", symbol: "XAF", digits: 0 },
+  NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN", symbol: "₦", digits: 0 },
+  KES: { label: "KES (KSh Kenya)", shortLabel: "KES", symbol: "KSh", digits: 0 },
+  ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR", symbol: "R", digits: 2 },
+  USD: { label: "USD ($)", shortLabel: "USD", symbol: "$", digits: 2 },
+  EUR: { label: "EUR (€)", shortLabel: "EUR", symbol: "€", digits: 2 },
 };
+
+export function getCurrencyMeta(currency: Currency = "XOF") {
+  return CURRENCY_OPTIONS[currency] ?? CURRENCY_OPTIONS.XOF;
+}
+
+export function formatCurrencyValue(value: number, currency: Currency = "XOF", locale: string = "fr-FR") {
+  const meta = getCurrencyMeta(currency);
+  if (currency === "XOF" || currency === "XAF") {
+    return `${Math.round(value).toLocaleString(locale)} ${meta.symbol}`;
+  }
+
+  const formatted = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+    minimumFractionDigits: meta.digits,
+    maximumFractionDigits: meta.digits,
+  }).format(value);
+
+  return formatted;
+}
 
 interface LanguageContextType {
   language: Language;
@@ -71,7 +93,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
 
       const storedCurrency = localStorage.getItem("gestfipro_currency") as Currency | null;
-      if (storedCurrency && (storedCurrency === "XOF" || storedCurrency === "XAF" || storedCurrency === "NGN" || storedCurrency === "KES" || storedCurrency === "ZAR" || storedCurrency === "USD")) {
+      if (storedCurrency && (storedCurrency === "XOF" || storedCurrency === "XAF" || storedCurrency === "NGN" || storedCurrency === "KES" || storedCurrency === "ZAR" || storedCurrency === "USD" || storedCurrency === "EUR")) {
         setCurrencyState(storedCurrency);
       }
     } catch {

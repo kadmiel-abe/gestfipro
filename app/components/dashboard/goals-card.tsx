@@ -372,7 +372,7 @@ export default function GoalsCard({
   onNavigate,
 }: GoalsCardProps) {
   const supabase = createClient();
-  const { t, isEn, language } = useLanguage();
+  const { t, isEn, language, currency } = useLanguage();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [feedingGoalId, setFeedingGoalId] = useState<string | null>(null);
   const [feedAmount, setFeedAmount] = useState("");
@@ -711,7 +711,7 @@ export default function GoalsCard({
                       <span style={{ fontWeight: 700, color: "#FAFAFA" }}>
                         {fmt(goal.current_amount)}
                       </span>{" "}
-                      / {fmt(goal.target_amount)} FCFA
+                      / {new Intl.NumberFormat(language === "en" ? "en-US" : "fr-FR", { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(goal.target_amount)}
                     </p>
 
                     {!isComplete && !isFeeding && (
@@ -772,7 +772,7 @@ export default function GoalsCard({
                         type="number"
                         value={feedAmount}
                         onChange={(e) => setFeedAmount(e.target.value)}
-                        placeholder="Montant FCFA"
+                        placeholder={`Montant ${currency}`}
                         min="1"
                         autoFocus
                         style={{

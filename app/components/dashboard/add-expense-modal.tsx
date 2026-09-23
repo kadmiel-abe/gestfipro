@@ -57,7 +57,7 @@ export default function AddExpenseModal({
   onTransactionAdded,
 }: AddExpenseModalProps) {
   const supabase = createClient();
-  const { t, isEn } = useLanguage();
+  const { t, isEn, currency, language } = useLanguage();
 
   const categoriesList = [
     { key: "food", label: t.dashboard.transactionModal.categories.food, emoji: "🍽️" },
@@ -461,7 +461,7 @@ export default function AddExpenseModal({
                   pointerEvents: "none",
                 }}
               >
-                FCFA
+                {currency}
               </span>
             </div>
           </div>
@@ -503,7 +503,7 @@ export default function AddExpenseModal({
                 ) : (
                   accounts.map((acc) => (
                     <option key={String(acc.id)} value={String(acc.id)}>
-                      {acc.name} ({fmt(acc.balance)})
+                      {acc.name} ({new Intl.NumberFormat(language === "en" ? "en-US" : "fr-FR", { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(acc.balance)})
                     </option>
                   ))
                 )}

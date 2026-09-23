@@ -17,9 +17,9 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
 
-type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
 const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> = {
   XOF: { label: "FCFA (UEMOA)", shortLabel: "XOF" },
@@ -28,6 +28,7 @@ const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> 
   KES: { label: "KSh", shortLabel: "KES" },
   ZAR: { label: "Rand R", shortLabel: "ZAR" },
   USD: { label: "USD $", shortLabel: "USD" },
+  EUR: { label: "EUR €", shortLabel: "EUR" },
 };
 
 function fmt(n: number) {
@@ -37,7 +38,7 @@ function fmt(n: number) {
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { currency, setCurrency, isEn } = useLanguage();
+  const { currency, setCurrency, isEn, language } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -407,7 +408,7 @@ export default function SettingsPage() {
                 }}
               >
                 <Wallet size={13} color="#EF4444" />
-                Salaire Net Mensuel (FCFA)
+                {language === "fr" ? `Salaire Net Mensuel (${currency})` : `Monthly Net Salary (${currency})`}
               </label>
               <div style={{ position: "relative" }}>
                 <input
@@ -441,7 +442,7 @@ export default function SettingsPage() {
                     color: "#71717A",
                   }}
                 >
-                  FCFA
+                  {currency}
                 </span>
               </div>
               <p style={{ fontSize: 11, color: "#71717A", marginTop: 6 }}>

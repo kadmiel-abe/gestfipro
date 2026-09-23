@@ -77,15 +77,16 @@ const DonutChart = dynamic(() => import("../components/DonutChart"), {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type TabKey = "accueil" | "comptes" | "historique" | "statistiques" | "objectifs" | "reglages" | "guide";
-type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
-const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> = {
-  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF" },
-  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF" },
-  NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN" },
-  KES: { label: "KES (KSh Kenya)", shortLabel: "KES" },
-  ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR" },
-  USD: { label: "USD ($)", shortLabel: "USD" },
+const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string; symbol: string; digits: number }> = {
+  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF", symbol: "XOF", digits: 0 },
+  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF", symbol: "XAF", digits: 0 },
+  NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN", symbol: "₦", digits: 0 },
+  KES: { label: "KES (KSh Kenya)", shortLabel: "KES", symbol: "KSh", digits: 0 },
+  ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR", symbol: "R", digits: 2 },
+  USD: { label: "USD ($)", shortLabel: "USD", symbol: "$", digits: 2 },
+  EUR: { label: "EUR (€)", shortLabel: "EUR", symbol: "€", digits: 2 },
 };
 
 interface Account {
@@ -122,6 +123,23 @@ interface Objective {
 function fmt(n: number) {
   const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
   return n.toLocaleString(locale);
+}
+
+function formatMoney(n: number, currency: Currency) {
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
+  const meta = CURRENCY_OPTIONS[currency] ?? CURRENCY_OPTIONS.XOF;
+
+  if (currency === "XOF" || currency === "XAF") {
+    return `${Math.round(n).toLocaleString(locale)} ${meta.symbol}`;
+  }
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "USD",
+    currencyDisplay: "narrowSymbol",
+    minimumFractionDigits: meta.digits,
+    maximumFractionDigits: meta.digits,
+  }).format(n);
 }
 
 function formatDateFr(d: Date): string {
@@ -1438,7 +1456,7 @@ export default function GestFiProDashboard() {
             <LanguageSelector align="right" />
             <div className="hidden md:block text-right">
               <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>{t.dashboard.balance}</p>
-              <p style={{ fontSize: 13, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} {selectedCurrency}</p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: "#FAFAFA" }}>{formatMoney(totalBalance, selectedCurrency)}</p>
             </div>
             <div className="hidden md:block w-px h-7 bg-[#27272A]" />
             <button
@@ -1730,13 +1748,13 @@ export default function GestFiProDashboard() {
               >
                 <div>
                   <p className="section-label" style={{ marginBottom: 6 }}>{t.dashboard.accountsPage.totalBalance}</p>
-                  <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#FAFAFA" }}>{fmt(totalBalance)} <span style={{ fontSize: 14, fontWeight: 500, color: "#A1A1AA" }}>FCFA</span></p>
+                  <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#FAFAFA" }}>{formatMoney(totalBalance, selectedCurrency)}</p>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {accounts.map((a) => (
                     <div key={a.id} style={{ textAlign: "right", background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "8px 14px" }}>
                       <p style={{ fontSize: 9, color: "#A1A1AA", fontWeight: 600, textTransform: "uppercase" }}>{a.name}</p>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: a.colorClass }}>{fmt(a.balance)} FCFA</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: a.colorClass }}>{formatMoney(a.balance, selectedCurrency)}</p>
                     </div>
                   ))}
                 </div>
@@ -1812,8 +1830,7 @@ export default function GestFiProDashboard() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={{ textAlign: "right" }}>
-                          <p style={{ fontSize: 16, fontWeight: 800, color: "#FAFAFA" }}>{fmt(acc.balance)}</p>
-                          <p style={{ fontSize: 10, color: "#A1A1AA" }}>FCFA</p>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: "#FAFAFA" }}>{formatMoney(acc.balance, selectedCurrency)}</p>
                         </div>
                         {/* Bouton éditer solde */}
                         <button
@@ -1922,7 +1939,7 @@ export default function GestFiProDashboard() {
                           </div>
                         </div>
                         <span style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>
-                          {tx.type === "income" ? "+" : ""}{fmt(tx.amount)} FCFA
+                          {tx.type === "income" ? "+" : ""}{formatMoney(Math.abs(tx.amount), selectedCurrency)}
                         </span>
                       </div>
                       ))
@@ -2012,7 +2029,7 @@ export default function GestFiProDashboard() {
                                 <span style={{ fontSize: 12, color: "#FAFAFA" }}>{cat}</span>
                               </div>
                               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                <span style={{ fontSize: 11, color: "#A1A1AA" }}>{fmt(amount)} FCFA</span>
+                                <span style={{ fontSize: 11, color: "#A1A1AA" }}>{formatMoney(amount, selectedCurrency)}</span>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: "#EF4444" }}>{pct}%</span>
                               </div>
                             </div>
@@ -2112,7 +2129,7 @@ export default function GestFiProDashboard() {
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                             <span style={{ fontSize: 11, color: "#A1A1AA" }}>{isEn ? "Progress" : "Progression"}</span>
                             <span style={{ fontSize: 11, fontWeight: 700 }}>
-                              {fmt(obj.currentAmount)} / {fmt(obj.targetAmount)} FCFA
+                              {formatMoney(obj.currentAmount, selectedCurrency)} / {formatMoney(obj.targetAmount, selectedCurrency)}
                             </span>
                           </div>
                           <div className="progress-track" style={{ height: 8 }}>
@@ -2128,7 +2145,7 @@ export default function GestFiProDashboard() {
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 11, color: "#A1A1AA" }}>
-                            {isEn ? "Remaining:" : "Reste :"} <strong style={{ color: "#FAFAFA" }}>{fmt(remaining)} FCFA</strong>
+                            {isEn ? "Remaining:" : "Reste :"} <strong style={{ color: "#FAFAFA" }}>{formatMoney(remaining, selectedCurrency)}</strong>
                           </span>
                           <button
                             className="btn-primary"
@@ -2195,7 +2212,7 @@ export default function GestFiProDashboard() {
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
                       <p style={{ fontSize: 10, color: "#A1A1AA" }}>{t.dashboard.paydayCard.dailyBudgetLabel}</p>
                       <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#EF4444" : "#71717A" }}>
-                        {isPaydayConfigured ? `${fmt(dailyBudget)} FCFA` : "--"}
+                        {isPaydayConfigured ? formatMoney(dailyBudget, selectedCurrency) : "--"}
                       </p>
                     </div>
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>

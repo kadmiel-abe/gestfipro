@@ -52,7 +52,7 @@ import {
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Language = "fr" | "en";
-type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
 interface CurrencyConfig {
   code: Currency;
@@ -68,6 +68,7 @@ const CURRENCIES: Record<Currency, CurrencyConfig> = {
   KES: { code: "KES", label: "KSh", defaultBalance: 38000, flag: "🇰🇪" },
   ZAR: { code: "ZAR", label: "Rand R", defaultBalance: 5200, flag: "🇿🇦" },
   USD: { code: "USD", label: "USD $", defaultBalance: 320, flag: "💵" },
+  EUR: { code: "EUR", label: "EUR €", defaultBalance: 280, flag: "🇪🇺" },
 };
 
 // ── COMPOSANT D'ANIMATION COUNT-UP POUR CHIFFRES ET MONTANTS ───────────────

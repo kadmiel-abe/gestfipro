@@ -12,6 +12,7 @@ interface Category {
 interface DonutChartProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transactions?: any[];
+  currency?: string;
 }
 
 const SIZE = 140;
@@ -31,7 +32,7 @@ const defaultColorMap: Record<string, string> = {
   "Autres": "#71717A",
 };
 
-export default function DonutChart({ transactions = [] }: DonutChartProps) {
+export default function DonutChart({ transactions = [], currency = "XOF" }: DonutChartProps) {
   const { isEn } = useLanguage();
   const expenseList = transactions.filter((t) => t.type === "expense" || t.amount < 0);
   const totalExpense = expenseList.reduce((acc, t) => acc + Math.abs(t.amount), 0);
@@ -143,7 +144,7 @@ export default function DonutChart({ transactions = [] }: DonutChartProps) {
             fontSize="9"
             fontWeight="600"
           >
-            {isEn ? "FCFA spent" : "FCFA dép."}
+            {currency === "USD" ? (isEn ? "spent" : "dép.") : currency === "EUR" ? (isEn ? "spent" : "dép.") : currency === "NGN" || currency === "KES" || currency === "ZAR" ? (isEn ? "spent" : "dép.") : (isEn ? "spent" : "dép.")}
           </text>
         </svg>
       </div>

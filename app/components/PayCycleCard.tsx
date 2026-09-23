@@ -10,7 +10,21 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, getCurrencyMeta } from "@/lib/i18n/LanguageContext";
+
+function formatMoney(value: number, currency: string, locale: string) {
+  const code = currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF";
+  if (currency === "XOF" || currency === "XAF") {
+    return `${Math.round(value).toLocaleString(locale)} ${currency}`;
+  }
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: code,
+    currencyDisplay: "narrowSymbol",
+    maximumFractionDigits: code === "USD" || code === "EUR" || code === "ZAR" ? 2 : 0,
+    minimumFractionDigits: code === "USD" || code === "EUR" || code === "ZAR" ? 2 : 0,
+  }).format(value);
+}
 
 interface PayCycleCardProps {
   netSalary: number;
@@ -72,8 +86,10 @@ export default function PayCycleCard({
   accountsCount = 0,
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
-  const { language, t, isEn } = useLanguage();
+  const { language, t, isEn, currency: currentCurrency } = useLanguage();
   const locale = language === "en" ? "en-US" : "fr-FR";
+  const activeCurrency = (currency || currentCurrency) as any;
+  const currencySymbol = getCurrencyMeta(activeCurrency).symbol;
   const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
     totalBalance
@@ -175,16 +191,16 @@ export default function PayCycleCard({
 
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-[#EF4444]">
-                {fmt(dailyBudget, locale)}
+                {formatMoney(dailyBudget, activeCurrency, locale).replace(/^[^0-9-]*/, "").trim()}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
-                {currency} / {isEn ? "day" : "jour"}
+                {currencySymbol} / {isEn ? "day" : "jour"}
               </span>
             </div>
 
             <div className="mt-2">
               <p className="text-[11px] font-medium text-[#A1A1AA] mb-1.5">
-                {isEn ? `Balance (${fmt(totalBalance, locale)} ${currency}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "days" : "day"}` : `Solde (${fmt(totalBalance, locale)} ${currency}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "jours" : "jour"}`}
+                {isEn ? `Balance (${formatMoney(totalBalance, activeCurrency, locale)}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "days" : "day"}` : `Solde (${formatMoney(totalBalance, activeCurrency, locale)}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "jours" : "jour"}`}
               </p>
               <div className="flex items-center gap-1.5">
                 {isBudgetCritical ? (
@@ -217,12 +233,12 @@ export default function PayCycleCard({
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
-            {fmt(totalBalance, locale)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+            {formatMoney(totalBalance, activeCurrency, locale)}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#71717A]">
             <span>{isEn ? `Consolidated across ${accountsCount} account${accountsCount > 1 ? "s" : ""}` : `Consolidé sur ${accountsCount} compte${accountsCount > 1 ? "s" : ""}`}</span>
             {netSalary > 0 && (
-              <span>· {isEn ? "Salary" : "Salaire"} : {fmt(netSalary, locale)} FCFA</span>
+              <span>· {isEn ? "Salary" : "Salaire"} : {formatMoney(netSalary, activeCurrency, locale)}</span>
             )}
           </div>
         </div>
@@ -238,7 +254,7 @@ export default function PayCycleCard({
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
-            {fmt(todayExpenses, locale)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+            {formatMoney(todayExpenses, activeCurrency, locale)}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className={`badge ${rhythmAlert ? "badge-danger" : "badge-warning"} text-[10px] px-2 py-0.5`}>

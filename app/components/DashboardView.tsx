@@ -89,8 +89,9 @@ export default function DashboardView({
   userId = null,
   onTransactionAdded,
 }: DashboardViewProps) {
-  const { t, isEn, language } = useLanguage();
-  const displayCurrency = currency || "XOF";
+  const { t, isEn, language, currency: globalCurrency } = useLanguage();
+  const displayCurrency = currency || globalCurrency || "XOF";
+  const locale = language === "en" ? "en-US" : "fr-FR";
   const now = new Date();
   const todayNum = now.getDate();
 
@@ -152,7 +153,7 @@ export default function DashboardView({
               {t.dashboard.paydayCard.salaryLabel}
             </p>
             <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
-              {fmt(netSalary)} {displayCurrency}
+              {new Intl.NumberFormat(locale, { style: "currency", currency: displayCurrency === "USD" ? "USD" : displayCurrency === "EUR" ? "EUR" : displayCurrency === "NGN" ? "NGN" : displayCurrency === "KES" ? "KES" : displayCurrency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0, minimumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0 }).format(netSalary)}
             </p>
           </div>
           <button onClick={() => setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
@@ -194,7 +195,7 @@ export default function DashboardView({
             </div>
             <span className="badge text-[10px] px-2 py-0.5">{displayCurrency}</span>
           </div>
-          <CashflowChart transactions={transactions} totalBalance={totalBalance} />
+          <CashflowChart transactions={transactions} totalBalance={totalBalance} currency={displayCurrency} />
         </div>
 
         {/* Mini Calendrier du cycle */}
@@ -229,7 +230,7 @@ export default function DashboardView({
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <DonutChart transactions={transactions} />
+          <DonutChart transactions={transactions} currency={displayCurrency} />
         </div>
       </div>
 

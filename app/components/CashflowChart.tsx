@@ -35,9 +35,10 @@ interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{ value: number; name: string; color: string }>;
   label?: string;
+  currency?: string;
 }
 
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, label, currency = "XOF" }: CustomTooltipProps) {
   if (active && payload && payload.length) {
     const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
     return (
@@ -56,7 +57,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
         {payload.map((p) => (
           <p key={p.name} style={{ color: p.color, fontWeight: 700, marginBottom: 2 }}>
             {p.name === "solde" ? (document.documentElement.lang === "en" ? "Balance" : "Solde") : (document.documentElement.lang === "en" ? "Expenses" : "Dépenses")} :{" "}
-            {Number(p.value).toLocaleString(locale)} FCFA
+            {new Intl.NumberFormat(locale, { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(Number(p.value))}
           </p>
         ))}
       </div>
@@ -68,9 +69,10 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 interface CashflowChartProps {
   transactions?: any[];
   totalBalance?: number;
+  currency?: string;
 }
 
-export default function CashflowChart({ transactions = [], totalBalance = 0 }: CashflowChartProps) {
+export default function CashflowChart({ transactions = [], totalBalance = 0, currency = "XOF" }: CashflowChartProps) {
   const { isEn } = useLanguage();
   if (transactions.length === 0 && totalBalance === 0) {
     return (
@@ -138,7 +140,7 @@ export default function CashflowChart({ transactions = [], totalBalance = 0 }: C
             }
             width={40}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip currency={currency} />} />
           <Area
             type="monotone"
             dataKey="solde"

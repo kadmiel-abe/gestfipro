@@ -23,8 +23,12 @@ export default function ScrollToTop() {
         setScrollProgress(progress);
       }
 
-      const threshold = isLandingLikePage ? 60 : 280;
-      setIsVisible(scrollY > threshold);
+      if (isLandingLikePage) {
+        setIsVisible(true);
+        return;
+      }
+
+      setIsVisible(scrollY > 280);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -64,9 +68,9 @@ export default function ScrollToTop() {
             onClick={scrollToTop}
             aria-label={isFr ? "Remonter en haut de page" : "Scroll back to top"}
             title={isFr ? `Remonter en haut (${Math.round(scrollProgress)}%)` : `Back to top (${Math.round(scrollProgress)}%)`}
-            className="group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#050505] border border-[#ff2f2f]/90 shadow-[0_0_18px_rgba(255,47,47,0.9),0_0_32px_rgba(255,47,47,0.55)] hover:scale-[1.04] active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff2f2f] focus:ring-offset-2 focus:ring-offset-[#09090B]"
+            className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#050505] border-[2.5px] border-[#ff2f2f] shadow-[0_0_16px_rgba(255,47,47,0.9),0_0_28px_rgba(255,47,47,0.6)] hover:scale-[1.02] active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff2f2f] focus:ring-offset-2 focus:ring-offset-[#09090B]"
           >
-            <span className="absolute inset-0 rounded-full bg-[#ff2f2f]/10 blur-sm group-hover:bg-[#ff2f2f]/20 transition-all duration-200" />
+            <span className="absolute inset-1.5 rounded-full bg-[#ff2f2f]/8 blur-sm" />
 
             <svg
               className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
@@ -75,17 +79,17 @@ export default function ScrollToTop() {
               <circle
                 cx="28"
                 cy="28"
-                r={23}
-                className="stroke-[#ff2f2f]/70"
-                strokeWidth="1.7"
+                r={24}
+                className="stroke-[#ff2f2f]/50"
+                strokeWidth="1.4"
                 fill="transparent"
               />
               <circle
                 cx="28"
                 cy="28"
-                r={23}
+                r={24}
                 className="stroke-[#ff2f2f] transition-[stroke-dashoffset] duration-150 ease-out"
-                strokeWidth="2.1"
+                strokeWidth="1.8"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
@@ -93,7 +97,7 @@ export default function ScrollToTop() {
               />
             </svg>
 
-            <ChevronUp className="relative w-5 h-5 sm:w-6 sm:h-6 text-[#ff2f2f] drop-shadow-[0_0_8px_rgba(255,47,47,0.8)]" strokeWidth={2.6} />
+            <ChevronUp className="relative w-5 h-5 sm:w-6 sm:h-6 text-[#ff2f2f] drop-shadow-[0_0_10px_rgba(255,47,47,0.9)]" strokeWidth={2.6} />
           </button>
         </motion.div>
       )}

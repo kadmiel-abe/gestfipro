@@ -38,6 +38,14 @@ export default function ScrollToTop() {
   }, []);
 
   const scrollToTop = () => {
+    if (isLandingLikePage) {
+      const hero = document.getElementById("hero");
+      if (hero) {
+        hero.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -59,7 +67,7 @@ export default function ScrollToTop() {
           transition={{ type: "spring", stiffness: 300, damping: 26 }}
           className={
             isLandingLikePage
-              ? "fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-50 select-none"
+              ? "fixed bottom-5 right-3 sm:bottom-6 sm:right-5 z-50 select-none"
               : "fixed bottom-5 right-3 sm:bottom-6 sm:right-5 z-50 select-none"
           }
         >

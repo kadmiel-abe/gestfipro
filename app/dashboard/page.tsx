@@ -44,7 +44,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Dynamic imports for chart components (client-only)
 const CashflowChart = dynamic(() => import("../components/CashflowChart"), {
@@ -160,6 +160,8 @@ interface AddTransactionModalProps {
 }
 
 function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalProps) {
+  const { currency, isEn } = useLanguage();
+  const currencySymbol = getCurrencyMeta(currency).symbol;
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Nourriture");
@@ -263,7 +265,7 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Montant (FCFA)</label>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isEn ? `Amount (${currencySymbol})` : `Montant (${currencySymbol})`}</label>
             <input className="input-field" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Ex: 35000" required min={1} />
           </div>
 
@@ -316,6 +318,7 @@ export default function GestFiProDashboard() {
   const supabase = createClient();
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
+  const currencySymbol = getCurrencyMeta(currency).symbol;
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
   const [showModal, setShowModal] = useState(false);
@@ -767,7 +770,7 @@ export default function GestFiProDashboard() {
   };
 
   const handleEditAccountBalance = async (accId: string | number, accName: string, currentBal: number) => {
-    const val = prompt(`Nouveau solde pour "${accName}" (FCFA) :`, String(currentBal));
+    const val = prompt(`Nouveau solde pour "${accName}" (${getCurrencyMeta(currency).symbol}) :`, String(currentBal));
     if (val === null || isNaN(Number(val)) || Number(val) < 0) return;
     const newBal = Number(val);
     const updated = accounts.map((a) => (a.id === accId ? { ...a, balance: newBal } : a));
@@ -1684,7 +1687,7 @@ export default function GestFiProDashboard() {
                     onClick={() => {
                       const name = prompt(isEn ? "Account name (e.g. Cash, Wave, Orange Money, Bank...):" : "Nom du compte (ex: Espèces, Wave, Orange Money, BOA, Ecobank...) :");
                       if (!name || !name.trim()) return;
-                      const bal = prompt(isEn ? "Initial balance (FCFA):" : "Solde initial (FCFA) :", "0");
+                      const bal = prompt(isEn ? `Initial balance (${getCurrencyMeta(currency).symbol}):` : `Solde initial (${getCurrencyMeta(currency).symbol}) :`, "0");
                       if (bal !== null && !isNaN(Number(bal))) {
                         handleAddAccount(name.trim(), Number(bal));
                       }
@@ -1804,7 +1807,7 @@ export default function GestFiProDashboard() {
                     onClick={() => {
                       const name = prompt(isEn ? "Account name (e.g. Cash, Wave, Orange Money, Bank...):" : "Nom du compte (ex: Espèces, Wave, Orange Money, Banque...) :");
                       if (!name || !name.trim()) return;
-                      const bal = prompt(isEn ? "Initial balance (FCFA):" : "Solde initial (FCFA) :", "0");
+                      const bal = prompt(isEn ? `Initial balance (${getCurrencyMeta(currency).symbol}):` : `Solde initial (${getCurrencyMeta(currency).symbol}) :`, "0");
                       if (bal !== null && !isNaN(Number(bal))) {
                         handleAddAccount(name.trim(), Number(bal));
                       }
@@ -2067,7 +2070,7 @@ export default function GestFiProDashboard() {
                   className="btn-primary"
                   onClick={() => {
                     const title = prompt(isEn ? "Goal project title:" : "Titre de l'objectif :");
-                    const target = prompt(isEn ? "Target amount (FCFA):" : "Montant cible (FCFA) :");
+                    const target = prompt(isEn ? `Target amount (${getCurrencyMeta(currency).symbol}):` : `Montant cible (${getCurrencyMeta(currency).symbol}) :`);
                     if (title && target) {
                       handleAddGoal(title, Number(target));
                     }
@@ -2086,7 +2089,7 @@ export default function GestFiProDashboard() {
                     style={{ margin: "16px auto 0" }}
                     onClick={() => {
                       const title = prompt(isEn ? "Goal project title:" : "Titre de l'objectif :");
-                      const target = prompt(isEn ? "Target amount (FCFA):" : "Montant cible (FCFA) :");
+                      const target = prompt(isEn ? `Target amount (${getCurrencyMeta(currency).symbol}):` : `Montant cible (${getCurrencyMeta(currency).symbol}) :`);
                       if (title && target) {
                         handleAddGoal(title, Number(target));
                       }
@@ -2151,7 +2154,7 @@ export default function GestFiProDashboard() {
                             className="btn-primary"
                             style={{ padding: "5px 12px", fontSize: 11 }}
                             onClick={() => {
-                              const amount = prompt(isEn ? `Fund "${obj.title}" with amount (FCFA):` : `Alimenter "${obj.title}" de combien ? (FCFA)`);
+                              const amount = prompt(isEn ? `Fund "${obj.title}" with amount (${getCurrencyMeta(currency).symbol}):` : `Alimenter "${obj.title}" de combien ? (${getCurrencyMeta(currency).symbol})`);
                               if (amount && Number(amount) > 0) {
                                 handleFeedGoal(obj.id, Number(amount));
                               }
@@ -2518,7 +2521,7 @@ export default function GestFiProDashboard() {
                   color: "#FAFAFA",
                   content: [
                     "Go to **Settings** (gear icon in the sidebar).",
-                    "Enter your **monthly net salary** in FCFA — the actual amount you receive.",
+                    `Enter your **monthly net salary** in ${currencySymbol} — the actual amount you receive.`,
                     "Set your **payday date** (e.g., 28th of every month).",
                     "GestFiPro automatically calculates the days remaining until your next paycheck.",
                     "These parameters calculate your **daily budget** = Balance ÷ Days remaining.",
@@ -2533,7 +2536,7 @@ export default function GestFiProDashboard() {
                   content: [
                     "The header **badge** displays the number of days until your next income.",
                     "The **Daily Budget** card shows how much you can spend per day without running out of money.",
-                    "If the daily budget drops below **10,000 FCFA**, the card turns red — time to be cautious.",
+                    `If the daily budget drops below **10,000 ${currencySymbol}**, the card turns red — time to be cautious.`,
                     "The **Cashflow** chart tracks your balance progression over the last 7 days.",
                     "The **Spending Pace** indicator compares today's spending to your recommended daily pace.",
                   ],
@@ -2575,7 +2578,7 @@ export default function GestFiProDashboard() {
                   color: "#FAFAFA",
                   content: [
                     "Allez dans **Réglages** (icône engrenage en bas de la sidebar).",
-                    "Saisissez votre **salaire net mensuel** en FCFA — celui que vous recevez réellement.",
+                    `Saisissez votre **salaire net mensuel** en ${currencySymbol} — celui que vous recevez réellement.`,
                     "Indiquez le **jour de versement** (ex: le 28 de chaque mois pour les fonctionnaires).",
                     "GestFiPro calcule automatiquement le nombre de jours restants avant votre prochaine paie.",
                     "Ces paramètres servent à calculer votre **budget journalier** = Solde ÷ Jours restants.",
@@ -2590,7 +2593,7 @@ export default function GestFiProDashboard() {
                   content: [
                     "Le **badge** dans l'en-tête affiche le nombre de jours restants jusqu'au prochain versement.",
                     "La carte **Budget/Jour** sur l'accueil indique combien vous pouvez dépenser par jour sans dépasser votre solde.",
-                    "Si ce budget journalier passe sous **10 000 FCFA**, la carte vire au rouge — signe de vigilance.",
+                    `Si ce budget journalier passe sous **10 000 ${currencySymbol}**, la carte vire au rouge — signe de vigilance.`,
                     "Le graphique **Cashflow** vous montre l'évolution de votre solde sur 7 jours.",
                     "L'indicateur de **Rythme de dépense** compare vos dépenses du jour au budget journalier recommandé.",
                   ],

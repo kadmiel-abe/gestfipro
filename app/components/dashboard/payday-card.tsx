@@ -11,7 +11,7 @@ interface PaydayCardProps {
   paydayDate?: number | null;
   /** Solde agrégé de tous les comptes */
   totalBalance: number;
-  /** Devise affichée (par défaut "FCFA") */
+  /** Devise affichée, synchronisée avec la préférence globale */
   currency?: string;
   /** Navigation vers un onglet (ex: réglages) */
   onNavigate?: (tab: string) => void;
@@ -28,11 +28,11 @@ function fmt(n: number): string {
 export default function PaydayCard({
   paydayDate,
   totalBalance,
-  currency = "FCFA",
+  currency = "XOF",
   onNavigate,
 }: PaydayCardProps) {
   const { t, isEn, currency: globalCurrency, language } = useLanguage();
-  const activeCurrency = (currency && currency !== "FCFA" ? currency : globalCurrency) as any;
+  const activeCurrency = (currency || globalCurrency) as any;
   const isConfigured = Boolean(paydayDate && paydayDate > 0 && paydayDate <= 31);
 
   const { daysRemaining, dailyBudget, isUrgent, progressPercent } = useMemo(() => {

@@ -12,7 +12,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import {
+  formatCurrencyValue,
+  getCurrencyMeta,
+  useLanguage,
+} from "@/lib/i18n/LanguageContext";
 import type { Goal } from "@/lib/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -60,7 +64,8 @@ function CreateGoalModal({
   onGoalCreated,
 }: CreateGoalModalProps) {
   const supabase = createClient();
-  const { t, isEn } = useLanguage();
+  const { t, isEn, currency, language } = useLanguage();
+  const currencySymbol = getCurrencyMeta(currency).symbol;
   const [title, setTitle] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [targetDate, setTargetDate] = useState("");
@@ -235,7 +240,7 @@ function CreateGoalModal({
 
           {/* Montant cible */}
           <div>
-            <label style={labelStyle}>{t.dashboard.goalsPage.targetAmountLabel}</label>
+            <label style={labelStyle}>{isEn ? `Target amount (${currencySymbol})` : `Montant cible (${currencySymbol})`}</label>
             <div style={{ position: "relative" }}>
               <input
                 type="number"
@@ -266,7 +271,7 @@ function CreateGoalModal({
                   pointerEvents: "none",
                 }}
               >
-                FCFA
+                {currencySymbol}
               </span>
             </div>
           </div>
@@ -709,9 +714,9 @@ export default function GoalsCard({
                   >
                     <p style={{ fontSize: 11, color: "#A1A1AA" }}>
                       <span style={{ fontWeight: 700, color: "#FAFAFA" }}>
-                        {fmt(goal.current_amount)}
+                        {formatCurrencyValue(goal.current_amount, currency, language === "en" ? "en-US" : "fr-FR")}
                       </span>{" "}
-                      / {new Intl.NumberFormat(language === "en" ? "en-US" : "fr-FR", { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(goal.target_amount)}
+                      / {formatCurrencyValue(goal.target_amount, currency, language === "en" ? "en-US" : "fr-FR")}
                     </p>
 
                     {!isComplete && !isFeeding && (

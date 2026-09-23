@@ -447,9 +447,12 @@ export default function GestFiProDashboard() {
           .from("accounts")
           .select("*")
           .eq("user_id", user.id);
-        if (accountsError) throw accountsError;
+        if (accountsError) {
+          console.warn("Erreur chargement comptes Supabase :", accountsError);
+          setAccounts([]);
+        }
 
-        if (accs && accs.length > 0) {
+        if (!accountsError && accs && accs.length > 0) {
           setAccounts(accs.map((a: any) => ({
             id: a.id,
             name: a.name,
@@ -468,9 +471,12 @@ export default function GestFiProDashboard() {
           .select("*")
           .eq("user_id", user.id)
           .order("transaction_date", { ascending: false });
-        if (transactionsError) throw transactionsError;
+        if (transactionsError) {
+          console.warn("Erreur chargement transactions Supabase :", transactionsError);
+          setTransactions([]);
+        }
 
-        if (txs) {
+        if (!transactionsError && txs) {
           setTransactions(txs.map((t: any) => ({
             id: t.id,
             label: t.title || t.note || "Opération",
@@ -487,8 +493,11 @@ export default function GestFiProDashboard() {
 
         // 4. SELECT goals
         const { data: gls, error: goalsError } = await supabase.from("goals").select("*").eq("user_id", user.id);
-        if (goalsError) throw goalsError;
-        if (gls && gls.length > 0) {
+        if (goalsError) {
+          console.warn("Erreur chargement objectifs Supabase :", goalsError);
+          setObjectives([]);
+        }
+        if (!goalsError && gls && gls.length > 0) {
           setObjectives(gls.map((g: any) => ({
             id: g.id,
             title: g.title,
@@ -528,7 +537,12 @@ export default function GestFiProDashboard() {
       }
     } catch (err) {
       console.error("Erreur chargement données Supabase :", err);
-      setDataLoadError(err instanceof Error ? err.message : "Impossible de charger les données du compte.");
+      const message = err && typeof err === "object" && "message" in err
+        ? String((err as { message?: unknown }).message)
+        : err instanceof Error
+          ? err.message
+          : "Impossible de charger les données du compte.";
+      setDataLoadError(message);
     } finally {
       setIsLoadingData(false);
     }

@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function ScrollToTop() {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const { isFr } = useLanguage();
+  const isLandingLikePage = pathname === "/" || pathname === "/guide";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,7 +53,11 @@ export default function ScrollToTop() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.6, y: 30 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-50 flex items-center gap-2 group select-none"
+          className={
+            isLandingLikePage
+              ? "fixed right-4 top-1/2 -translate-y-1/2 z-50 flex items-center gap-2 group select-none"
+              : "fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-50 flex items-center gap-2 group select-none"
+          }
         >
           {/* ── TOOLTIP FLOTTANT SURVOL (DESKTOP) ── */}
           <span

@@ -17,6 +17,18 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+
+const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> = {
+  XOF: { label: "FCFA (UEMOA)", shortLabel: "XOF" },
+  XAF: { label: "FCFA (CEMAC)", shortLabel: "XAF" },
+  NGN: { label: "Naira ₦", shortLabel: "NGN" },
+  KES: { label: "KSh", shortLabel: "KES" },
+  ZAR: { label: "Rand R", shortLabel: "ZAR" },
+  USD: { label: "USD $", shortLabel: "USD" },
+};
 
 function fmt(n: number) {
   return Math.round(n).toLocaleString("fr-FR");
@@ -25,6 +37,7 @@ function fmt(n: number) {
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { currency, setCurrency, isEn } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -209,6 +222,27 @@ export default function SettingsPage() {
       }}
     >
       <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <div className="md:hidden mb-6 rounded-2xl border border-[#27272A] bg-[#111113] p-4">
+          <label htmlFor="mobile-settings-currency" style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            {isEn ? "Currency" : "Devise"}
+          </label>
+          <div className="flex items-center gap-3 rounded-xl border border-[#27272A] bg-[#09090B] px-3 py-3">
+            <span style={{ fontSize: 18 }}>💱</span>
+            <select
+              id="mobile-settings-currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              style={{ width: "100%", background: "transparent", border: "none", color: "#FAFAFA", fontSize: 14, fontWeight: 700, outline: "none", fontFamily: "inherit" }}
+            >
+              {Object.entries(CURRENCY_OPTIONS).map(([code, config]) => (
+                <option key={code} value={code} style={{ background: "#09090B" }}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Header avec lien retour */}
         <div style={{ marginBottom: 28 }}>
           <Link

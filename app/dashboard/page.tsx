@@ -1420,7 +1420,7 @@ export default function GestFiProDashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-1.5 py-1 text-xs shrink-0">
+            <div className="hidden md:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-1.5 py-1 text-xs shrink-0">
               <span className="mr-1 text-[#EF4444] text-[10px] sm:text-xs">💱</span>
               <select
                 value={selectedCurrency}

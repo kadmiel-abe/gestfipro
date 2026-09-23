@@ -24,7 +24,7 @@ export default function ScrollToTop() {
       }
 
       if (isLandingLikePage) {
-        setIsVisible(true);
+        setIsVisible(scrollY > 80);
         return;
       }
 

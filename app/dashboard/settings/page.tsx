@@ -164,16 +164,22 @@ export default function SettingsPage() {
       const cleanSalary = Math.max(0, Number(monthlySalary) || 0);
       const cleanName = userName.trim();
 
-      if (userId) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const activeUserId = user?.id || userId;
+
+      if (activeUserId) {
         const { error: upsertErr } = await supabase.from("profiles").upsert({
-          id: userId,
+          id: activeUserId,
           full_name: cleanName,
           net_salary: cleanSalary,
           payday_with_month: cleanPayday,
           updated_at: new Date().toISOString(),
-        });
+        }, { onConflict: "id" });
 
         if (upsertErr) throw upsertErr;
+      } else {
+        throw new Error("Session Supabase introuvable. Veuillez vous reconnecter.");
       }
 
       // Toujours persister dans localStorage pour synchro instantanée
@@ -190,7 +196,9 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
       console.error("Erreur enregistrement profil :", err);
-      setError(err.message || "Une erreur est survenue lors de l'enregistrement.");
+      setError([err?.message, err?.code ? `Code: ${err.code}` : "", err?.details, err?.hint]
+        .filter(Boolean)
+        .join(" - ") || "Une erreur est survenue lors de l'enregistrement.");
     } finally {
       setSaving(false);
     }

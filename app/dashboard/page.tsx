@@ -700,21 +700,28 @@ export default function GestFiProDashboard() {
     setSettingsError(null);
     const cleanPayday = paydayDate > 0 && paydayDate <= 31 ? paydayDate : null;
 
-    if (currentUser) {
-      try {
-        const { error: profileError } = await supabase.from("profiles").upsert({
-          id: currentUser.id,
-          full_name: userName,
-          net_salary: monthlySalary,
-          payday_with_month: cleanPayday,
-          updated_at: new Date().toISOString(),
-        });
-        if (profileError) throw profileError;
-      } catch (err) {
-        console.error("Erreur sauvegarde profil Supabase :", err);
-        setSettingsError(err instanceof Error ? err.message : "Impossible d'enregistrer les paramètres.");
-        return;
-      }
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error("Session Supabase introuvable. Veuillez vous reconnecter.");
+
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: userName.trim(),
+        net_salary: Math.max(0, Number(monthlySalary) || 0),
+        payday_with_month: cleanPayday,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "id" });
+      if (profileError) throw profileError;
+
+      setCurrentUser(user);
+    } catch (err: any) {
+      console.error("Erreur sauvegarde profil Supabase :", err);
+      const detail = [err?.message, err?.code ? `Code: ${err.code}` : "", err?.details, err?.hint]
+        .filter(Boolean)
+        .join(" - ");
+      setSettingsError(detail || "Impossible d'enregistrer les paramètres.");
+      return;
     }
 
     setSettingsSaved(true);

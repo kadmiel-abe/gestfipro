@@ -33,43 +33,47 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      // 1. Priorité au localStorage
       const stored = localStorage.getItem("gestfipro_lang") as Language | null;
       if (stored === "fr" || stored === "en") {
         setLanguageState(stored);
         document.documentElement.lang = stored;
+        document.documentElement.setAttribute("data-lang", stored);
         return;
       }
 
-      // 2. Cookie fallback
       const match = document.cookie.match(/gestfipro_lang=([a-z]{2})/);
       if (match && (match[1] === "fr" || match[1] === "en")) {
         const cLang = match[1] as Language;
         setLanguageState(cLang);
         document.documentElement.lang = cLang;
+        document.documentElement.setAttribute("data-lang", cLang);
         return;
       }
 
-      // 3. Navigateur fallback
       const navLang = navigator.language?.slice(0, 2);
-      if (navLang === "en") {
-        setLanguageState("en");
-        document.documentElement.lang = "en";
-      } else {
-        setLanguageState("fr");
-        document.documentElement.lang = "fr";
-      }
+      const nextLang = navLang === "en" ? "en" : "fr";
+      setLanguageState(nextLang);
+      document.documentElement.lang = nextLang;
+      document.documentElement.setAttribute("data-lang", nextLang);
     } catch {
       setLanguageState("fr");
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = "fr";
+        document.documentElement.setAttribute("data-lang", "fr");
+      }
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = language;
+      document.documentElement.setAttribute("data-lang", language);
+      document.cookie = `gestfipro_lang=${language}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+  }, [language]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = lang;
-      document.cookie = `gestfipro_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
-    }
     try {
       localStorage.setItem("gestfipro_lang", lang);
     } catch {}

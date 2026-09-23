@@ -110,7 +110,8 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const redirectedFrom = params?.get("redirectedFrom");
       const targetNext = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
-      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(targetNext)}`;
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const redirectUrl = `${origin}/auth/callback`;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",

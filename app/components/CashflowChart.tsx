@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import {
   AreaChart,
   Area,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface DataPoint {
   day: string;
@@ -38,6 +39,7 @@ interface CustomTooltipProps {
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (active && payload && payload.length) {
+    const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
     return (
       <div
         style={{
@@ -49,12 +51,12 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
         }}
       >
         <p style={{ color: "#A1A1AA", marginBottom: 6, fontWeight: 600 }}>
-          Jour {label}
+          {document.documentElement.lang === "en" ? `Day ${label}` : `Jour ${label}`}
         </p>
         {payload.map((p) => (
           <p key={p.name} style={{ color: p.color, fontWeight: 700, marginBottom: 2 }}>
-            {p.name === "solde" ? "Solde" : "Dépenses"} :{" "}
-            {p.value.toLocaleString("fr-FR")} FCFA
+            {p.name === "solde" ? (document.documentElement.lang === "en" ? "Balance" : "Solde") : (document.documentElement.lang === "en" ? "Expenses" : "Dépenses")} :{" "}
+            {Number(p.value).toLocaleString(locale)} FCFA
           </p>
         ))}
       </div>
@@ -69,6 +71,7 @@ interface CashflowChartProps {
 }
 
 export default function CashflowChart({ transactions = [], totalBalance = 0 }: CashflowChartProps) {
+  const { isEn } = useLanguage();
   if (transactions.length === 0 && totalBalance === 0) {
     return (
       <div
@@ -88,10 +91,10 @@ export default function CashflowChart({ transactions = [], totalBalance = 0 }: C
         }}
       >
         <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", margin: 0 }}>
-          Aucune transaction pour ce cycle
+          {isEn ? "No transactions for this cycle" : "Aucune transaction pour ce cycle"}
         </p>
         <p style={{ fontSize: 11, color: "#71717A", margin: 0, maxWidth: 300 }}>
-          L'évolution de votre solde et de vos flux financiers s'affichera dès vos premières opérations enregistrées.
+          {isEn ? "Your balance and cash flow history will appear as soon as you log your first transactions." : "L'évolution de votre solde et de vos flux financiers s'affichera dès vos premières opérations enregistrées."}
         </p>
       </div>
     );
@@ -120,7 +123,7 @@ export default function CashflowChart({ transactions = [], totalBalance = 0 }: C
             tick={{ fill: "#52525B", fontSize: 10 }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => `J${v}`}
+            tickFormatter={(v) => (isEn ? `D${v}` : `J${v}`)}
           />
           <YAxis
             tick={{ fill: "#52525B", fontSize: 10 }}

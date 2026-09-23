@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Transaction } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface Category {
   label: string;
@@ -32,6 +32,7 @@ const defaultColorMap: Record<string, string> = {
 };
 
 export default function DonutChart({ transactions = [] }: DonutChartProps) {
+  const { isEn } = useLanguage();
   const expenseList = transactions.filter((t) => t.type === "expense" || t.amount < 0);
   const totalExpense = expenseList.reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
@@ -54,10 +55,10 @@ export default function DonutChart({ transactions = [] }: DonutChartProps) {
         }}
       >
         <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", margin: 0 }}>
-          Aucune dépense enregistrée
+          {isEn ? "No expenses recorded" : "Aucune dépense enregistrée"}
         </p>
         <p style={{ fontSize: 11, color: "#71717A", margin: 0, maxWidth: 280 }}>
-          La répartition par catégorie se calculera automatiquement dès votre premier achat.
+          {isEn ? "The category breakdown will appear automatically as soon as you add your first purchase." : "La répartition par catégorie se calculera automatiquement dès votre premier achat."}
         </p>
       </div>
     );
@@ -142,7 +143,7 @@ export default function DonutChart({ transactions = [] }: DonutChartProps) {
             fontSize="9"
             fontWeight="600"
           >
-            FCFA dép.
+            {isEn ? "FCFA spent" : "FCFA dép."}
           </text>
         </svg>
       </div>

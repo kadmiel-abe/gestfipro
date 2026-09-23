@@ -110,7 +110,8 @@ interface Objective {
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return n.toLocaleString("fr-FR");
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
+  return n.toLocaleString(locale);
 }
 
 function formatDateFr(d: Date): string {
@@ -286,7 +287,7 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
 export default function GestFiProDashboard() {
   const supabase = createClient();
   const { theme, toggleTheme, setTheme } = useTheme();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, isEn } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
   const [showModal, setShowModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -909,7 +910,7 @@ export default function GestFiProDashboard() {
 
   // ─── Tool items — OUTILS section (Guide uniquement) ───────────────────────
   const toolItems: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "guide", label: "Guide", icon: <HelpCircle size={15} /> },
+    { key: "guide", label: t.dashboard.tabs.guide, icon: <HelpCircle size={15} /> },
   ];
 
   // ─── Shared styles ────────────────────────────────────────────────────────
@@ -976,8 +977,8 @@ export default function GestFiProDashboard() {
                       setSidebarCollapsed(true);
                     }
                   }}
-                  title="Réduire le menu"
-                  aria-label="Réduire la barre latérale"
+                  title={t.dashboard.collapseSidebar}
+                  aria-label={t.dashboard.collapseSidebar}
                   style={{
                     background: "#18181B",
                     border: "1px solid #27272A",
@@ -1024,7 +1025,7 @@ export default function GestFiProDashboard() {
                   paddingLeft: 2,
                 }}
               >
-                Suivi financier intelligent
+                {t.dashboard.smartFinanceSubtitle}
               </p>
             </div>
           ) : (
@@ -1042,8 +1043,8 @@ export default function GestFiProDashboard() {
               {/* Bouton d'agrandissement (flèche droite) */}
               <button
                 onClick={() => setSidebarCollapsed(false)}
-                title="Agrandir le menu"
-                aria-label="Agrandir la barre latérale"
+                title={t.dashboard.expandSidebar}
+                aria-label={t.dashboard.expandSidebar}
                 style={{
                   background: "#18181B",
                   border: "1px solid #27272A",
@@ -1075,7 +1076,7 @@ export default function GestFiProDashboard() {
           {/* ── NAVIGATION ────────────────────────────────────────────────── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 1, marginBottom: 8 }}>
             {!sidebarCollapsed && (
-              <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>Navigation</p>
+              <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>{t.dashboard.navSection}</p>
             )}
             {navItems.map((item) => (
               <button
@@ -1101,7 +1102,7 @@ export default function GestFiProDashboard() {
           {/* ── OUTILS (Guide uniquement) ─────────────────────────────────── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {!sidebarCollapsed && (
-              <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>Outils</p>
+              <p className="section-label" style={{ paddingLeft: 12, marginBottom: 6 }}>{t.dashboard.toolsSection}</p>
             )}
             {toolItems.map((item) => (
               <button
@@ -1131,8 +1132,8 @@ export default function GestFiProDashboard() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                title={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
-                aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+                title={theme === "dark" ? t.dashboard.switchToLight : t.dashboard.switchToDark}
+                aria-label={theme === "dark" ? t.dashboard.switchToLight : t.dashboard.switchToDark}
                 style={{
                   width: "100%",
                   display: "flex",
@@ -1160,7 +1161,7 @@ export default function GestFiProDashboard() {
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {theme === "dark" ? <Moon size={14} color="#EF4444" /> : <Sun size={14} color="#EF4444" />}
-                  <span>{theme === "dark" ? "Mode Sombre" : "Mode Clair"}</span>
+                  <span>{theme === "dark" ? t.dashboard.darkMode : t.dashboard.lightMode}</span>
                 </span>
                 <span
                   style={{
@@ -1190,8 +1191,8 @@ export default function GestFiProDashboard() {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  title={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
-                  aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+                  title={theme === "dark" ? t.dashboard.switchToLight : t.dashboard.switchToDark}
+                  aria-label={theme === "dark" ? t.dashboard.switchToLight : t.dashboard.switchToDark}
                   style={{
                     width: 32,
                     height: 32,
@@ -1281,12 +1282,12 @@ export default function GestFiProDashboard() {
                     <p style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {userName || firstName || "Utilisateur"}
                     </p>
-                    <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>Compte personnel</p>
+                    <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{t.dashboard.personalAccount}</p>
                   </div>
                   <button
                     onClick={() => setActiveTab("reglages")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
-                    title="Paramètres"
+                    title={t.dashboard.settings}
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
                   >
@@ -1299,7 +1300,7 @@ export default function GestFiProDashboard() {
                         window.location.href = "/login";
                       }}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
-                      title="Déconnexion"
+                      title={t.dashboard.logout}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
                       onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
                     >
@@ -1312,7 +1313,7 @@ export default function GestFiProDashboard() {
                   <button
                     onClick={() => setActiveTab("reglages")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
-                    title="Paramètres"
+                    title={t.dashboard.settings}
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
                   >
@@ -1325,7 +1326,7 @@ export default function GestFiProDashboard() {
                         window.location.href = "/login";
                       }}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
-                      title="Déconnexion"
+                      title={t.dashboard.logout}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
                       onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
                     >
@@ -1363,8 +1364,8 @@ export default function GestFiProDashboard() {
                   setSidebarCollapsed((prev) => !prev);
                 }
               }}
-              title="Basculer la barre latérale"
-              aria-label="Basculer la barre latérale"
+              title={t.dashboard.toggleSidebar}
+              aria-label={t.dashboard.toggleSidebar}
               className="hamburger-btn shrink-0"
               style={{
                 background: "#18181B",
@@ -1393,8 +1394,8 @@ export default function GestFiProDashboard() {
                 className="pulse-dot shrink-0"
                 style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", display: "inline-block" }}
               />
-              <span className="hidden sm:inline">Cycle de paie actif </span>
-              <span>(J-{daysRemaining})</span>
+              <span className="hidden sm:inline">{t.dashboard.activeCycle} </span>
+              <span>({isEn ? "D-" : "J-"}{daysRemaining})</span>
             </span>
           </div>
 
@@ -1416,7 +1417,7 @@ export default function GestFiProDashboard() {
               {/* ─── Bouton cloche ─── */}
               <button
                 onClick={() => setShowNotifications((v) => !v)}
-                title="Notifications"
+                title={t.dashboard.notificationsTitle}
                 style={{
                   width: 36,
                   height: 36,
@@ -1468,11 +1469,15 @@ export default function GestFiProDashboard() {
                 >
                   {/* En-tête */}
                   <div style={{ padding: "14px 16px", borderBottom: "1px solid #27272A", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA" }}>Notifications</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA" }}>{t.dashboard.notificationsTitle}</p>
                     {hasUnread && notifications.length > 0 ? (
-                      <span className="badge badge-danger" style={{ fontSize: 9 }}>{notifications.length} nouvelle{notifications.length > 1 ? "s" : ""}</span>
+                      <span className="badge badge-danger" style={{ fontSize: 9 }}>
+                        {notifications.length} {isEn ? "new" : "nouvelle"}{notifications.length > 1 && !isEn ? "s" : ""}
+                      </span>
                     ) : (
-                      <span className="badge" style={{ fontSize: 9 }}>0 notification</span>
+                      <span className="badge" style={{ fontSize: 9 }}>
+                        0 {isEn ? "notification" : "notification"}
+                      </span>
                     )}
                   </div>
 
@@ -1480,8 +1485,7 @@ export default function GestFiProDashboard() {
                   {notifications.length === 0 ? (
                     <div style={{ padding: "32px 16px", textAlign: "center", color: "#71717A" }}>
                       <Bell size={24} style={{ margin: "0 auto 8px", opacity: 0.4 }} />
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "#FAFAFA" }}>Aucune notification</p>
-                      <p style={{ fontSize: 11, color: "#52525B", marginTop: 2 }}>Vos alertes budgétaires s'afficheront ici.</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#FAFAFA" }}>{t.dashboard.noNotifications}</p>
                     </div>
                   ) : (
                     notifications.map((n, i) => (
@@ -1507,7 +1511,7 @@ export default function GestFiProDashboard() {
                         </div>
                         <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                           <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap" }}>{n.time}</p>
-                          <span style={{ fontSize: 9, color: n.color, fontWeight: 600 }}>Voir →</span>
+                          <span style={{ fontSize: 9, color: n.color, fontWeight: 600 }}>{t.dashboard.seeMore}</span>
                         </div>
                       </div>
                     ))
@@ -1525,7 +1529,7 @@ export default function GestFiProDashboard() {
                         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#52525B")}
                         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#27272A")}
                       >
-                        ✓ Tout marquer comme lu
+                        ✓ {t.dashboard.markAllRead}
                       </button>
                     </div>
                   )}
@@ -1574,8 +1578,8 @@ export default function GestFiProDashboard() {
             <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                 <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Comptes Financiers</h2>
-                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Gérez vos supports de trésorerie (Espèces, Wave, Orange Money, Banque...).</p>
+                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>{t.dashboard.accountsPage.title}</h2>
+                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.accountsPage.subtitle}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   {accounts.length > 0 && (
@@ -1597,7 +1601,7 @@ export default function GestFiProDashboard() {
                             gap: 6,
                           }}
                         >
-                          ⚡ Nettoyer les doublons
+                          {t.dashboard.accountsPage.cleanDuplicates}
                         </button>
                       )}
                       <button
@@ -1615,24 +1619,24 @@ export default function GestFiProDashboard() {
                           alignItems: "center",
                           gap: 6,
                         }}
-                        title="Vider tous les comptes"
+                        title={isEn ? "Clear all accounts" : "Vider tous les comptes"}
                       >
-                        <Trash2 size={13} /> Tout effacer
+                        <Trash2 size={13} /> {isEn ? "Clear all" : "Tout effacer"}
                       </button>
                     </>
                   )}
                   <button
                     className="btn-primary"
                     onClick={() => {
-                      const name = prompt("Nom du compte (ex: Espèces, Wave, Orange Money, BOA, Ecobank...) :");
+                      const name = prompt(isEn ? "Account name (e.g. Cash, Wave, Orange Money, Bank...):" : "Nom du compte (ex: Espèces, Wave, Orange Money, BOA, Ecobank...) :");
                       if (!name || !name.trim()) return;
-                      const bal = prompt("Solde initial (FCFA) :", "0");
+                      const bal = prompt(isEn ? "Initial balance (FCFA):" : "Solde initial (FCFA) :", "0");
                       if (bal !== null && !isNaN(Number(bal))) {
                         handleAddAccount(name.trim(), Number(bal));
                       }
                     }}
                   >
-                    <Plus size={14} /> Ajouter un compte
+                    <Plus size={14} /> {t.dashboard.accountsPage.addAccountBtn}
                   </button>
                 </div>
               </div>
@@ -1653,7 +1657,7 @@ export default function GestFiProDashboard() {
                   }}
                 >
                   <p style={{ fontSize: 12, color: "#FAFAFA", margin: 0 }}>
-                    ⚠️ <strong>Doublons détectés :</strong> Plusieurs comptes portent le même nom. Vous pouvez les fusionner automatiquement en 1 clic.
+                    ⚠️ <strong>{isEn ? "Duplicates detected:" : "Doublons détectés :"}</strong> {isEn ? "Multiple accounts have the same name. You can merge them in 1 click." : "Plusieurs comptes portent le même nom. Vous pouvez les fusionner automatiquement en 1 clic."}
                   </p>
                   <button
                     onClick={handleDeduplicateAccounts}
@@ -1669,7 +1673,7 @@ export default function GestFiProDashboard() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    Nettoyer maintenant
+                    {isEn ? "Clean now" : "Nettoyer maintenant"}
                   </button>
                 </div>
               )}
@@ -1689,7 +1693,7 @@ export default function GestFiProDashboard() {
                 }}
               >
                 <div>
-                  <p className="section-label" style={{ marginBottom: 6 }}>Solde total consolidé</p>
+                  <p className="section-label" style={{ marginBottom: 6 }}>{t.dashboard.accountsPage.totalBalance}</p>
                   <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#FAFAFA" }}>{fmt(totalBalance)} <span style={{ fontSize: 14, fontWeight: 500, color: "#A1A1AA" }}>FCFA</span></p>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1734,25 +1738,25 @@ export default function GestFiProDashboard() {
                   </div>
                   <div>
                     <h3 style={{ fontSize: 17, fontWeight: 800, color: "#FAFAFA", margin: "0 0 6px" }}>
-                      Aucun compte enregistré
+                      {t.dashboard.accountsPage.emptyAccounts}
                     </h3>
                     <p style={{ fontSize: 13, color: "#A1A1AA", margin: 0, maxWidth: 420 }}>
-                      Ajoutez vos comptes de trésorerie (Espèces, Wave, Orange Money, Banque...) pour suivre votre solde global.
+                      {t.dashboard.accountsPage.subtitle}
                     </p>
                   </div>
                   <button
                     className="btn-primary"
                     style={{ padding: "10px 20px" }}
                     onClick={() => {
-                      const name = prompt("Nom du compte (ex: Espèces, Wave, Orange Money, Banque...) :");
+                      const name = prompt(isEn ? "Account name (e.g. Cash, Wave, Orange Money, Bank...):" : "Nom du compte (ex: Espèces, Wave, Orange Money, Banque...) :");
                       if (!name || !name.trim()) return;
-                      const bal = prompt("Solde initial (FCFA) :", "0");
+                      const bal = prompt(isEn ? "Initial balance (FCFA):" : "Solde initial (FCFA) :", "0");
                       if (bal !== null && !isNaN(Number(bal))) {
                         handleAddAccount(name.trim(), Number(bal));
                       }
                     }}
                   >
-                    <Plus size={15} /> Ajouter mon premier compte
+                    <Plus size={15} /> {t.dashboard.accountsPage.addAccountBtn}
                   </button>
                 </div>
               ) : (
@@ -1766,7 +1770,7 @@ export default function GestFiProDashboard() {
                           <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{acc.name}</p>
                           <p style={{ fontSize: 11, color: "#A1A1AA" }}>{acc.type}</p>
                           <div style={{ marginTop: 4 }}>
-                            <span className="badge" style={{ fontSize: 9 }}>Manuel</span>
+                            <span className="badge" style={{ fontSize: 9 }}>{isEn ? "Manual" : "Manuel"}</span>
                           </div>
                         </div>
                       </div>
@@ -1777,7 +1781,7 @@ export default function GestFiProDashboard() {
                         </div>
                         {/* Bouton éditer solde */}
                         <button
-                          title="Modifier le solde"
+                          title={isEn ? "Edit balance" : "Modifier le solde"}
                           onClick={() => handleEditAccountBalance(acc.id, acc.name, acc.balance)}
                           style={{ background: "#27272A", border: "none", borderRadius: 8, color: "#A1A1AA", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#EF4444"; }}
@@ -1789,7 +1793,7 @@ export default function GestFiProDashboard() {
                         <button
                           onClick={() => handleDeleteAccount(acc.id, acc.name)}
                           style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 4, display: "flex", transition: "color 0.15s" }}
-                          title="Supprimer ce compte"
+                          title={t.dashboard.accountsPage.deleteBtn}
                           onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
                           onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
                         >
@@ -1807,8 +1811,8 @@ export default function GestFiProDashboard() {
           {activeTab === "historique" && (
             <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Historique des Transactions</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Retrouvez l'ensemble de vos mouvements financiers.</p>
+                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>{t.dashboard.historyPage.title}</h2>
+                <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.historyPage.subtitle}</p>
               </div>
 
               <div className="card" style={{ padding: "20px 24px" }}>
@@ -1817,7 +1821,7 @@ export default function GestFiProDashboard() {
                   <input
                     className="input-field"
                     style={{ border: "none", padding: 0, background: "transparent" }}
-                    placeholder="Rechercher une transaction..."
+                    placeholder={t.dashboard.historyPage.searchPlaceholder}
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                   />
@@ -1834,12 +1838,12 @@ export default function GestFiProDashboard() {
                 {transactions.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "#71717A" }}>
                     <Clock size={36} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Aucune transaction enregistrée</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{t.dashboard.home.noTransactions}</p>
                     <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, marginBottom: 18, maxWidth: 360, margin: "6px auto 18px" }}>
-                      Vos dépenses et rentrées apparaîtront ici dès votre première saisie.
+                      {t.dashboard.home.addFirstExpense}
                     </p>
                     <button onClick={() => setShowModal(true)} className="btn-primary" style={{ margin: "0 auto" }}>
-                      <Plus size={14} /> Enregistrer une opération
+                      <Plus size={14} /> {t.dashboard.addTransaction}
                     </button>
                   </div>
                 ) : (
@@ -1894,7 +1898,7 @@ export default function GestFiProDashboard() {
                       tx.account.toLowerCase().includes(historySearch.toLowerCase())
                     ).length === 0 && (
                       <div style={{ textAlign: "center", padding: "28px 0", color: "#52525B", fontSize: 13 }}>
-                        Aucune transaction pour « {historySearch} »
+                        {isEn ? `No transactions for "${historySearch}"` : `Aucune transaction pour « ${historySearch} »`}
                       </div>
                     )}
                   </div>
@@ -1907,49 +1911,59 @@ export default function GestFiProDashboard() {
           {activeTab === "statistiques" && (
             <div className="p-3 sm:p-6 max-w-5xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Statistiques Avancées</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Analysez vos habitudes de dépenses par catégorie ce mois-ci.</p>
+                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>{t.dashboard.statsPage.title}</h2>
+                <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.statsPage.subtitle}</p>
               </div>
 
               {transactions.filter((t) => t.type === "expense" || t.amount < 0).length === 0 ? (
                 <div className="card" style={{ textAlign: "center", padding: "56px 24px", color: "#71717A" }}>
                   <BarChart3 size={44} style={{ margin: "0 auto 12px", opacity: 0.35, color: "#EF4444" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#FAFAFA" }}>Aucune statistique pour le moment</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#FAFAFA" }}>{t.dashboard.statsPage.noDataForPeriod}</p>
                   <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, maxWidth: 460, margin: "8px auto 20px", lineHeight: 1.6 }}>
-                    Votre tableau de bord est prêt pour un nouvel utilisateur. Dès l'enregistrement de vos premières dépenses, vos graphiques et répartitions par catégorie s'afficheront ici automatiquement.
+                    {t.dashboard.home.addFirstExpense}
                   </p>
                   <button onClick={() => setShowModal(true)} className="btn-primary" style={{ margin: "0 auto" }}>
-                    <Plus size={14} /> Enregistrer une première dépense
+                    <Plus size={14} /> {t.dashboard.addTransaction}
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="card" style={{ padding: "22px 24px" }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Répartition par Poste</h3>
-                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>Dépenses en FCFA — Cycle en cours</p>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{t.dashboard.statsPage.expensesByCategory}</h3>
+                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>{t.dashboard.statsPage.currentMonth}</p>
                     <DonutChart transactions={transactions} />
                   </div>
 
                   <div className="card" style={{ padding: "22px 24px" }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Détail par catégorie</h3>
-                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>Dépenses réelles calculées</p>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{t.dashboard.home.categoryDistribution}</h3>
+                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 18 }}>{t.dashboard.statsPage.currentMonth}</p>
                     {(() => {
                       const expList = transactions.filter((t) => t.type === "expense" || t.amount < 0);
                       const totalExp = expList.reduce((acc, t) => acc + Math.abs(t.amount), 0);
                       const catTotals: Record<string, number> = {};
                       for (const t of expList) {
-                        const c = t.category || "Divers";
+                        const c = t.category || (isEn ? "Other" : "Divers");
                         catTotals[c] = (catTotals[c] || 0) + Math.abs(t.amount);
                       }
                       const colorMap: Record<string, string> = {
                         "Nourriture": "#EF4444",
+                        "Food & Groceries": "#EF4444",
                         "Transport": "#DC2626",
+                        "Transport & Fuel": "#DC2626",
                         "Logement": "#B91C1C",
+                        "Housing & Rent": "#B91C1C",
+                        "Factures": "#F87171",
+                        "Bills (Water, Power, Internet)": "#F87171",
                         "Loisirs": "#F87171",
+                        "Leisure & Dining Out": "#F87171",
                         "Santé": "#FAFAFA",
+                        "Health & Pharmacy": "#FAFAFA",
                         "Éducation": "#E4E4E7",
+                        "Education & Courses": "#E4E4E7",
                         "Vêtements": "#A1A1AA",
+                        "Shopping & Clothes": "#A1A1AA",
                         "Divers": "#71717A",
+                        "Other": "#71717A",
                       };
                       return Object.entries(catTotals).map(([cat, amount]) => {
                         const pct = totalExp > 0 ? Math.round((amount / totalExp) * 100) : 0;
@@ -1979,8 +1993,8 @@ export default function GestFiProDashboard() {
                   </div>
 
                   <div className="card p-4 sm:p-6 lg:col-span-2">
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Évolution du Solde — Cycle en cours</h3>
-                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>Tendance de votre trésorerie</p>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{t.dashboard.home.cashflowTitle}</h3>
+                    <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>{t.dashboard.home.cashflowSubtitle}</p>
                     <CashflowChart transactions={transactions} totalBalance={totalBalance} />
                   </div>
                 </div>
@@ -1993,42 +2007,39 @@ export default function GestFiProDashboard() {
             <div className="p-3 sm:p-6 max-w-4xl w-full mx-auto space-y-5">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                 <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Objectifs Financiers</h2>
-                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>Définissez vos cibles d'épargne et suivez votre progression.</p>
+                  <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>{t.dashboard.goalsPage.title}</h2>
+                  <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.goalsPage.subtitle}</p>
                 </div>
                 <button
                   className="btn-primary"
                   onClick={() => {
-                    const title = prompt("Titre de l'objectif :");
-                    const target = prompt("Montant cible (FCFA) :");
+                    const title = prompt(isEn ? "Goal project title:" : "Titre de l'objectif :");
+                    const target = prompt(isEn ? "Target amount (FCFA):" : "Montant cible (FCFA) :");
                     if (title && target) {
                       handleAddGoal(title, Number(target));
                     }
                   }}
                 >
-                  <Plus size={14} /> Nouvel objectif
+                  <Plus size={14} /> {t.dashboard.goalsPage.addGoalBtn}
                 </button>
               </div>
 
               {objectives.length === 0 ? (
                 <div className="card" style={{ textAlign: "center", padding: "48px 24px", color: "#71717A" }}>
                   <PiggyBank size={40} style={{ margin: "0 auto 12px", opacity: 0.4, color: "#EF4444" }} />
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Aucun objectif d'épargne pour l'instant</p>
-                  <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, maxWidth: 420, margin: "6px auto 18px" }}>
-                    Définissez vos projets financiers (Fonds de prévoyance, Matériel, Voyage, Équipement...) et suivez vos paliers de progression.
-                  </p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{t.dashboard.goalsPage.emptyGoals}</p>
                   <button
                     className="btn-primary"
-                    style={{ margin: "0 auto" }}
+                    style={{ margin: "16px auto 0" }}
                     onClick={() => {
-                      const title = prompt("Titre de l'objectif :");
-                      const target = prompt("Montant cible (FCFA) :");
+                      const title = prompt(isEn ? "Goal project title:" : "Titre de l'objectif :");
+                      const target = prompt(isEn ? "Target amount (FCFA):" : "Montant cible (FCFA) :");
                       if (title && target) {
                         handleAddGoal(title, Number(target));
                       }
                     }}
                   >
-                    <Plus size={14} /> Créer mon premier objectif
+                    <Plus size={14} /> {t.dashboard.goalsPage.addFirstGoal}
                   </button>
                 </div>
               ) : (
@@ -2043,7 +2054,7 @@ export default function GestFiProDashboard() {
                             <span style={{ fontSize: 24 }}>{obj.icon}</span>
                             <div>
                               <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{obj.title}</p>
-                              <p style={{ fontSize: 11, color: "#A1A1AA" }}>Échéance : {obj.deadline}</p>
+                              {obj.deadline && <p style={{ fontSize: 11, color: "#A1A1AA" }}>{isEn ? "Target:" : "Échéance :"} {obj.deadline}</p>}
                             </div>
                           </div>
                           <span
@@ -2063,7 +2074,7 @@ export default function GestFiProDashboard() {
 
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                            <span style={{ fontSize: 11, color: "#A1A1AA" }}>Progression</span>
+                            <span style={{ fontSize: 11, color: "#A1A1AA" }}>{isEn ? "Progress" : "Progression"}</span>
                             <span style={{ fontSize: 11, fontWeight: 700 }}>
                               {fmt(obj.currentAmount)} / {fmt(obj.targetAmount)} FCFA
                             </span>
@@ -2081,19 +2092,19 @@ export default function GestFiProDashboard() {
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 11, color: "#A1A1AA" }}>
-                            Reste : <strong style={{ color: "#FAFAFA" }}>{fmt(remaining)} FCFA</strong>
+                            {isEn ? "Remaining:" : "Reste :"} <strong style={{ color: "#FAFAFA" }}>{fmt(remaining)} FCFA</strong>
                           </span>
                           <button
                             className="btn-primary"
                             style={{ padding: "5px 12px", fontSize: 11 }}
                             onClick={() => {
-                              const amount = prompt(`Alimenter "${obj.title}" de combien ? (FCFA)`);
+                              const amount = prompt(isEn ? `Fund "${obj.title}" with amount (FCFA):` : `Alimenter "${obj.title}" de combien ? (FCFA)`);
                               if (amount && Number(amount) > 0) {
                                 handleFeedGoal(obj.id, Number(amount));
                               }
                             }}
                           >
-                            <PiggyBank size={11} /> Alimenter
+                            <PiggyBank size={11} /> {isEn ? "Fund" : "Alimenter"}
                           </button>
                         </div>
                       </div>
@@ -2108,26 +2119,27 @@ export default function GestFiProDashboard() {
           {activeTab === "reglages" && (
             <div className="p-3 sm:p-6 max-w-xl w-full mx-auto space-y-5">
               <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>Paramètres</h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA" }}>Configurez votre profil et votre cycle de paie.</p>
+                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>{t.dashboard.settingsPage.title}</h2>
+                <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.settingsPage.subtitle}</p>
               </div>
 
               <div className="card" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 18 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Nom d'utilisateur
+                    {t.dashboard.settingsPage.fullNameLabel}
                   </label>
-                  <input className="input-field" type="text" value={userName} onChange={(e) => setUserName(e.target.value)} />
+                  <input className="input-field" type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder={t.dashboard.settingsPage.fullNamePlaceholder} />
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Salaire Net Mensuel (FCFA)
+                    {t.dashboard.settingsPage.monthlySalaryLabel}
                   </label>
-                  <input className="input-field" type="number" value={monthlySalary} onChange={(e) => setMonthlySalary(Number(e.target.value))} />
+                  <input className="input-field" type="number" value={monthlySalary} onChange={(e) => setMonthlySalary(Number(e.target.value))} placeholder={t.dashboard.settingsPage.monthlySalaryPlaceholder} />
+                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 5 }}>{t.dashboard.settingsPage.monthlySalaryHint}</p>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                    Jour de versement de la paie
+                    {t.dashboard.settingsPage.paydayLabel}
                   </label>
                   <input
                     className="input-field"
@@ -2138,22 +2150,22 @@ export default function GestFiProDashboard() {
                     min={1}
                     max={31}
                   />
-                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 5 }}>La date de versement sert à calculer le budget quotidien et le compte à rebours.</p>
+                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 5 }}>{t.dashboard.settingsPage.paydayHint}</p>
                 </div>
 
                 <div style={{ borderTop: "1px solid #27272A", paddingTop: 18 }}>
-                  <p className="section-label" style={{ marginBottom: 12 }}>Informations calculées</p>
+                  <p className="section-label" style={{ marginBottom: 12 }}>{isEn ? "Calculated Metrics" : "Informations calculées"}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
-                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>Budget / jour actuel</p>
+                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>{t.dashboard.paydayCard.dailyBudgetLabel}</p>
                       <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#EF4444" : "#71717A" }}>
                         {isPaydayConfigured ? `${fmt(dailyBudget)} FCFA` : "--"}
                       </p>
                     </div>
                     <div style={{ background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "12px 14px" }}>
-                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>Jours avant paie</p>
+                      <p style={{ fontSize: 10, color: "#A1A1AA" }}>{t.dashboard.paydayCard.daysRemainingLabel}</p>
                       <p style={{ fontSize: 16, fontWeight: 800, color: isPaydayConfigured ? "#818cf8" : "#71717A" }}>
-                        {isPaydayConfigured ? `${daysRemaining} jours` : "Non défini"}
+                        {isPaydayConfigured ? `${daysRemaining} ${isEn ? (daysRemaining > 1 ? "days" : "day") : (daysRemaining > 1 ? "jours" : "jour")}` : (isEn ? "Not set" : "Non défini")}
                       </p>
                     </div>
                   </div>
@@ -2161,10 +2173,7 @@ export default function GestFiProDashboard() {
 
                 {/* ── Section Thème (Dark / Light) ── */}
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
-                  <p className="section-label" style={{ marginBottom: 6 }}>Apparence & Thème</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
-                    Sélectionnez le mode d'affichage de GestFiPro (géré via la classe <code>dark</code> sur <code>&lt;html&gt;</code>).
-                  </p>
+                  <p className="section-label" style={{ marginBottom: 6 }}>{t.dashboard.settingsPage.themeLabel}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
@@ -2198,12 +2207,11 @@ export default function GestFiProDashboard() {
                           <Moon size={16} color={theme === "dark" ? "#EF4444" : "var(--text-muted)"} />
                         </div>
                         <div>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Sombre</p>
-                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>Thème dark</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t.dashboard.darkMode}</p>
                         </div>
                       </div>
                       {theme === "dark" && (
-                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Actif</span>
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>{isEn ? "Active" : "Actif"}</span>
                       )}
                     </button>
 
@@ -2239,12 +2247,11 @@ export default function GestFiProDashboard() {
                           <Sun size={16} color={theme === "light" ? "#EF4444" : "var(--text-muted)"} />
                         </div>
                         <div>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Clair</p>
-                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>Thème light</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t.dashboard.lightMode}</p>
                         </div>
                       </div>
                       {theme === "light" && (
-                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Actif</span>
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>{isEn ? "Active" : "Actif"}</span>
                       )}
                     </button>
                   </div>
@@ -2253,12 +2260,7 @@ export default function GestFiProDashboard() {
                 {/* ── Section Langue (Français / English) ── */}
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
                   <p className="section-label" style={{ marginBottom: 6 }}>
-                    {language === "en" ? "Application Language" : "Langue de l'application"}
-                  </p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
-                    {language === "en"
-                      ? "Choose your preferred language for the whole SaaS interface and dashboard."
-                      : "Choisissez votre langue préférée pour l'ensemble de l'interface GestFiPro."}
+                    {t.dashboard.settingsPage.languageLabel}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
@@ -2282,11 +2284,10 @@ export default function GestFiProDashboard() {
                         <span style={{ fontSize: 20 }}>🇫🇷</span>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Français</p>
-                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>FR (Afrique & Monde)</p>
                         </div>
                       </div>
                       {language === "fr" && (
-                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Actif</span>
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>{isEn ? "Active" : "Actif"}</span>
                       )}
                     </button>
 
@@ -2311,11 +2312,10 @@ export default function GestFiProDashboard() {
                         <span style={{ fontSize: 20 }}>🇬🇧</span>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>English</p>
-                          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}>EN (International)</p>
                         </div>
                       </div>
                       {language === "en" && (
-                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>Active</span>
+                        <span className="badge badge-success" style={{ fontSize: 9, padding: "2px 8px" }}>{isEn ? "Active" : "Actif"}</span>
                       )}
                     </button>
                   </div>
@@ -2338,7 +2338,7 @@ export default function GestFiProDashboard() {
                     }}
                   >
                     <CheckCircle2 size={14} />
-                    Paramètres enregistrés avec succès !
+                    {t.dashboard.settingsPage.savedSuccess}
                   </div>
                 )}
 
@@ -2348,14 +2348,14 @@ export default function GestFiProDashboard() {
                   onClick={handleSaveSettings}
                 >
                   <CheckCircle2 size={14} />
-                  Enregistrer les paramètres
+                  {t.dashboard.settingsPage.saveChangesBtn}
                 </button>
 
-                {/* ── Zone de Danger : Remise à zéro (Nouvel Utilisateur) ── */}
+                {/* ── Zone de Danger : Remise à zéro ── */}
                 <div style={{ borderTop: "1px solid #27272A", paddingTop: 18, marginTop: 4 }}>
-                  <p className="section-label" style={{ color: "#EF4444", marginBottom: 6 }}>Zone de Réinitialisation</p>
+                  <p className="section-label" style={{ color: "#EF4444", marginBottom: 6 }}>{isEn ? "Reset Zone" : "Zone de Réinitialisation"}</p>
                   <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 12 }}>
-                    Efface toutes les transactions, soldes, objectifs et profil pour repartir totalement à zéro comme un nouvel utilisateur.
+                    {isEn ? "Clears all transactions, balances, goals and settings to start fresh." : "Efface toutes les transactions, soldes, objectifs et profil pour repartir totalement à zéro comme un nouvel utilisateur."}
                   </p>
                   <button
                     type="button"
@@ -2387,7 +2387,7 @@ export default function GestFiProDashboard() {
                     }}
                   >
                     <Trash2 size={14} />
-                    Réinitialiser toutes les données (Remise à zéro)
+                    {isEn ? "Reset all application data" : "Réinitialiser toutes les données (Remise à zéro)"}
                   </button>
                 </div>
               </div>
@@ -2413,17 +2413,74 @@ export default function GestFiProDashboard() {
                     <BookOpen size={20} color="#EF4444" />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em" }}>Guide d'utilisation</h2>
-                    <p style={{ fontSize: 12, color: "#A1A1AA" }}>GestFiPro · Gestion financière de A à Z</p>
+                    <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em" }}>{t.dashboard?.guidePage?.title || (isEn ? "User Guide" : "Guide d'utilisation")}</h2>
+                    <p style={{ fontSize: 12, color: "#A1A1AA" }}>GestFiPro · {t.dashboard?.guidePage?.subtitle || (isEn ? "Complete Financial Management" : "Gestion financière de A à Z")}</p>
                   </div>
                 </div>
                 <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7 }}>
-                  Suivez ces 4 étapes pour configurer votre tableau de bord et commencer à suivre vos finances en temps réel.
+                  {((t.dashboard as any)?.guidePage?.description) || (isEn ? "Follow these 4 steps to configure your dashboard and track your finances in real time." : "Suivez ces 4 étapes pour configurer votre tableau de bord et commencer à suivre vos finances en temps réel.")}
                 </p>
               </div>
 
               {/* Étapes */}
-              {[
+              {(isEn ? [
+                {
+                  step: "01",
+                  icon: "🏦",
+                  title: "Set up your manual accounts",
+                  color: "#EF4444",
+                  content: [
+                    "Go to the **Accounts** tab via the sidebar.",
+                    "GestFiPro supports 4 account types: **Cash**, **Wave**, **Orange Money**, and **Bank**.",
+                    "For each account, enter your **current balance** as shown on your phone or statement.",
+                    "The **consolidated** balance (sum of all accounts) is permanently displayed in the dashboard header.",
+                    "You can update any balance anytime from Accounts → pencil icon.",
+                  ],
+                  tip: "💡 Tip: Start with your most used Mobile Money account to immediately reflect your everyday spending.",
+                },
+                {
+                  step: "02",
+                  icon: "💰",
+                  title: "Set your net salary & pay cycle",
+                  color: "#FAFAFA",
+                  content: [
+                    "Go to **Settings** (gear icon in the sidebar).",
+                    "Enter your **monthly net salary** in FCFA — the actual amount you receive.",
+                    "Set your **payday date** (e.g., 28th of every month).",
+                    "GestFiPro automatically calculates the days remaining until your next paycheck.",
+                    "These parameters calculate your **daily budget** = Balance ÷ Days remaining.",
+                  ],
+                  tip: "💡 If you are paid on the last business day, pick the 28th to give yourself a safety cushion.",
+                },
+                {
+                  step: "03",
+                  icon: "📅",
+                  title: "Understand the \"Days until payday\" counter",
+                  color: "#EF4444",
+                  content: [
+                    "The header **badge** displays the number of days until your next income.",
+                    "The **Daily Budget** card shows how much you can spend per day without running out of money.",
+                    "If the daily budget drops below **10,000 FCFA**, the card turns red — time to be cautious.",
+                    "The **Cashflow** chart tracks your balance progression over the last 7 days.",
+                    "The **Spending Pace** indicator compares today's spending to your recommended daily pace.",
+                  ],
+                  tip: "🎯 Goal: keep daily expenses strictly below your Daily Budget to finish the month stress-free.",
+                },
+                {
+                  step: "04",
+                  icon: "⚡",
+                  title: "Record expenses and income",
+                  color: "#DC2626",
+                  content: [
+                    "Click **Quick Add** (red button in header) or use the quick input at the bottom of the screen.",
+                    "For each transaction, provide: **title**, **amount**, **category** (Food, Transport, etc.), and **debited account**.",
+                    "Expenses immediately appear in the **Recent Transactions** feed on home.",
+                    "Visit the **History** tab to see all your transactions filtered and sorted by date.",
+                    "The **Statistics** tab visualizes category breakdowns to help you optimize habits.",
+                  ],
+                  tip: "⚡ Best practice: log each expense right away after paying — it only takes 10 seconds!",
+                },
+              ] : [
                 {
                   step: "01",
                   icon: "🏦",
@@ -2480,7 +2537,7 @@ export default function GestFiProDashboard() {
                   ],
                   tip: "⚡ Bonne pratique : saisissez chaque dépense immédiatement après l'avoir faite — 10 secondes suffisent !",
                 },
-              ].map((item, idx) => (
+              ]).map((item, idx) => (
                 <div key={item.step} style={{ marginBottom: idx < 3 ? 24 : 0 }}>
                   <div className="card" style={{ padding: "22px 24px", borderColor: `${item.color}22` }}>
                     {/* Numéro d'étape + titre */}
@@ -2497,7 +2554,7 @@ export default function GestFiProDashboard() {
                       </div>
                       <div>
                         <span style={{ fontSize: 10, fontWeight: 700, color: item.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                          Étape {item.step}
+                          {isEn ? `Step ${item.step}` : `Étape ${item.step}`}
                         </span>
                         <h3 style={{ fontSize: 15, fontWeight: 800, color: "#FAFAFA" }}>{item.title}</h3>
                       </div>
@@ -2558,7 +2615,7 @@ export default function GestFiProDashboard() {
                   onClick={() => setActiveTab("accueil")}
                 >
                   <LayoutDashboard size={14} />
-                  Commencer avec le tableau de bord
+                  {isEn ? "Go to Dashboard Home" : "Commencer avec le tableau de bord"}
                 </button>
               </div>
             </div>
@@ -2617,7 +2674,7 @@ export default function GestFiProDashboard() {
                 type="text"
                 value={quickInputText}
                 onChange={(e) => setQuickInputText(e.target.value)}
-                placeholder="Saisie rapide : taxi 5000, riz 3000..."
+                placeholder={t.dashboard?.home?.quickAddPlaceholder || (isEn ? "Quick entry: taxi 5000, groceries 3000..." : "Saisie rapide : taxi 5000, riz 3000...")}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -2632,8 +2689,8 @@ export default function GestFiProDashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button
                 type="button"
-                title="Saisie vocale (bientôt disponible)"
-                onClick={() => alert("🎙️ La saisie vocale sera disponible dans une prochaine version de GestFiPro.")}
+                title={isEn ? "Voice input (coming soon)" : "Saisie vocale (bientôt disponible)"}
+                onClick={() => alert(isEn ? "🎙️ Voice input will be available in an upcoming version of GestFiPro." : "🎙️ La saisie vocale sera disponible dans une prochaine version de GestFiPro.")}
                 style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 6, display: "flex", alignItems: "center" }}
               >
                 <Mic size={14} />
@@ -2744,7 +2801,7 @@ export default function GestFiProDashboard() {
                 className="btn-primary"
                 style={{ flex: 1, justifyContent: "center", padding: "9px 0" }}
               >
-                Compris
+                {isEn ? "Got it" : "Compris"}
               </button>
               <button
                 onClick={() => { setActiveNotif(null); setHasUnread(false); }}
@@ -2761,7 +2818,7 @@ export default function GestFiProDashboard() {
                   padding: "9px 0",
                 }}
               >
-                Marquer comme lu
+                {isEn ? "Mark as read" : "Marquer comme lu"}
               </button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import AddExpenseModal from "./dashboard/add-expense-modal";
 import GoalsCard from "./dashboard/goals-card";
 import MiniCalendar from "./MiniCalendar";
 import { AccountIcon } from "./AccountIcon";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
 
 // Dynamic imports for chart components
@@ -32,7 +33,7 @@ const CashflowChart = dynamic(() => import("./CashflowChart"), {
         justifyContent: "center",
       }}
     >
-      <span style={{ color: "#52525B", fontSize: 12 }}>Chargement du graphique…</span>
+      <span style={{ color: "#52525B", fontSize: 12 }}>...</span>
     </div>
   ),
 });
@@ -41,7 +42,7 @@ const DonutChart = dynamic(() => import("./DonutChart"), {
   ssr: false,
   loading: () => (
     <div style={{ height: 140, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <span style={{ color: "#52525B", fontSize: 12 }}>…</span>
+      <span style={{ color: "#52525B", fontSize: 12 }}>...</span>
     </div>
   ),
 });
@@ -66,16 +67,8 @@ interface DashboardViewProps {
 }
 
 function fmt(n: number) {
-  return Math.round(n).toLocaleString("fr-FR");
-}
-
-function formatDateFr(d: Date): string {
-  const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const months = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
+  return Math.round(n).toLocaleString(locale);
 }
 
 export default function DashboardView({
@@ -94,9 +87,16 @@ export default function DashboardView({
   userId = null,
   onTransactionAdded,
 }: DashboardViewProps) {
+  const { t, isEn, language } = useLanguage();
   const now = new Date();
   const todayNum = now.getDate();
-  const dateStr = formatDateFr(now);
+
+  // Format de date dynamique selon la langue
+  const dayName = t.dashboard.days[now.getDay()] || "";
+  const monthName = t.dashboard.months[now.getMonth()] || "";
+  const dateStr = isEn
+    ? `${dayName}, ${monthName} ${todayNum}, ${now.getFullYear()}`
+    : `${dayName} ${todayNum} ${monthName} ${now.getFullYear()}`;
 
   // ── État interne de la modal de saisie rapide ──
   const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -105,9 +105,19 @@ export default function DashboardView({
   const paydayWithMonth = profile?.payday_with_month ?? 0;
   const rawName = profile?.full_name?.trim() || "";
   const firstName = rawName.split(" ")[0] || "";
-  const displayGreeting = firstName && firstName.toLowerCase() !== "utilisateur"
-    ? `Bonjour ${firstName} 👋`
-    : "Bonjour 👋";
+
+  const hour = now.getHours();
+  const greetingPrefix =
+    hour < 12
+      ? t.dashboard.home.greetingMorning
+      : hour < 18
+      ? t.dashboard.home.greetingAfternoon
+      : t.dashboard.home.greetingEvening;
+
+  const displayGreeting =
+    firstName && firstName.toLowerCase() !== "utilisateur" && firstName.toLowerCase() !== "user"
+      ? `${greetingPrefix} ${firstName} 👋`
+      : `${greetingPrefix} 👋`;
 
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-5 px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
@@ -127,7 +137,7 @@ export default function DashboardView({
                 </h2>
               </div>
               <p className="text-xs text-[#A1A1AA]">
-                {dateStr} · Suivi budgétaire en temps réel
+                {dateStr} · {t.dashboard.smartFinanceSubtitle}
               </p>
             </>
           )}
@@ -136,7 +146,7 @@ export default function DashboardView({
         <div className="flex items-center gap-3 sm:gap-3.5 self-start sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
           <div className="text-left sm:text-right bg-[#18181B] border border-[#27272A] rounded-xl px-3.5 py-2">
             <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider">
-              Salaire net mensuel
+              {t.dashboard.paydayCard.salaryLabel}
             </p>
             <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
               {fmt(netSalary)} FCFA
@@ -144,7 +154,7 @@ export default function DashboardView({
           </div>
           <button onClick={() => setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
             <Plus className="w-4 h-4" />
-            <span>Nouvelle dépense</span>
+            <span>{t.dashboard.addTransaction}</span>
           </button>
         </div>
       </div>
@@ -174,9 +184,9 @@ export default function DashboardView({
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-bold text-[#FAFAFA]">
-                Évolution du Solde & Flux
+                {t.dashboard.home.cashflowTitle}
               </h3>
-              <p className="text-[11px] text-[#A1A1AA]">Trésorerie sur le cycle en cours</p>
+              <p className="text-[11px] text-[#A1A1AA]">{t.dashboard.home.cashflowSubtitle}</p>
             </div>
             <span className="badge text-[10px] px-2 py-0.5">XOF (FCFA)</span>
           </div>
@@ -203,15 +213,15 @@ export default function DashboardView({
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-bold text-[#FAFAFA]">
-                Répartition des Dépenses
+                {t.dashboard.home.categoryDistribution}
               </h3>
-              <p className="text-[11px] text-[#A1A1AA]">Par catégorie</p>
+              <p className="text-[11px] text-[#A1A1AA]">{t.dashboard.statsPage.expensesByCategory}</p>
             </div>
             <button
               onClick={() => onNavigate("statistiques")}
               className="text-[11px] text-[#EF4444] font-semibold flex items-center gap-0.5 hover:underline cursor-pointer"
             >
-              <span>Détails</span>
+              <span>{t.dashboard.seeMore}</span>
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -219,17 +229,17 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* ── SECTION COMPTES D'AFRIQUE DE L'OUEST ── */}
+      {/* ── SECTION COMPTES ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm sm:text-base font-bold text-[#FAFAFA]">
-            Mes Comptes de Trésorerie
+            {t.dashboard.home.yourAccounts}
           </h3>
           <button
             onClick={() => onNavigate("comptes")}
             className="text-xs text-[#EF4444] font-semibold flex items-center gap-1 hover:underline cursor-pointer"
           >
-            <span>Gérer les comptes</span>
+            <span>{t.dashboard.home.manageAccounts}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -241,10 +251,10 @@ export default function DashboardView({
             </div>
             <div>
               <p className="text-sm font-bold text-[#FAFAFA] mb-1">
-                Aucun compte enregistré
+                {t.dashboard.accountsPage.emptyAccounts}
               </p>
               <p className="text-xs text-[#A1A1AA] max-w-sm">
-                Ajoutez vos supports de trésorerie (Espèces, Wave, Orange Money, Banque...) pour suivre vos soldes au même endroit.
+                {t.dashboard.accountsPage.subtitle}
               </p>
             </div>
             <button
@@ -252,7 +262,7 @@ export default function DashboardView({
               className="btn-primary py-2 px-4 text-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter mon premier compte</span>
+              <span>{t.dashboard.accountsPage.addAccountBtn}</span>
             </button>
           </div>
         ) : (
@@ -287,11 +297,11 @@ export default function DashboardView({
             className="input-field flex-1 text-xs sm:text-sm"
             value={quickInputText}
             onChange={(e) => setQuickInputText(e.target.value)}
-            placeholder="⚡ Saisie rapide : ex. 'Déjeuner 3000 Espèces' ou 'Essence 10000 Wave'..."
+            placeholder={t.dashboard.home.quickAddPlaceholder}
           />
           <button type="submit" className="btn-primary py-2.5 px-5 text-xs font-bold shrink-0 justify-center">
             <Send className="w-3.5 h-3.5" />
-            <span>Ajouter</span>
+            <span>{t.dashboard.home.quickAddSubmit}</span>
           </button>
         </form>
       </div>
@@ -306,7 +316,7 @@ export default function DashboardView({
         />
       </div>
 
-      {/* ── SECTION HISTORIQUE RÉCENT + RÉPARTITION PAR CATÉGORIE (Grid 2 colonnes) ── */}
+      {/* ── SECTION HISTORIQUE RÉCENT + RÉPARTITION PAR CATÉGORIE ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* ════════ COLONNE 1 : HISTORIQUE RÉCENT ════════ */}
         <div className="card p-4 sm:p-6 rounded-2xl flex flex-col justify-between">
@@ -344,10 +354,10 @@ export default function DashboardView({
                     lineHeight: 1.2,
                   }}
                 >
-                  Historique Récent
+                  {t.dashboard.home.recentTransactionsTitle}
                 </h3>
                 <p style={{ fontSize: 10, color: "#71717A", marginTop: 1 }}>
-                  5 dernières opérations
+                  {t.dashboard.home.lastTransaction}
                 </p>
               </div>
             </div>
@@ -376,7 +386,7 @@ export default function DashboardView({
                 (e.currentTarget.style.background = "transparent")
               }
             >
-              Voir tout <ChevronRight size={12} />
+              {t.dashboard.home.viewAll} <ChevronRight size={12} />
             </button>
           </div>
 
@@ -398,12 +408,10 @@ export default function DashboardView({
                 style={{ margin: "0 auto 10px", opacity: 0.4 }}
               />
               <p style={{ fontSize: 13, fontWeight: 600, color: "#A1A1AA" }}>
-                Aucune transaction
+                {t.dashboard.home.noTransactions}
               </p>
               <p style={{ fontSize: 11, marginTop: 4, textAlign: "center" }}>
-                Cliquez sur « Nouvelle dépense » pour
-                <br />
-                enregistrer votre premier mouvement.
+                {t.dashboard.home.addFirstExpense}
               </p>
             </div>
           ) : (
@@ -428,12 +436,12 @@ export default function DashboardView({
                   const diffDays = Math.floor(
                     diffMs / (1000 * 60 * 60 * 24)
                   );
-                  if (diffDays === 0) relativeDate = "Aujourd'hui";
-                  else if (diffDays === 1) relativeDate = "Hier";
+                  if (diffDays === 0) relativeDate = t.dashboard.historyPage.today;
+                  else if (diffDays === 1) relativeDate = t.dashboard.historyPage.yesterday;
                   else if (diffDays < 7)
-                    relativeDate = `Il y a ${diffDays} jours`;
+                    relativeDate = isEn ? `${diffDays} days ago` : `Il y a ${diffDays} jours`;
                   else
-                    relativeDate = txD.toLocaleDateString("fr-FR", {
+                    relativeDate = txD.toLocaleDateString(language === "en" ? "en-US" : "fr-FR", {
                       day: "numeric",
                       month: "short",
                     });
@@ -543,8 +551,7 @@ export default function DashboardView({
                               color: "#52525B",
                             }}
                           >
-                            {tx.account ||
-                              "Compte principal"}
+                            {tx.account || (isEn ? "Main Account" : "Compte principal")}
                           </span>
                           {/* Séparateur */}
                           <span
@@ -640,10 +647,10 @@ export default function DashboardView({
                     lineHeight: 1.2,
                   }}
                 >
-                  Répartition des Dépenses
+                  {t.dashboard.home.categoryDistribution}
                 </h3>
                 <p style={{ fontSize: 10, color: "#71717A", marginTop: 1 }}>
-                  Mois en cours par catégorie
+                  {t.dashboard.statsPage.currentMonth}
                 </p>
               </div>
             </div>
@@ -672,7 +679,7 @@ export default function DashboardView({
                 (e.currentTarget.style.background = "transparent")
               }
             >
-              Détails <ChevronRight size={12} />
+              {t.dashboard.seeMore} <ChevronRight size={12} />
             </button>
           </div>
 
@@ -691,7 +698,7 @@ export default function DashboardView({
                   d.getFullYear() === currentYear
                 );
               }
-              return true; // inclure les transactions sans date parsée
+              return true;
             });
 
             const categoryColorMap: Record<string, string> = {
@@ -713,7 +720,7 @@ export default function DashboardView({
               { total: number; color: string }
             >();
             monthExpenses.forEach((t) => {
-              const cat = t.category || "Divers";
+              const cat = t.category || (isEn ? "Other" : "Divers");
               const existing = categoryMap.get(cat) || {
                 total: 0,
                 color:
@@ -765,18 +772,7 @@ export default function DashboardView({
                       color: "#A1A1AA",
                     }}
                   >
-                    Aucune dépense ce mois
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      marginTop: 4,
-                      textAlign: "center",
-                    }}
-                  >
-                    Les données de répartition
-                    <br />
-                    apparaîtront avec vos premières dépenses.
+                    {t.dashboard.home.noExpensesMonth}
                   </p>
                 </div>
               );
@@ -886,7 +882,7 @@ export default function DashboardView({
                         marginTop: 2,
                       }}
                     >
-                      FCFA ce mois
+                      FCFA {isEn ? "this month" : "ce mois"}
                     </p>
                   </div>
                 </div>
@@ -992,7 +988,6 @@ export default function DashboardView({
         </div>
       </div>
 
-
       {/* ── MODAL DE SAISIE RAPIDE (AddExpenseModal) ── */}
       <AddExpenseModal
         isOpen={showExpenseModal}
@@ -1000,7 +995,6 @@ export default function DashboardView({
         accounts={accounts}
         userId={userId}
         onTransactionAdded={() => {
-          // Fermer la modal et notifier le parent pour rafraîchir les données
           setShowExpenseModal(false);
           if (onTransactionAdded) {
             onTransactionAdded();

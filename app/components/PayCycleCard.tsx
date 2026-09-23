@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface PayCycleCardProps {
   netSalary: number;
@@ -20,8 +21,8 @@ interface PayCycleCardProps {
   todayTransactionsCount?: number;
 }
 
-function fmt(n: number) {
-  return Math.round(n).toLocaleString("fr-FR");
+function fmt(n: number, locale: string) {
+  return Math.round(n).toLocaleString(locale);
 }
 
 export function computePayCycle(paydayWithMonth: number | null | undefined, totalBalance: number) {
@@ -69,6 +70,8 @@ export default function PayCycleCard({
   accountsCount = 0,
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
+  const { language, t, isEn } = useLanguage();
+  const locale = language === "en" ? "en-US" : "fr-FR";
   const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
     totalBalance
@@ -90,12 +93,16 @@ export default function PayCycleCard({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tracking-tight">
-                Cycle de Paie
+                {t.dashboard.paydayCard.title}
               </h3>
               <p className="text-xs text-[#A1A1AA] mt-0.5">
                 {isConfigured
-                  ? `Versement prévu le ${safePayday} du mois · Jour ${todayNum} en cours`
-                  : "Aucun jour de paie configuré"}
+                  ? isEn
+                    ? `Payment due on ${safePayday} of the month · Day ${todayNum} in progress`
+                    : `Versement prévu le ${safePayday} du mois · Jour ${todayNum} en cours`
+                  : isEn
+                    ? "No payday configured"
+                    : "Aucun jour de paie configuré"}
               </p>
             </div>
           </div>
@@ -103,11 +110,11 @@ export default function PayCycleCard({
           {isConfigured ? (
             <span className="badge badge-success inline-flex items-center gap-1.5 px-3 py-1 text-xs self-start sm:self-auto">
               <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-[#EF4444] inline-block" />
-              Cycle actif (J-{daysRemaining})
+              {isEn ? `Active cycle (D-${daysRemaining})` : `Cycle actif (J-${daysRemaining})`}
             </span>
           ) : (
             <span className="badge inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-[#27272A] text-[#A1A1AA] border border-[#3F3F46] self-start sm:self-auto">
-              Jour non défini
+              {isEn ? "Day not set" : "Jour non défini"}
             </span>
           )}
         </div>
@@ -118,7 +125,7 @@ export default function PayCycleCard({
           <div className="bg-[#09090B] border border-[#27272A] rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                Jours restants avant la paie
+                {isEn ? "Days until payday" : "Jours restants avant la paie"}
               </span>
               <Clock className="w-4 h-4 text-[#A1A1AA]" />
             </div>
@@ -127,11 +134,11 @@ export default function PayCycleCard({
               <span className={`text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums ${
                 isConfigured ? "text-[#FAFAFA]" : "text-[#71717A]"
               }`}>
-                {isConfigured ? daysRemaining : "Non défini"}
+                {isConfigured ? daysRemaining : isEn ? "Not set" : "Non défini"}
               </span>
               {isConfigured && (
                 <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
-                  {daysRemaining > 1 ? "jours restants" : "jour restant"}
+                  {daysRemaining > 1 ? (isEn ? "days left" : "jours restants") : (isEn ? "day left" : "jour restant")}
                 </span>
               )}
             </div>
@@ -139,8 +146,8 @@ export default function PayCycleCard({
             {/* Barre d'avancement du cycle */}
             <div className="mt-2">
               <div className="flex justify-between text-[10px] text-[#71717A] mb-1">
-                <span>Cycle en cours</span>
-                <span>{isConfigured ? `Prochaine paie : le ${safePayday}` : "Jour de paie requis"}</span>
+                <span>{isEn ? "Pay cycle in progress" : "Cycle en cours"}</span>
+                <span>{isConfigured ? (isEn ? `Next payday: ${safePayday}` : `Prochaine paie : le ${safePayday}`) : (isEn ? "Payday date required" : "Jour de paie requis")}</span>
               </div>
               <div className="h-1.5 w-full bg-[#18181B] rounded-full overflow-hidden">
                 <div
@@ -159,34 +166,34 @@ export default function PayCycleCard({
               <span className={`text-[11px] font-bold uppercase tracking-wider ${
                 isBudgetCritical ? "text-[#f87171]" : "text-[#A1A1AA]"
               }`}>
-                Budget journalier autorisé
+                {isEn ? "Authorized daily budget" : "Budget journalier autorisé"}
               </span>
               <Zap className="w-4 h-4 text-[#EF4444]" />
             </div>
 
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-[#EF4444]">
-                {fmt(dailyBudget)}
+                {fmt(dailyBudget, locale)}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
-                FCFA / jour
+                {isEn ? "FCFA / day" : "FCFA / jour"}
               </span>
             </div>
 
             <div className="mt-2">
               <p className="text-[11px] font-medium text-[#A1A1AA] mb-1.5">
-                Solde ({fmt(totalBalance)} FCFA) ÷ {daysRemaining} {daysRemaining > 1 ? "jours" : "jour"}
+                {isEn ? `Balance (${fmt(totalBalance, locale)} FCFA) ÷ ${daysRemaining} ${daysRemaining > 1 ? "days" : "day"}` : `Solde (${fmt(totalBalance, locale)} FCFA) ÷ ${daysRemaining} ${daysRemaining > 1 ? "jours" : "jour"}`}
               </p>
               <div className="flex items-center gap-1.5">
                 {isBudgetCritical ? (
                   <span className="badge badge-danger text-[10px] px-2 py-0.5">
                     <AlertTriangle className="w-3 h-3" />
-                    Vigilance : budget sous 10 000 FCFA/j
+                    {isEn ? "Warning: daily budget under 10,000 FCFA" : "Vigilance : budget sous 10 000 FCFA/j"}
                   </span>
                 ) : (
                   <span className="badge badge-success text-[10px] px-2 py-0.5">
                     <CheckCircle2 className="w-3 h-3" />
-                    Rythme conseillé équilibré
+                    {isEn ? "Balanced spending pace" : "Rythme conseillé équilibré"}
                   </span>
                 )}
               </div>
@@ -201,19 +208,19 @@ export default function PayCycleCard({
         <div className="card animate-fade-in-up-2 p-4 sm:p-5 rounded-xl sm:rounded-2xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] text-[#A1A1AA] font-bold uppercase tracking-wider">
-              Solde total disponible
+              {isEn ? "Total available balance" : "Solde total disponible"}
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center text-[#EF4444]">
               <CircleDollarSign className="w-4 h-4" />
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
-            {fmt(totalBalance)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+            {fmt(totalBalance, locale)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#71717A]">
-            <span>Consolidé sur {accountsCount} compte{accountsCount > 1 ? "s" : ""}</span>
+            <span>{isEn ? `Consolidated across ${accountsCount} account${accountsCount > 1 ? "s" : ""}` : `Consolidé sur ${accountsCount} compte${accountsCount > 1 ? "s" : ""}`}</span>
             {netSalary > 0 && (
-              <span>· Salaire : {fmt(netSalary)} FCFA</span>
+              <span>· {isEn ? "Salary" : "Salaire"} : {fmt(netSalary, locale)} FCFA</span>
             )}
           </div>
         </div>
@@ -229,7 +236,7 @@ export default function PayCycleCard({
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
-            {fmt(todayExpenses)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
+            {fmt(todayExpenses, locale)} <span className="text-xs font-semibold text-[#A1A1AA]">FCFA</span>
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className={`badge ${rhythmAlert ? "badge-danger" : "badge-warning"} text-[10px] px-2 py-0.5`}>

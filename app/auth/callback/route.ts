@@ -7,13 +7,11 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next") ?? "/dashboard";
 
-  // Déterminer l'URL d'origine propre (gère reverse proxies, HTTPS, Vercel, localhost)
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  const isLocal = requestUrl.hostname === "localhost" || requestUrl.hostname === "127.0.0.1";
-  
-  const origin = forwardedHost && !isLocal
-    ? `${forwardedProto}://${forwardedHost}`
+  // Vercel transmet l'hôte public dans ces en-têtes proxy.
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0].trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
+  const origin = forwardedHost
+    ? `${forwardedProto || "https"}://${forwardedHost}`
     : requestUrl.origin;
 
   // Gérer d'éventuelles erreurs renvoyées directement par le fournisseur OAuth
@@ -36,8 +34,8 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sYmNidHhxYmltaGtyY3dza3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTM3NjgsImV4cCI6MjEwNDM2OTc2OH0.wDcWOuAxHUjIK9mwSYA6r4Bjl9nUzRARRknwC42mnBU";
 
-    // Target redirect destination
-    const targetPath = next.startsWith("/") ? next : `/${next}`;
+    // Only allow internal paths as the post-login destination.
+    const targetPath = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
     const redirectTarget = new URL(targetPath, origin);
     const response = NextResponse.redirect(redirectTarget);
 

@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { Account } from "@/lib/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -40,20 +41,6 @@ interface AddExpenseModalProps {
   }) => void;
 }
 
-// ─── Catégories disponibles ──────────────────────────────────────────────────
-
-const CATEGORIES = [
-  { label: "Nourriture", emoji: "🍽️" },
-  { label: "Transport", emoji: "🚕" },
-  { label: "Logement", emoji: "🏠" },
-  { label: "Factures", emoji: "📄" },
-  { label: "Loisirs", emoji: "🎮" },
-  { label: "Santé", emoji: "💊" },
-  { label: "Éducation", emoji: "📚" },
-  { label: "Vêtements", emoji: "👕" },
-  { label: "Divers", emoji: "📦" },
-];
-
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
@@ -70,12 +57,25 @@ export default function AddExpenseModal({
   onTransactionAdded,
 }: AddExpenseModalProps) {
   const supabase = createClient();
+  const { t, isEn } = useLanguage();
+
+  const categoriesList = [
+    { key: "food", label: t.dashboard.transactionModal.categories.food, emoji: "🍽️" },
+    { key: "transport", label: t.dashboard.transactionModal.categories.transport, emoji: "🚕" },
+    { key: "housing", label: t.dashboard.transactionModal.categories.housing, emoji: "🏠" },
+    { key: "utilities", label: t.dashboard.transactionModal.categories.utilities, emoji: "📄" },
+    { key: "leisure", label: t.dashboard.transactionModal.categories.leisure, emoji: "🎮" },
+    { key: "health", label: t.dashboard.transactionModal.categories.health, emoji: "💊" },
+    { key: "education", label: t.dashboard.transactionModal.categories.education, emoji: "📚" },
+    { key: "shopping", label: t.dashboard.transactionModal.categories.shopping, emoji: "👕" },
+    { key: "other", label: t.dashboard.transactionModal.categories.other, emoji: "📦" },
+  ];
 
   // ── Form state ──
   const [type, setType] = useState<"expense" | "income">("expense");
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0].label);
+  const [category, setCategory] = useState(categoriesList[0].label);
   const [accountId, setAccountId] = useState<string>("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -98,7 +98,7 @@ export default function AddExpenseModal({
       setType("expense");
       setTitle("");
       setAmount("");
-      setCategory(CATEGORIES[0].label);
+      setCategory(categoriesList[0].label);
       setNote("");
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
@@ -121,15 +121,15 @@ export default function AddExpenseModal({
     // Validation
     const parsedAmount = Number(amount);
     if (!title.trim()) {
-      setError("Veuillez saisir un libellé.");
+      setError(isEn ? "Please enter a description." : "Veuillez saisir un libellé.");
       return;
     }
     if (!parsedAmount || parsedAmount <= 0) {
-      setError("Veuillez saisir un montant valide.");
+      setError(isEn ? "Please enter a valid amount." : "Veuillez saisir un montant valide.");
       return;
     }
     if (!accountId) {
-      setError("Veuillez sélectionner un compte (ou créer un premier compte dans l'onglet Comptes).");
+      setError(isEn ? "Please select an account." : "Veuillez sélectionner un compte (ou créer un premier compte dans l'onglet Comptes).");
       return;
     }
 
@@ -162,7 +162,7 @@ export default function AddExpenseModal({
         if (txError) {
           console.error("Erreur insertion transaction :", txError);
           setError(
-            txError.message || "Impossible d'enregistrer la transaction."
+            txError.message || (isEn ? "Failed to save transaction." : "Impossible d'enregistrer la transaction.")
           );
           setLoading(false);
           return;
@@ -181,7 +181,6 @@ export default function AddExpenseModal({
 
           if (accError) {
             console.error("Erreur mise à jour solde :", accError);
-            // La transaction est créée, on ne bloque pas l'UX
           }
         }
 
@@ -195,7 +194,7 @@ export default function AddExpenseModal({
             type: txData.type,
             transaction_date: txData.transaction_date,
             account_id: txData.account_id,
-            account_name: selectedAccount?.name || "Compte",
+            account_name: selectedAccount?.name || (isEn ? "Account" : "Compte"),
             note: txData.note || "",
           });
         }
@@ -210,7 +209,7 @@ export default function AddExpenseModal({
             type,
             transaction_date: txDate,
             account_id: isUuid ? accountId : null,
-            account_name: selectedAccount?.name || "Compte",
+            account_name: selectedAccount?.name || (isEn ? "Account" : "Compte"),
             note: note.trim(),
           });
         }
@@ -223,7 +222,7 @@ export default function AddExpenseModal({
         onClose();
       }, 800);
     } catch (err: any) {
-      setError(err?.message || "Une erreur inattendue est survenue.");
+      setError(err?.message || (isEn ? "An unexpected error occurred." : "Une erreur inattendue est survenue."));
     } finally {
       setLoading(false);
     }
@@ -288,10 +287,12 @@ export default function AddExpenseModal({
                 letterSpacing: "-0.02em",
               }}
             >
-              Nouvelle saisie
+              {type === "expense"
+                ? t.dashboard.transactionModal.titleExpense
+                : t.dashboard.transactionModal.titleIncome}
             </h3>
             <p style={{ fontSize: 11, color: "#A1A1AA", marginTop: 2 }}>
-              Enregistrez une dépense ou un revenu
+              {isEn ? "Log an expense or income entry" : "Enregistrez une dépense ou un revenu"}
             </p>
           </div>
           <button
@@ -355,7 +356,7 @@ export default function AddExpenseModal({
               }}
             >
               <ArrowUpCircle size={14} />
-              Dépense
+              {t.dashboard.transactionModal.typeExpense}
             </button>
             <button
               type="button"
@@ -383,13 +384,13 @@ export default function AddExpenseModal({
               }}
             >
               <ArrowDownCircle size={14} />
-              Revenu
+              {t.dashboard.transactionModal.typeIncome}
             </button>
           </div>
 
           {/* ── Libellé ── */}
           <div>
-            <label style={labelStyle}>Libellé</label>
+            <label style={labelStyle}>{t.dashboard.transactionModal.descriptionLabel}</label>
             <div style={{ position: "relative" }}>
               <FileText
                 size={14}
@@ -409,7 +410,7 @@ export default function AddExpenseModal({
                   setTitle(e.target.value);
                   setError(null);
                 }}
-                placeholder="Ex: Déjeuner, Taxi, Loyer..."
+                placeholder={t.dashboard.transactionModal.descriptionPlaceholder}
                 required
                 style={{ ...inputStyle, paddingLeft: 36 }}
               />
@@ -418,7 +419,7 @@ export default function AddExpenseModal({
 
           {/* ── Montant ── */}
           <div>
-            <label style={labelStyle}>Montant (FCFA)</label>
+            <label style={labelStyle}>{t.dashboard.transactionModal.amountLabel}</label>
             <div style={{ position: "relative" }}>
               <Wallet
                 size={14}
@@ -471,15 +472,15 @@ export default function AddExpenseModal({
             <div>
               <label style={labelStyle}>
                 <Tag size={10} style={{ display: "inline", marginRight: 4 }} />
-                Catégorie
+                {t.dashboard.transactionModal.categoryLabel}
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 style={selectStyle}
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.label} value={cat.label}>
+                {categoriesList.map((cat) => (
+                  <option key={cat.key} value={cat.label}>
                     {cat.emoji} {cat.label}
                   </option>
                 ))}
@@ -490,7 +491,7 @@ export default function AddExpenseModal({
             <div>
               <label style={labelStyle}>
                 <Wallet size={10} style={{ display: "inline", marginRight: 4 }} />
-                Compte
+                {t.dashboard.transactionModal.accountLabel}
               </label>
               <select
                 value={accountId}
@@ -498,7 +499,7 @@ export default function AddExpenseModal({
                 style={selectStyle}
               >
                 {accounts.length === 0 ? (
-                  <option value="">Aucun compte configuré</option>
+                  <option value="">{isEn ? "No account configured" : "Aucun compte configuré"}</option>
                 ) : (
                   accounts.map((acc) => (
                     <option key={String(acc.id)} value={String(acc.id)}>
@@ -516,7 +517,7 @@ export default function AddExpenseModal({
             <div>
               <label style={labelStyle}>
                 <CalendarDays size={10} style={{ display: "inline", marginRight: 4 }} />
-                Date
+                {t.dashboard.transactionModal.dateLabel}
               </label>
               <input
                 type="date"
@@ -528,12 +529,12 @@ export default function AddExpenseModal({
 
             {/* Note */}
             <div>
-              <label style={labelStyle}>Note (optionnel)</label>
+              <label style={labelStyle}>Note ({isEn ? "optional" : "optionnel"})</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Détail..."
+                placeholder={isEn ? "Details..." : "Détail..."}
                 style={inputStyle}
               />
             </div>
@@ -588,12 +589,12 @@ export default function AddExpenseModal({
             {loading ? (
               <>
                 <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                Enregistrement...
+                {t.dashboard.transactionModal.submitting}
               </>
             ) : success ? (
               <>
                 <CheckCircle2 size={16} />
-                Enregistré !
+                {isEn ? "Saved!" : "Enregistré !"}
               </>
             ) : (
               <>
@@ -603,8 +604,8 @@ export default function AddExpenseModal({
                   <ArrowDownCircle size={16} />
                 )}
                 {type === "expense"
-                  ? "Enregistrer la dépense"
-                  : "Enregistrer le revenu"}
+                  ? (isEn ? "Save expense" : "Enregistrer la dépense")
+                  : (isEn ? "Save income" : "Enregistrer le revenu")}
               </>
             )}
           </button>

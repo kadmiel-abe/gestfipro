@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { CalendarClock, Wallet, TrendingDown, Settings, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ export default function PaydayCard({
   currency = "FCFA",
   onNavigate,
 }: PaydayCardProps) {
+  const { t, isEn } = useLanguage();
   const isConfigured = Boolean(paydayDate && paydayDate > 0 && paydayDate <= 31);
 
   const { daysRemaining, dailyBudget, isUrgent, progressPercent } = useMemo(() => {
@@ -146,7 +148,7 @@ export default function PaydayCard({
                 lineHeight: 1.2,
               }}
             >
-              Cycle de Paie
+              {t.dashboard.paydayCard.title}
             </h3>
             <p
               style={{
@@ -156,7 +158,7 @@ export default function PaydayCard({
                 marginTop: 1,
               }}
             >
-              {isConfigured ? "Budget quotidien intelligent" : "Configurez votre date pour activer le calcul"}
+              {isConfigured ? t.dashboard.paydayCard.subtitleActive : t.dashboard.paydayCard.subtitleInactive}
             </p>
           </div>
         </div>
@@ -180,7 +182,7 @@ export default function PaydayCard({
             }}
           >
             <CalendarClock size={12} />
-            Paie le {paydayDate}
+            {t.dashboard.paydayCard.payOnDay} {paydayDate}
           </span>
         ) : (
           <button
@@ -203,7 +205,7 @@ export default function PaydayCard({
             }}
           >
             <AlertCircle size={12} />
-            Jour non défini — Configurer
+            {t.dashboard.paydayCard.notSetConfigure}
           </button>
         )}
       </div>
@@ -260,7 +262,7 @@ export default function PaydayCard({
                 letterSpacing: "0.06em",
               }}
             >
-              Jours avant la paie
+              {t.dashboard.paydayCard.daysRemainingLabel}
             </span>
           </div>
 
@@ -286,7 +288,7 @@ export default function PaydayCard({
                     color: isUrgent ? "#F87171" : "#71717A",
                   }}
                 >
-                  jour{daysRemaining > 1 ? "s" : ""}
+                  {isEn ? (daysRemaining > 1 ? "days" : "day") : (daysRemaining > 1 ? "jours" : "jour")}
                 </span>
               </div>
 
@@ -312,7 +314,7 @@ export default function PaydayCard({
                       animation: "pulse 2s infinite",
                     }}
                   />
-                  Fin de cycle proche
+                  {t.dashboard.paydayCard.urgentWarning}
                 </span>
               )}
             </>
@@ -326,7 +328,7 @@ export default function PaydayCard({
                   letterSpacing: "-0.02em",
                 }}
               >
-                Non configuré
+                {t.dashboard.paydayCard.notSetConfigure}
               </span>
               {onNavigate && (
                 <button
@@ -346,7 +348,7 @@ export default function PaydayCard({
                     gap: 4,
                   }}
                 >
-                  <Settings size={12} /> Définir mon jour de paie →
+                  <Settings size={12} /> {t.dashboard.paydayCard.notSetConfigure} →
                 </button>
               )}
             </div>
@@ -376,7 +378,7 @@ export default function PaydayCard({
                 letterSpacing: "0.06em",
               }}
             >
-              Budget / Jour
+              {t.dashboard.paydayCard.dailyBudgetLabel}
             </span>
           </div>
 
@@ -425,7 +427,7 @@ export default function PaydayCard({
                 fontWeight: 600,
               }}
             >
-              Solde total : {fmt(totalBalance)} {currency}
+              {t.dashboard.balance} : {fmt(totalBalance)} {currency}
             </span>
           </div>
         </div>

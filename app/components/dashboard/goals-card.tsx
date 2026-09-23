@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { Goal } from "@/lib/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ function CreateGoalModal({
   onGoalCreated,
 }: CreateGoalModalProps) {
   const supabase = createClient();
+  const { t, isEn } = useLanguage();
   const [title, setTitle] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [targetDate, setTargetDate] = useState("");
@@ -83,12 +85,12 @@ function CreateGoalModal({
     setError(null);
 
     if (!title.trim()) {
-      setError("Veuillez saisir un nom pour votre objectif.");
+      setError(isEn ? "Please enter a title for your goal." : "Veuillez saisir un nom pour votre objectif.");
       return;
     }
     const amount = Number(targetAmount);
     if (!amount || amount <= 0) {
-      setError("Veuillez saisir un montant cible valide.");
+      setError(isEn ? "Please enter a valid target amount." : "Veuillez saisir un montant cible valide.");
       return;
     }
 
@@ -115,7 +117,7 @@ function CreateGoalModal({
         if (onGoalCreated) onGoalCreated();
       }, 600);
     } catch (err: any) {
-      setError(err?.message || "Erreur inattendue.");
+      setError(err?.message || (isEn ? "Unexpected error." : "Erreur inattendue."));
     } finally {
       setLoading(false);
     }
@@ -179,10 +181,10 @@ function CreateGoalModal({
                 letterSpacing: "-0.02em",
               }}
             >
-              Nouvel objectif d&apos;épargne
+              {t.dashboard.goalsPage.modalTitle}
             </h3>
             <p style={{ fontSize: 11, color: "#A1A1AA", marginTop: 2 }}>
-              Définissez un objectif et suivez votre progression
+              {isEn ? "Set a target for your project" : "Définissez une cible financière pour votre projet"}
             </p>
           </div>
           <button
@@ -199,21 +201,13 @@ function CreateGoalModal({
               justifyContent: "center",
               cursor: "pointer",
               color: "#A1A1AA",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#EF4444";
-              e.currentTarget.style.color = "#FAFAFA";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#27272A";
-              e.currentTarget.style.color = "#A1A1AA";
             }}
           >
             <X size={16} />
           </button>
         </div>
 
+        {/* Formulaire */}
         <form
           onSubmit={handleSubmit}
           style={{
@@ -223,9 +217,9 @@ function CreateGoalModal({
             gap: 14,
           }}
         >
-          {/* Titre */}
+          {/* Nom du projet */}
           <div>
-            <label style={labelStyle}>Nom de l&apos;objectif</label>
+            <label style={labelStyle}>{t.dashboard.goalsPage.goalTitleLabel}</label>
             <input
               type="text"
               value={title}
@@ -233,7 +227,7 @@ function CreateGoalModal({
                 setTitle(e.target.value);
                 setError(null);
               }}
-              placeholder="Ex: Fonds d'urgence, Voyage, Moto..."
+              placeholder={t.dashboard.goalsPage.goalTitlePlaceholder}
               required
               style={inputStyle}
             />
@@ -241,7 +235,7 @@ function CreateGoalModal({
 
           {/* Montant cible */}
           <div>
-            <label style={labelStyle}>Montant cible (FCFA)</label>
+            <label style={labelStyle}>{t.dashboard.goalsPage.targetAmountLabel}</label>
             <div style={{ position: "relative" }}>
               <input
                 type="number"
@@ -284,7 +278,7 @@ function CreateGoalModal({
                 size={10}
                 style={{ display: "inline", marginRight: 4 }}
               />
-              Date cible (optionnel)
+              {t.dashboard.goalsPage.deadlineLabel} ({isEn ? "optional" : "optionnel"})
             </label>
             <input
               type="date"
@@ -342,17 +336,17 @@ function CreateGoalModal({
                   size={16}
                   style={{ animation: "spin 1s linear infinite" }}
                 />
-                Création...
+                {isEn ? "Creating..." : "Création..."}
               </>
             ) : success ? (
               <>
                 <CheckCircle2 size={16} />
-                Objectif créé !
+                {isEn ? "Goal created!" : "Objectif créé !"}
               </>
             ) : (
               <>
                 <Target size={16} />
-                Créer l&apos;objectif
+                {t.dashboard.goalsPage.saveBtn}
               </>
             )}
           </button>
@@ -378,6 +372,7 @@ export default function GoalsCard({
   onNavigate,
 }: GoalsCardProps) {
   const supabase = createClient();
+  const { t, isEn, language } = useLanguage();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [feedingGoalId, setFeedingGoalId] = useState<string | null>(null);
   const [feedAmount, setFeedAmount] = useState("");
@@ -460,11 +455,10 @@ export default function GoalsCard({
                   lineHeight: 1.2,
                 }}
               >
-                Objectifs d&apos;Épargne
+                {t.dashboard.home.savingsGoals}
               </h3>
               <p style={{ fontSize: 10, color: "#71717A", marginTop: 1 }}>
-                {goals.length} objectif{goals.length !== 1 ? "s" : ""} actif
-                {goals.length !== 1 ? "s" : ""}
+                {goals.length} {isEn ? (goals.length > 1 ? "active goals" : "active goal") : (goals.length > 1 ? "objectifs actifs" : "objectif actif")}
               </p>
             </div>
           </div>
@@ -492,7 +486,7 @@ export default function GoalsCard({
                   (e.currentTarget.style.background = "transparent")
                 }
               >
-                Voir tout
+                {t.dashboard.home.seeAllGoals}
               </button>
             )}
             <button
@@ -522,7 +516,7 @@ export default function GoalsCard({
               }}
             >
               <Plus size={12} />
-              Ajouter
+              {isEn ? "Add" : "Ajouter"}
             </button>
           </div>
         </div>
@@ -543,10 +537,7 @@ export default function GoalsCard({
             <p
               style={{ fontSize: 13, fontWeight: 600, color: "#A1A1AA" }}
             >
-              Aucun objectif d&apos;épargne
-            </p>
-            <p style={{ fontSize: 11, marginTop: 4 }}>
-              Créez votre premier objectif pour commencer à épargner.
+              {t.dashboard.goalsPage.emptyGoals}
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -567,7 +558,7 @@ export default function GoalsCard({
               }}
             >
               <Plus size={13} />
-              Créer un objectif
+              {t.dashboard.goalsPage.addFirstGoal}
             </button>
           </div>
         ) : (
@@ -664,9 +655,8 @@ export default function GoalsCard({
                               marginTop: 1,
                             }}
                           >
-                            Échéance :{" "}
-                            {new Date(goal.target_date).toLocaleDateString(
-                              "fr-FR",
+                            {isEn ? "Due:" : "Échéance :"} {new Date(goal.target_date).toLocaleDateString(
+                              language === "en" ? "en-US" : "fr-FR",
                               { day: "numeric", month: "short", year: "numeric" }
                             )}
                           </p>
@@ -747,7 +737,7 @@ export default function GoalsCard({
                           (e.currentTarget.style.background = "transparent")
                         }
                       >
-                        + Alimenter
+                        + {isEn ? "Fund" : "Alimenter"}
                       </button>
                     )}
 
@@ -763,7 +753,7 @@ export default function GoalsCard({
                         }}
                       >
                         <CheckCircle2 size={12} />
-                        Atteint !
+                        {t.dashboard.goalsPage.goalCompleted}
                       </span>
                     )}
                   </div>

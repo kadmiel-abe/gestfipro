@@ -77,6 +77,16 @@ const DonutChart = dynamic(() => import("../components/DonutChart"), {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type TabKey = "accueil" | "comptes" | "historique" | "statistiques" | "objectifs" | "reglages" | "guide";
+type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
+
+const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> = {
+  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF" },
+  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF" },
+  NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN" },
+  KES: { label: "KES (KSh Kenya)", shortLabel: "KES" },
+  ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR" },
+  USD: { label: "USD ($)", shortLabel: "USD" },
+};
 
 interface Account {
   id: string | number;
@@ -289,6 +299,7 @@ export default function GestFiProDashboard() {
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("XOF");
   const [showModal, setShowModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1400,10 +1411,25 @@ export default function GestFiProDashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="hidden lg:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs">
+              <span className="mr-1.5 text-[#EF4444]">💱</span>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
+                className="bg-transparent text-white font-bold cursor-pointer outline-none text-xs"
+                aria-label="Currency selector"
+              >
+                {Object.entries(CURRENCY_OPTIONS).map(([code, config]) => (
+                  <option key={code} value={code} className="bg-[#18181B]">
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <LanguageSelector align="right" />
             <div className="hidden md:block text-right">
               <p style={{ fontSize: 10, color: "#A1A1AA", fontWeight: 500 }}>{t.dashboard.balance}</p>
-              <p style={{ fontSize: 13, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} FCFA</p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: "#FAFAFA" }}>{fmt(totalBalance)} {selectedCurrency}</p>
             </div>
             <div className="hidden md:block w-px h-7 bg-[#27272A]" />
             <button
@@ -1551,6 +1577,7 @@ export default function GestFiProDashboard() {
                 net_salary: monthlySalary,
                 payday_with_month: paydayDate,
               }}
+              currency={selectedCurrency}
               accounts={accounts as any}
               transactions={transactions as any}
               goals={objectives.map((o) => ({

@@ -60,6 +60,7 @@ interface DashboardViewProps {
   setQuickInputText: (text: string) => void;
   todayExpenses: number;
   totalBalance: number;
+  currency?: string;
   /** ID de l'utilisateur Supabase Auth — nécessaire pour l'insertion directe */
   userId?: string | null;
   /** Callback après ajout d'une transaction (permet au parent de rafraîchir) */
@@ -84,10 +85,12 @@ export default function DashboardView({
   setQuickInputText,
   todayExpenses,
   totalBalance,
+  currency = "XOF",
   userId = null,
   onTransactionAdded,
 }: DashboardViewProps) {
   const { t, isEn, language } = useLanguage();
+  const displayCurrency = currency || "XOF";
   const now = new Date();
   const todayNum = now.getDate();
 
@@ -149,7 +152,7 @@ export default function DashboardView({
               {t.dashboard.paydayCard.salaryLabel}
             </p>
             <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
-              {fmt(netSalary)} FCFA
+              {fmt(netSalary)} {displayCurrency}
             </p>
           </div>
           <button onClick={() => setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
@@ -163,7 +166,7 @@ export default function DashboardView({
       <PaydayCard
         paydayDate={paydayWithMonth}
         totalBalance={totalBalance}
-        currency="FCFA"
+        currency={displayCurrency}
         onNavigate={onNavigate}
       />
 
@@ -173,6 +176,7 @@ export default function DashboardView({
         paydayWithMonth={paydayWithMonth}
         totalBalance={totalBalance}
         todayExpenses={todayExpenses}
+        currency={displayCurrency}
         accountsCount={accounts.length}
         todayTransactionsCount={transactions.filter((t) => t.date?.startsWith("Auj") || t.date?.includes("instant")).length}
       />
@@ -188,7 +192,7 @@ export default function DashboardView({
               </h3>
               <p className="text-[11px] text-[#A1A1AA]">{t.dashboard.home.cashflowSubtitle}</p>
             </div>
-            <span className="badge text-[10px] px-2 py-0.5">XOF (FCFA)</span>
+            <span className="badge text-[10px] px-2 py-0.5">{displayCurrency}</span>
           </div>
           <CashflowChart transactions={transactions} totalBalance={totalBalance} />
         </div>

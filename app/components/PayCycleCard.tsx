@@ -17,6 +17,7 @@ interface PayCycleCardProps {
   paydayWithMonth: number;
   totalBalance: number;
   todayExpenses: number;
+  currency?: string;
   accountsCount?: number;
   todayTransactionsCount?: number;
 }
@@ -67,6 +68,7 @@ export default function PayCycleCard({
   paydayWithMonth,
   totalBalance,
   todayExpenses,
+  currency = "XOF",
   accountsCount = 0,
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
@@ -176,13 +178,13 @@ export default function PayCycleCard({
                 {fmt(dailyBudget, locale)}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
-                {isEn ? "FCFA / day" : "FCFA / jour"}
+                {currency} / {isEn ? "day" : "jour"}
               </span>
             </div>
 
             <div className="mt-2">
               <p className="text-[11px] font-medium text-[#A1A1AA] mb-1.5">
-                {isEn ? `Balance (${fmt(totalBalance, locale)} FCFA) ÷ ${daysRemaining} ${daysRemaining > 1 ? "days" : "day"}` : `Solde (${fmt(totalBalance, locale)} FCFA) ÷ ${daysRemaining} ${daysRemaining > 1 ? "jours" : "jour"}`}
+                {isEn ? `Balance (${fmt(totalBalance, locale)} ${currency}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "days" : "day"}` : `Solde (${fmt(totalBalance, locale)} ${currency}) ÷ ${daysRemaining} ${daysRemaining > 1 ? "jours" : "jour"}`}
               </p>
               <div className="flex items-center gap-1.5">
                 {isBudgetCritical ? (

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X, DollarSign, Calendar, Tag, CreditCard, FileText } from "lucide-react";
+import { formatCurrencyValue, getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface AddExpenseModalProps {
     isOpen: boolean;
@@ -32,6 +33,8 @@ export default function AddExpenseModal({
     comptes,
     onAddTransaction,
 }: AddExpenseModalProps) {
+    const { currency, isEn, language } = useLanguage();
+    const currencySymbol = getCurrencyMeta(currency).symbol;
     const [montant, setMontant] = useState("");
     const [categorie, setCategorie] = useState(CATEGORIES[0]);
     const [compteId, setCompteId] = useState(comptes[0]?.id || 1);
@@ -72,7 +75,7 @@ export default function AddExpenseModal({
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Montant */}
                     <div>
-                        <label className="text-xs text-[#A1A1AA] font-medium block mb-1">Montant (FCFA)</label>
+                        <label className="text-xs text-[#A1A1AA] font-medium block mb-1">{isEn ? `Amount (${currencySymbol})` : `Montant (${currencySymbol})`}</label>
                         <div className="relative">
                             <input
                                 type="number"
@@ -82,7 +85,7 @@ export default function AddExpenseModal({
                                 onChange={(e) => setMontant(e.target.value)}
                                 className="w-full bg-[#09090B] border border-[#27272A] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#EF4444] transition font-semibold text-lg"
                             />
-                            <span className="absolute right-4 top-3.5 text-xs text-[#EF4444] font-bold">XOF</span>
+                            <span className="absolute right-4 top-3.5 text-xs text-[#EF4444] font-bold">{currencySymbol}</span>
                         </div>
                     </div>
 
@@ -112,7 +115,7 @@ export default function AddExpenseModal({
                         >
                             {comptes.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                    {c.nom} ({c.solde.toLocaleString()} FCFA)
+                                    {c.nom} ({formatCurrencyValue(c.solde, currency, language === "en" ? "en-US" : "fr-FR")})
                                 </option>
                             ))}
                         </select>

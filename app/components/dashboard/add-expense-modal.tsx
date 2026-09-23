@@ -13,7 +13,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import {
+  formatCurrencyValue,
+  getCurrencyMeta,
+  useLanguage,
+} from "@/lib/i18n/LanguageContext";
 import type { Account } from "@/lib/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -58,6 +62,8 @@ export default function AddExpenseModal({
 }: AddExpenseModalProps) {
   const supabase = createClient();
   const { t, isEn, currency, language } = useLanguage();
+  const currencySymbol = getCurrencyMeta(currency).symbol;
+  const currencyLabel = isEn ? `Amount (${currencySymbol})` : `Montant (${currencySymbol})`;
 
   const categoriesList = [
     { key: "food", label: t.dashboard.transactionModal.categories.food, emoji: "🍽️" },
@@ -419,7 +425,7 @@ export default function AddExpenseModal({
 
           {/* ── Montant ── */}
           <div>
-            <label style={labelStyle}>{t.dashboard.transactionModal.amountLabel}</label>
+            <label style={labelStyle}>{currencyLabel}</label>
             <div style={{ position: "relative" }}>
               <Wallet
                 size={14}
@@ -503,7 +509,7 @@ export default function AddExpenseModal({
                 ) : (
                   accounts.map((acc) => (
                     <option key={String(acc.id)} value={String(acc.id)}>
-                      {acc.name} ({new Intl.NumberFormat(language === "en" ? "en-US" : "fr-FR", { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(acc.balance)})
+                      {acc.name} ({formatCurrencyValue(acc.balance, currency, language === "en" ? "en-US" : "fr-FR")})
                     </option>
                   ))
                 )}

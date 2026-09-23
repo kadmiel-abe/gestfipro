@@ -34,6 +34,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Loader2,
 } from "lucide-react";
 import MiniCalendar from "../components/MiniCalendar";
 import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
@@ -329,9 +330,11 @@ export default function GestFiProDashboard() {
   const [notifications, setNotifications] = useState<{ icon: string; title: string; desc: string; detail: string; time: string; color: string }[]>([]);
   const [activeNotif, setActiveNotif] = useState<null | { icon: string; title: string; desc: string; detail: string; time: string; color: string }>(null);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [dataLoadError, setDataLoadError] = useState<string | null>(null);
 
   // Profile fields (from Supabase profiles)
   const [userName, setUserName] = useState("");
@@ -388,8 +391,10 @@ export default function GestFiProDashboard() {
 
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
+    setDataLoadError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       setCurrentUser(user);
 
       if (user) {
@@ -398,11 +403,12 @@ export default function GestFiProDashboard() {
         const oAuthFullName = meta?.full_name || meta?.name || meta?.user_name || "";
 
         // 1. SELECT profiles
-        const { data: prof } = await supabase
+        const { data: prof, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
           .maybeSingle();
+        if (profileError) throw profileError;
 
         if (prof) {
           const resolvedName = prof.full_name?.trim() || oAuthFullName || "";
@@ -437,10 +443,11 @@ export default function GestFiProDashboard() {
         }
 
         // 2. SELECT accounts
-        const { data: accs } = await supabase
+        const { data: accs, error: accountsError } = await supabase
           .from("accounts")
           .select("*")
           .eq("user_id", user.id);
+        if (accountsError) throw accountsError;
 
         if (accs && accs.length > 0) {
           setAccounts(accs.map((a: any) => ({
@@ -456,11 +463,12 @@ export default function GestFiProDashboard() {
         }
 
         // 3. SELECT transactions
-        const { data: txs } = await supabase
+        const { data: txs, error: transactionsError } = await supabase
           .from("transactions")
           .select("*")
           .eq("user_id", user.id)
           .order("transaction_date", { ascending: false });
+        if (transactionsError) throw transactionsError;
 
         if (txs) {
           setTransactions(txs.map((t: any) => ({
@@ -478,7 +486,8 @@ export default function GestFiProDashboard() {
         }
 
         // 4. SELECT goals
-        const { data: gls } = await supabase.from("goals").select("*").eq("user_id", user.id);
+        const { data: gls, error: goalsError } = await supabase.from("goals").select("*").eq("user_id", user.id);
+        if (goalsError) throw goalsError;
         if (gls && gls.length > 0) {
           setObjectives(gls.map((g: any) => ({
             id: g.id,
@@ -519,6 +528,7 @@ export default function GestFiProDashboard() {
       }
     } catch (err) {
       console.error("Erreur chargement données Supabase :", err);
+      setDataLoadError(err instanceof Error ? err.message : "Impossible de charger les données du compte.");
     } finally {
       setIsLoadingData(false);
     }
@@ -673,25 +683,28 @@ export default function GestFiProDashboard() {
   };
 
   const handleSaveSettings = async () => {
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
-
+    setSettingsError(null);
     const cleanPayday = paydayDate > 0 && paydayDate <= 31 ? paydayDate : null;
 
     if (currentUser) {
       try {
-        await supabase.from("profiles").upsert({
+        const { error: profileError } = await supabase.from("profiles").upsert({
           id: currentUser.id,
           full_name: userName,
           net_salary: monthlySalary,
           payday_with_month: cleanPayday,
           updated_at: new Date().toISOString(),
         });
+        if (profileError) throw profileError;
       } catch (err) {
         console.error("Erreur sauvegarde profil Supabase :", err);
+        setSettingsError(err instanceof Error ? err.message : "Impossible d'enregistrer les paramètres.");
+        return;
       }
     }
 
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 3000);
     localStorage.setItem(
       "gestfipro_profile",
       JSON.stringify({ userName, monthlySalary, paydayDate: cleanPayday || 0 })
@@ -1596,7 +1609,33 @@ export default function GestFiProDashboard() {
         </header>
 
         {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 w-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 w-full" style={{ position: "relative" }}>
+          {isLoadingData && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 10,
+                background: "rgba(9,9,11,0.94)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 24,
+              }}
+            >
+              <div style={{ textAlign: "center", maxWidth: 320 }}>
+                <Loader2 size={24} className="animate-spin" style={{ color: "#EF4444", margin: "0 auto 12px" }} />
+                <p style={{ color: "#FAFAFA", fontSize: 14, fontWeight: 700 }}>{isEn ? "Loading your financial data..." : "Chargement de vos données financières..."}</p>
+              </div>
+            </div>
+          )}
+          {dataLoadError && !isLoadingData && (
+            <div style={{ margin: 24, padding: 16, border: "1px solid rgba(239,68,68,0.35)", borderRadius: 12, background: "rgba(239,68,68,0.08)" }} role="alert">
+              <p style={{ color: "#FCA5A5", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{isEn ? "Unable to load your data" : "Impossible de charger vos données"}</p>
+              <p style={{ color: "#A1A1AA", fontSize: 12, marginBottom: 10 }}>{dataLoadError}</p>
+              <button type="button" className="btn-primary" onClick={loadData}>{isEn ? "Retry" : "Réessayer"}</button>
+            </div>
+          )}
 
           {/* ════════════ TAB: ACCUEIL ════════════ */}
           {activeTab === "accueil" && (
@@ -2415,6 +2454,23 @@ export default function GestFiProDashboard() {
                   >
                     <CheckCircle2 size={14} />
                     {t.dashboard.settingsPage.savedSuccess}
+                  </div>
+                )}
+
+                {settingsError && (
+                  <div
+                    style={{
+                      background: "rgba(239,68,68,0.08)",
+                      border: "1px solid rgba(239,68,68,0.25)",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      color: "#FCA5A5",
+                      fontWeight: 600,
+                    }}
+                    role="alert"
+                  >
+                    {settingsError}
                   </div>
                 )}
 

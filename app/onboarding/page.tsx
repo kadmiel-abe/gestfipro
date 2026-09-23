@@ -17,6 +17,8 @@ export default function OnboardingPage() {
   const [newAccName, setNewAccName] = useState("");
   const [newAccType, setNewAccType] = useState("Espèces");
   const [newAccBal, setNewAccBal] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const addCustomAccount = () => {
     if (!newAccName.trim()) return;
@@ -38,21 +40,25 @@ export default function OnboardingPage() {
   };
 
   const finishOnboarding = async () => {
+    setSaving(true);
+    setSaveError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
       const netSalary = Number(salary) || 0;
       const paydayNum = Number(payday) > 0 && Number(payday) <= 31 ? Number(payday) : null;
       const fullName = name.trim() || "";
 
       if (user) {
         // Sauvegarder dans profiles
-        await supabase.from("profiles").upsert({
+        const { error: profileError } = await supabase.from("profiles").upsert({
           id: user.id,
           full_name: fullName,
           net_salary: netSalary,
           payday_with_month: paydayNum,
           updated_at: new Date().toISOString(),
         });
+        if (profileError) throw profileError;
 
         // Insérer UNIQUEMENT les comptes explicitement ajoutés par l'utilisateur
         if (customAccounts.length > 0) {
@@ -71,8 +77,11 @@ export default function OnboardingPage() {
             };
           });
 
-          await supabase.from("accounts").insert(accountsToInsert);
+          const { error: accountsError } = await supabase.from("accounts").insert(accountsToInsert);
+          if (accountsError) throw accountsError;
         }
+      } else {
+        throw new Error("Session utilisateur introuvable. Veuillez vous reconnecter avant de terminer l'onboarding.");
       }
 
       // Persistance dans localStorage pour la session
@@ -83,11 +92,13 @@ export default function OnboardingPage() {
       }));
 
       localStorage.setItem("gestfipro_accounts", JSON.stringify(customAccounts));
-    } catch (err) {
+      window.location.href = "/dashboard";
+    } catch (err: any) {
       console.error("Erreur sauvegarde onboarding:", err);
+      setSaveError(err?.message || "Impossible d'enregistrer vos informations.");
+    } finally {
+      setSaving(false);
     }
-
-    window.location.href = "/dashboard";
   };
 
   const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
@@ -245,7 +256,7 @@ export default function OnboardingPage() {
                   Votre salaire net 💰
                 </h2>
                 <p style={{ fontSize: 12, color: "#A1A1AA" }}>
-                  Ces informations restent locales — aucune donnée n'est partagée.
+                  Ces informations sont enregistrées dans votre profil sécurisé.
                 </p>
               </div>
               <div>
@@ -431,13 +442,20 @@ export default function OnboardingPage() {
             className="btn-primary"
             style={{ justifyContent: "center", padding: "11px 0", width: "100%" }}
             onClick={step === steps.length - 1 ? finishOnboarding : next}
+            disabled={saving}
           >
             {step === steps.length - 1 ? (
-              <>Accéder au tableau de bord <ArrowRight size={14} /></>
+              <>{saving ? "Enregistrement..." : "Accéder au tableau de bord"} <ArrowRight size={14} /></>
             ) : (
               <>Continuer <ArrowRight size={14} /></>
             )}
           </button>
+
+          {saveError && (
+            <p style={{ color: "#F87171", fontSize: 11, lineHeight: 1.5, margin: 0 }} role="alert">
+              {saveError}
+            </p>
+          )}
 
           {step > 0 && step < steps.length - 1 && (
             <button

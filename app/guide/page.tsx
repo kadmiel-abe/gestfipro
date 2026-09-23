@@ -10,134 +10,68 @@ import {
   LayoutDashboard,
   ChevronRight,
   ArrowLeft,
+  Bell,
+  TrendingUp,
+  CircleDollarSign,
+  ShieldCheck,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Guide d'utilisation | GestFiPro",
+  title: "Guide beta testeurs | GestFiPro",
   description:
-    "Apprenez à utiliser GestFiPro de A à Z : configuration des comptes manuels, cycle de paie, budget journalier et saisie des dépenses.",
+    "Guide de prise en main de GestFiPro pour beta testeurs : vue d'ensemble, comptes, cycle de paie, budget, historique, objectifs et réglages.",
 };
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const steps = [
+const featureSections = [
   {
     number: "01",
-    icon: <Wallet size={22} color="#EF4444" />,
+    icon: <LayoutDashboard size={22} color="#EF4444" />,
     iconBg: "rgba(239,68,68,0.12)",
     iconBorder: "rgba(239,68,68,0.25)",
     accentColor: "#EF4444",
-    title: "Configurer vos comptes manuels",
+    title: "Vue d’ensemble du dashboard",
     description:
-      "GestFiPro fonctionne sans connexion bancaire. Vous saisissez vos soldes manuellement pour garder le contrôle total de vos données.",
-    steps: [
-      {
-        label: "Accéder à l'onglet Comptes",
-        detail:
-          "Cliquez sur « Comptes » dans la barre latérale. Vous verrez la liste de vos 4 comptes disponibles.",
-      },
-      {
-        label: "Types de comptes supportés",
-        detail:
-          "Espèces (argent liquide), Wave (mobile money), Orange Money et Banque (compte bancaire classique).",
-      },
-      {
-        label: "Saisir votre solde initial",
-        detail:
-          "Consultez votre téléphone ou carnet de caisse, puis entrez le montant exact pour chaque compte en FCFA.",
-      },
-      {
-        label: "Solde consolidé automatique",
-        detail:
-          "La somme de tous vos comptes s'affiche dans l'en-tête du tableau de bord — c'est votre solde total disponible.",
-      },
-      {
-        label: "Mettre à jour un solde",
-        detail:
-          "À tout moment, cliquez sur l'icône stylo dans l'onglet Comptes pour corriger un solde après un retrait ou dépôt.",
-      },
+      "La page d’accueil centralise votre situation financière : solde, paie, budget du jour, transactions récentes et indicateurs clés.",
+    bullets: [
+      "Le header affiche le solde global, le cycle de paie actif et le bouton d’ajout rapide.",
+      "Les cartes en haut donnent un aperçu instantané de votre situation avant la prochaine paie.",
+      "Le dashboard est pensé pour une lecture ultra rapide, sans besoin d’ouvrir plusieurs écrans.",
     ],
-    tip: {
-      icon: "💡",
-      text: "Commencez par Wave ou Orange Money — ce sont généralement les comptes les plus actifs pour les transactions quotidiennes en Côte d'Ivoire.",
-    },
+    tip: "Le dashboard est la page d’entrée. Si vous voulez savoir rapidement où vous en êtes, c’est la page à regarder en premier.",
   },
   {
     number: "02",
-    icon: <Settings size={22} color="#FAFAFA" />,
+    icon: <Wallet size={22} color="#FAFAFA" />,
     iconBg: "rgba(255,255,255,0.08)",
-    iconBorder: "rgba(255,255,255,0.2)",
+    iconBorder: "rgba(255,255,255,0.15)",
     accentColor: "#FAFAFA",
-    title: "Définir votre salaire et cycle de paie",
+    title: "Comptes et soldes",
     description:
-      "La fonctionnalité clé de GestFiPro repose sur votre cycle de paie. Ces paramètres permettent le calcul automatique de votre budget journalier.",
-    steps: [
-      {
-        label: "Aller dans Réglages",
-        detail:
-          "Cliquez sur « Réglages » (icône engrenage) en bas de la barre latérale pour accéder à vos paramètres.",
-      },
-      {
-        label: "Saisir votre salaire net mensuel",
-        detail:
-          "Entrez uniquement le montant net réellement perçu chaque mois — pas le salaire brut ni les primes variables.",
-      },
-      {
-        label: "Définir le jour de versement",
-        detail:
-          "Indiquez le jour du mois où votre salaire est versé (ex: 28 pour les fonctionnaires ivoiriens). Saisissez un chiffre entre 1 et 31.",
-      },
-      {
-        label: "Calcul automatique activé",
-        detail:
-          "GestFiPro calcule instantanément le nombre de jours restants avant votre prochaine paie et met à jour votre budget journalier.",
-      },
+      "La section Comptes sert à enregistrer vos comptes de manière simple et à garder un solde consolidé en temps réel.",
+    bullets: [
+      "Vous pouvez créer plusieurs comptes : Espèces, Wave, Orange Money, Banque ou un autre type libre.",
+      "Chaque compte a son propre solde, mais la somme totale apparait automatiquement dans le dashboard.",
+      "Le solde peut être mis à jour à tout moment si un dépôt ou un retrait a été effectué hors app.",
+      "Le badge de total est utile pour avoir une vue en un coup d’œil de votre vrai niveau d’argent disponible.",
     ],
-    tip: {
-      icon: "⚠️",
-      text: "Si vous êtes payé le dernier jour ouvrable du mois, configurez le jour 28 pour avoir une marge de sécurité de 2-3 jours supplémentaires.",
-    },
+    tip: "Commencez par renseigner vos comptes que vous utilisez le plus souvent pour que le solde reflecte votre vie quotidienne.",
   },
   {
     number: "03",
-    icon: <CalendarDays size={22} color="#EF4444" />,
+    icon: <Settings size={22} color="#EF4444" />,
     iconBg: "rgba(239,68,68,0.12)",
     iconBorder: "rgba(239,68,68,0.25)",
     accentColor: "#EF4444",
-    title: "Comprendre le compteur « Jours avant la paie »",
+    title: "Salaire net et cycle de paie",
     description:
-      "C'est le cœur de GestFiPro. Ce compteur vous donne une conscience financière en temps réel de votre situation jusqu'au prochain versement.",
-    steps: [
-      {
-        label: "Badge « Cycle de paie actif »",
-        detail:
-          "Le badge dans l'en-tête du tableau de bord affiche le nombre de jours restants avant votre prochaine paie (ex: J-18).",
-      },
-      {
-        label: "Carte Budget/Jour",
-        detail:
-          "Cette KPI calculée automatiquement = Solde total disponible ÷ Jours restants. C'est le maximum à dépenser chaque jour.",
-      },
-      {
-        label: "Alerte Budget Critique",
-        detail:
-          "Si votre budget journalier descend sous 10 000 FCFA, la carte vire au rouge pour vous alerter d'un rythme trop élevé.",
-      },
-      {
-        label: "Graphique Cashflow",
-        detail:
-          "Le graphique de tendance montre l'évolution de votre solde sur 7 jours pour détecter les pics de dépenses inhabituels.",
-      },
-      {
-        label: "Indicateur de Rythme",
-        detail:
-          "Compare vos dépenses du jour à votre budget journalier. En rouge si vous avez dépassé, en blanc si vous êtes dans les clous.",
-      },
+      "C’est la base du système de budget. En indiquant votre salaire net et votre date de paie, GestFiPro calcule votre budget journalier.",
+    bullets: [
+      "Saisissez votre salaire net mensuel dans les réglages du profil.",
+      "Indiquez le jour de versement (par exemple 28 du mois).",
+      "Le système calcule le nombre de jours restants avant la prochaine paie.",
+      "La carte Budget/Jour se met à jour automatiquement pour vous aider à dépenser dans la bonne plage.",
     ],
-    tip: {
-      icon: "🎯",
-      text: "Objectif : dépenser chaque jour strictement moins que votre Budget/Jour. Si vous êtes en dessous 5 jours de suite, vous aurez une réserve confortable en fin de mois.",
-    },
+    tip: "Le but n’est pas de calculer un budget parfait, mais de prévenir les dépassements avant qu’ils ne deviennent critiques.",
   },
   {
     number: "04",
@@ -145,44 +79,102 @@ const steps = [
     iconBg: "rgba(220,38,38,0.12)",
     iconBorder: "rgba(220,38,38,0.25)",
     accentColor: "#DC2626",
-    title: "Saisir vos dépenses et revenus rapidement",
+    title: "Saisie rapide des revenus et dépenses",
     description:
-      "GestFiPro est conçu pour une saisie ultra-rapide. Chaque transaction prend moins de 10 secondes à enregistrer.",
-    steps: [
-      {
-        label: "Bouton Saisie Rapide",
-        detail:
-          "Cliquez sur le bouton rouge « Saisie rapide » dans l'en-tête du dashboard pour ouvrir le formulaire de transaction.",
-      },
-      {
-        label: "Renseigner la transaction",
-        detail:
-          "Saisissez : le libellé (ex: « Supermarché Hayat »), le montant en FCFA, la catégorie et le compte débité (Wave, Espèces, etc.).",
-      },
-      {
-        label: "Catégories disponibles",
-        detail:
-          "Nourriture & Marché, Transport, Logement & Factures, Loisirs, Santé, Éducation, Habillement, Autres.",
-      },
-      {
-        label: "Mise à jour instantanée",
-        detail:
-          "La transaction apparaît immédiatement dans « Transactions Récentes » et les KPI (solde, dépenses du jour) se recalculent en temps réel.",
-      },
-      {
-        label: "Consulter l'historique complet",
-        detail:
-          "Onglet Historique → toutes vos transactions chronologiques avec filtres. Onglet Statistiques → graphiques de répartition par catégorie.",
-      },
+      "Le bouton de saisie rapide est conçu pour enregistrer un mouvement en quelques secondes, sans friction.",
+    bullets: [
+      "Cliquez sur le bouton rouge dans l’en-tête pour ouvrir la modal d’ajout.",
+      "Ajoutez un libellé, un montant, une catégorie et le compte concerné.",
+      "Une dépense est enregistrée comme négative; un revenu comme positif.",
+      "Les montants s’actualisent immédiatement dans les KPI et les historiques.",
     ],
-    tip: {
-      icon: "⚡",
-      text: "Bonne pratique : saisissez chaque dépense dans les 2 minutes qui suivent le paiement. Un carnet de notes vocal ou un screenshot vous aide à ne rien oublier.",
-    },
+    tip: "La clé pour un bon usage est la régularité : renseigner les transactions dès qu’elles arrivent évite les oublis.",
+  },
+  {
+    number: "05",
+    icon: <CalendarDays size={22} color="#EF4444" />,
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
+    accentColor: "#EF4444",
+    title: "Jours avant la paie et budget journalier",
+    description:
+      "C’est probablement la fonctionnalité la plus utile pour garder le contrôle sur les dépenses quotidiennes.",
+    bullets: [
+      "Le compteur J- indique le nombre de jours restants avant votre prochaine paie.",
+      "Le budget journalier est calculé automatiquement à partir du solde total et du nombre de jours disponibles.",
+      "Un budget trop bas déclenche une alerte visuelle claire et immédiate.",
+      "Cela aide à adapter les achats du jour et à éviter un coup de pompe financier.",
+    ],
+    tip: "Un bon usage consiste à comparer les dépenses du jour au budget journalier plutôt que seulement au solde total.",
+  },
+  {
+    number: "06",
+    icon: <TrendingUp size={22} color="#EF4444" />,
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
+    accentColor: "#EF4444",
+    title: "Graphiques et suivi des tendances",
+    description:
+      "Les graphes permettent de voir si votre comportement de dépense est stable, explosif ou maîtrisé.",
+    bullets: [
+      "Le graphique de cashflow montre l’évolution du solde sur les jours récents.",
+      "La répartition par catégorie permet de comprendre d’où viennent les dépenses les plus élevées.",
+      "Les éléments visuels aident à détecter des habitudes, pas seulement des montants.",
+    ],
+    tip: "Les graphiques ne remplacent pas le bon sens, mais ils permettent de repérer rapidement un déséquilibre.",
+  },
+  {
+    number: "07",
+    icon: <CircleDollarSign size={22} color="#EF4444" />,
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
+    accentColor: "#EF4444",
+    title: "Historique et statistiques",
+    description:
+      "L’historique et les statistiques sont là pour donner du sens à la donnée. Vous pouvez analyser vos habitudes sans le stress.",
+    bullets: [
+      "L’historique regroupe vos mouvements dans le temps, triés chronologiquement.",
+      "Les statistiques résument vos dépenses par catégorie pour repérer les postes les plus lourds.",
+      "Cela permet de réagir avant qu’une dépense répétée ne pèse trop sur le mois.",
+    ],
+    tip: "À la fin du mois, l’historique devient le meilleur outil pour faire un vrai retour sur votre consommation.",
+  },
+  {
+    number: "08",
+    icon: <Bell size={22} color="#FAFAFA" />,
+    iconBg: "rgba(255,255,255,0.08)",
+    iconBorder: "rgba(255,255,255,0.15)",
+    accentColor: "#FAFAFA",
+    title: "Notifications, thème et personnalisation",
+    description:
+      "GestFiPro propose aussi des éléments de confort pour un usage quotidien plus fluide et plus agréable.",
+    bullets: [
+      "Vous pouvez changer le thème sombre ou clair selon vos préférences.",
+      "La langue du produit peut être modifiée pour un usage FR/EN.",
+      "Le sélecteur de devise permet d’afficher les montants dans une devise différente selon votre contexte.",
+      "Les notifications servent à rappeler les points importants ou les actions à faire.",
+    ],
+    tip: "Les détails de personnalisation ne sont pas accessoires : ils rendent l’outil plus naturel à utiliser chaque jour.",
+  },
+  {
+    number: "09",
+    icon: <ShieldCheck size={22} color="#EF4444" />,
+    iconBg: "rgba(239,68,68,0.12)",
+    iconBorder: "rgba(239,68,68,0.25)",
+    accentColor: "#EF4444",
+    title: "Points de vigilance pour les beta testeurs",
+    description:
+      "Ce guide n’est pas seulement un manuel ; c’est aussi un checklist pour tester la valeur du produit avec les vrais usages de terrain.",
+    bullets: [
+      "Testez la saisie de plusieurs comptes et comparez avec le solde total.",
+      "Vérifiez que le budget journalier change bien selon le salaire et la date de paie.",
+      "Ajoutez une dépense, puis vérifiez qu’elle apparaît dans l’historique et les stats.",
+      "Essayez le changement de devise et de langue pour confirmer que l’expérience reste cohérente.",
+      "Notez les retours sur les éléments qui semblent compliqués, lents ou peu clairs.",
+    ],
+    tip: "Le meilleur test utilisateur n’est pas “ça marche”, c’est “ça est compréhensible en moins d’une minute”.",
   },
 ];
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function GuidePage() {
   return (
@@ -194,7 +186,6 @@ export default function GuidePage() {
         fontFamily: "var(--font-sans), system-ui, sans-serif",
       }}
     >
-      {/* ── Header barre ────────────────────────────────────────────────────── */}
       <header
         style={{
           borderBottom: "1px solid #27272A",
@@ -211,43 +202,19 @@ export default function GuidePage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              textDecoration: "none",
-              color: "#A1A1AA",
-              fontSize: 13,
-              fontWeight: 500,
-              transition: "color 0.15s",
-            }}
-          >
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none", color: "#A1A1AA", fontSize: 13, fontWeight: 500 }}>
             <ArrowLeft size={14} />
             Retour
           </Link>
           <span style={{ color: "#27272A" }}>·</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: "rgba(239,68,68,0.12)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <BookOpen size={13} color="#EF4444" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Guide d'utilisation</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>Guide beta testeurs</span>
           </div>
         </div>
 
-        {/* Logo */}
         <Image
           src="/logo.png"
           alt="GestFiPro"
@@ -258,296 +225,92 @@ export default function GuidePage() {
         />
       </header>
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <section
-        style={{
-          maxWidth: 840,
-          margin: "0 auto",
-          padding: "52px 24px 40px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.25)",
-            borderRadius: 99,
-            padding: "4px 12px",
-            marginBottom: 20,
-          }}
-        >
+      <section style={{ maxWidth: 1000, margin: "0 auto", padding: "52px 24px 36px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 99, padding: "4px 12px", marginBottom: 18 }}>
           <BookOpen size={11} color="#EF4444" />
           <span style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Documentation MVP
+            Beta Guide
           </span>
         </div>
 
-        <h1
-          style={{
-            fontSize: "clamp(28px, 5vw, 42px)",
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.1,
-            marginBottom: 16,
-            background: "linear-gradient(135deg, #FAFAFA 0%, #A1A1AA 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Maîtrisez GestFiPro
-          <br />
-          en 4 étapes simples
+        <h1 style={{ fontSize: "clamp(28px, 5vw, 46px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 16, background: "linear-gradient(135deg, #FAFAFA 0%, #A1A1AA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          Tout comprendre sur GestFiPro
         </h1>
 
-        <p style={{ fontSize: 16, color: "#A1A1AA", maxWidth: 560, margin: "0 auto 32px", lineHeight: 1.7 }}>
-          Configurez vos comptes, définissez votre cycle de paie et commencez à suivre vos finances
-          en moins de 5 minutes.
+        <p style={{ fontSize: 16, color: "#A1A1AA", maxWidth: 700, margin: "0 auto 28px", lineHeight: 1.7 }}>
+          Ce guide explique chaque fonctionnalité du produit pour que tes beta testeurs ou futurs utilisateurs puissent prendre en main le tableau de bord sans aide extérieure.
         </p>
 
-        {/* Progress pills */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-          {steps.map((s, i) => (
-            <div
-              key={s.number}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "5px 12px",
-                borderRadius: 99,
-                background: `${s.accentColor}12`,
-                border: `1px solid ${s.accentColor}30`,
-                fontSize: 12,
-                fontWeight: 600,
-                color: s.accentColor,
-              }}
-            >
-              <span style={{ fontSize: 11, opacity: 0.7 }}>Étape {s.number}</span>
-              <span style={{ color: "#FAFAFA", fontWeight: 700 }}>{s.title.split(" ").slice(0, 3).join(" ")}</span>
-            </div>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+          {featureSections.map((section) => (
+            <span key={section.number} style={{ background: `${section.accentColor}15`, border: `1px solid ${section.accentColor}25`, color: section.accentColor, borderRadius: 999, padding: "6px 12px", fontWeight: 700, fontSize: 12 }}>
+              {section.number}
+            </span>
           ))}
         </div>
       </section>
 
-      {/* ── Steps ───────────────────────────────────────────────────────────── */}
-      <main
-        style={{
-          maxWidth: 840,
-          margin: "0 auto",
-          padding: "0 24px 80px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-        }}
-      >
-        {steps.map((step, stepIdx) => (
-          <article
-            key={step.number}
-            style={{
-              background: "#18181B",
-              border: `1px solid ${step.accentColor}20`,
-              borderRadius: 20,
-              padding: "28px 28px",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Numéro flottant décoratif */}
-            <span
-              style={{
-                position: "absolute",
-                top: 20,
-                right: 24,
-                fontSize: 56,
-                fontWeight: 900,
-                color: `${step.accentColor}08`,
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                userSelect: "none",
-                pointerEvents: "none",
-              }}
-            >
-              {step.number}
-            </span>
+      <main style={{ maxWidth: 980, margin: "0 auto", padding: "0 24px 80px", display: "flex", flexDirection: "column", gap: 24 }}>
+        {featureSections.map((section, index) => (
+          <article key={section.number} style={{ background: "#18181B", border: `1px solid ${section.accentColor}20`, borderRadius: 20, padding: "28px 28px", position: "relative", overflow: "hidden" }}>
+            <span style={{ position: "absolute", top: 18, right: 20, fontSize: 56, fontWeight: 900, color: `${section.accentColor}08`, letterSpacing: "-0.05em", userSelect: "none" }}>{section.number}</span>
 
-            {/* En-tête */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
-                  background: step.iconBg,
-                  border: `1px solid ${step.iconBorder}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                {step.icon}
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: section.iconBg, border: `1px solid ${section.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {section.icon}
               </div>
+
               <div>
-                <p
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: step.accentColor,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    marginBottom: 4,
-                  }}
-                >
-                  Étape {step.number} / {steps.length}
+                <p style={{ fontSize: 10, fontWeight: 800, color: section.accentColor, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+                  Fonctionnalité {section.number}
                 </p>
-                <h2 style={{ fontSize: 19, fontWeight: 800, color: "#FAFAFA", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                  {step.title}
-                </h2>
-                <p style={{ fontSize: 13, color: "#A1A1AA", marginTop: 6, lineHeight: 1.6 }}>
-                  {step.description}
-                </p>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: "#FAFAFA", letterSpacing: "-0.03em" }}>{section.title}</h2>
+                <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7, marginTop: 8 }}>{section.description}</p>
               </div>
             </div>
 
-            {/* Séparateur */}
             <div style={{ borderTop: "1px solid #27272A", marginBottom: 20 }} />
 
-            {/* Liste numérotée */}
-            <ol style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-              {step.steps.map((item, i) => (
-                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      background: `${step.accentColor}18`,
-                      border: `1px solid ${step.accentColor}35`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      marginTop: 1,
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: step.accentColor,
-                    }}
-                  >
-                    {i + 1}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#FAFAFA", marginBottom: 2 }}>
-                      {item.label}
-                    </p>
-                    <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.65 }}>
-                      {item.detail}
-                    </p>
-                  </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+              {section.bullets.map((bullet, bulletIndex) => (
+                <li key={bulletIndex} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: `${section.accentColor}18`, border: `1px solid ${section.accentColor}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: section.accentColor, flexShrink: 0, marginTop: 1 }}>
+                    {bulletIndex + 1}
+                  </span>
+                  <span style={{ fontSize: 13, lineHeight: 1.7, color: "#D4D4D8" }}>{bullet}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
 
-            {/* Tip */}
-            <div
-              style={{
-                background: `${step.accentColor}0A`,
-                border: `1px solid ${step.accentColor}22`,
-                borderRadius: 10,
-                padding: "12px 16px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 10,
-              }}
-            >
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{step.tip.icon}</span>
-              <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.65 }}>{step.tip.text}</p>
+            <div style={{ marginTop: 20, background: `${section.accentColor}0A`, border: `1px solid ${section.accentColor}22`, borderRadius: 10, padding: "12px 14px" }}>
+              <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.7 }}>
+                <strong style={{ color: "#FAFAFA" }}>Astuce :</strong> {section.tip}
+              </p>
             </div>
 
-            {/* Connecteur vers étape suivante */}
-            {stepIdx < steps.length - 1 && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: -24,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  zIndex: 1,
-                  pointerEvents: "none",
-                }}
-              >
-                <div style={{ width: 1, height: 16, background: "#27272A" }} />
-                <ChevronRight
-                  size={14}
-                  color="#52525B"
-                  style={{ transform: "rotate(90deg)" }}
-                />
+            {index < featureSections.length - 1 && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+                <ChevronRight size={14} color="#52525B" style={{ transform: "rotate(90deg)" }} />
               </div>
             )}
           </article>
         ))}
 
-        {/* ── CTA final ─────────────────────────────────────────────────────── */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03))",
-            border: "1px solid rgba(239,68,68,0.2)",
-            borderRadius: 20,
-            padding: "32px 28px",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
-          <h3 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8 }}>
-            Vous êtes prêt !
-          </h3>
-          <p style={{ fontSize: 13, color: "#A1A1AA", maxWidth: 460, margin: "0 auto 24px", lineHeight: 1.65 }}>
-            Votre tableau de bord GestFiPro est configuré. Commencez maintenant par saisir vos soldes
-            et votre première dépense du jour.
+        <div style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03))", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 20, padding: "32px 28px", textAlign: "center" }}>
+          <div style={{ fontSize: 38, marginBottom: 14 }}>🎯</div>
+          <h3 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8 }}>Prêt à tester ?</h3>
+          <p style={{ fontSize: 13, color: "#A1A1AA", maxWidth: 540, margin: "0 auto 24px", lineHeight: 1.7 }}>
+            Demandez à tes beta testeurs de suivre ce parcours : créer un compte, saisir un solde, ajouter une dépense, vérifier le budget journalier et regarder l’historique.
           </p>
+
           <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-            <Link
-              href="/"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#EF4444",
-                color: "white",
-                borderRadius: 10,
-                padding: "10px 24px",
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: "none",
-                transition: "opacity 0.15s",
-              }}
-            >
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EF4444", color: "white", borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
               <LayoutDashboard size={14} />
-              Accéder au tableau de bord
+              Ouvrir le dashboard
             </Link>
-            <Link
-              href="/"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#18181B",
-                border: "1px solid #27272A",
-                color: "#A1A1AA",
-                borderRadius: 10,
-                padding: "10px 24px",
-                fontSize: 13,
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
-            >
-              <Wallet size={14} />
-              Configurer mes comptes
+            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#18181B", border: "1px solid #27272A", color: "#A1A1AA", borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              <Settings size={14} />
+              Tester la connexion
             </Link>
           </div>
         </div>

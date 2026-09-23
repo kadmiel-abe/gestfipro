@@ -49,6 +49,7 @@ import {
   ShieldCheck,
   ExternalLink,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Language = "fr" | "en";
 type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD";
@@ -192,8 +193,9 @@ const scrollBadgeItem = {
 };
 
 export default function GestFiProPanAfricanLanding() {
-  const [lang, setLang] = useState<Language>("fr");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("XOF");
+  const { language, setLanguage, currency, setCurrency } = useLanguage();
+  const [lang, setLang] = useState<Language>(language);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
@@ -256,6 +258,19 @@ export default function GestFiProPanAfricanLanding() {
     setMobileMenuOpen(false);
     hamburgerBtnRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    setLang(language);
+  }, [language]);
+
+  useEffect(() => {
+    setSelectedCurrency(currency);
+  }, [currency]);
+
+  const handleCurrencyChange = (curr: Currency) => {
+    setCurrency(curr);
+    setSelectedCurrency(curr);
+  };
 
   // Parallax global du Hero
   const { scrollY } = useScroll();
@@ -323,15 +338,10 @@ export default function GestFiProPanAfricanLanding() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterToast, setNewsletterToast] = useState<string | null>(null);
 
-  const handleCurrencyChange = (curr: Currency) => {
-    setSelectedCurrency(curr);
-    setSimBalance(CURRENCIES[curr].defaultBalance);
-  };
-
   const dailyBudget = simDays > 0 ? Math.round(simBalance / simDays) : 0;
   const isBudgetCritical = simDays <= 4 || dailyBudget < 2000;
 
-  const fmt = (n: number) => Math.round(n).toLocaleString(lang === "fr" ? "fr-FR" : "en-US");
+  const fmt = (n: number) => Math.round(n).toLocaleString(language === "fr" ? "fr-FR" : "en-US");
 
   // Date dynamique
   const currentDateStr = "Lundi 14 Septembre";
@@ -348,7 +358,7 @@ export default function GestFiProPanAfricanLanding() {
     setSpentToday((prev) => prev + amount);
     setSimBalance((prev) => Math.max(0, prev - amount));
     setQuickInput("");
-    setFeedbackToast(`+ ${fmt(amount)} ${selectedCurrency} ${lang === "fr" ? "enregistré !" : "logged!"}`);
+    setFeedbackToast(`+ ${fmt(amount)} ${selectedCurrency} ${language === "fr" ? "enregistré !" : "logged!"}`);
 
     setTimeout(() => {
       setFeedbackToast(null);
@@ -359,7 +369,7 @@ export default function GestFiProPanAfricanLanding() {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes("@")) return;
     setNewsletterToast(
-      lang === "fr"
+      language === "fr"
         ? "Merci pour votre inscription ! À très bientôt."
         : "Thank you for subscribing! See you soon."
     );

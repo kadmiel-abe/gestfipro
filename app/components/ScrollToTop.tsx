@@ -52,68 +52,49 @@ export default function ScrollToTop() {
           initial={{ opacity: 0, scale: 0.6, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.6, y: 30 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          transition={{ type: "spring", stiffness: 300, damping: 26 }}
           className={
             isLandingLikePage
-              ? "fixed right-4 top-1/2 -translate-y-1/2 z-50 flex items-center gap-2 group select-none"
-              : "fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-50 flex items-center gap-2 group select-none"
+              ? "fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 select-none"
+              : "fixed bottom-5 right-3 sm:bottom-6 sm:right-5 z-50 select-none"
           }
         >
-          {/* ── TOOLTIP FLOTTANT SURVOL (DESKTOP) ── */}
-          <span
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-[#18181B]/95 border border-[#EF4444]/40 shadow-xl backdrop-blur-md opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 pointer-events-none whitespace-nowrap"
+          <button
+            type="button"
+            onClick={scrollToTop}
+            aria-label={isFr ? "Remonter en haut de page" : "Scroll back to top"}
+            title={isFr ? `Remonter en haut (${Math.round(scrollProgress)}%)` : `Back to top (${Math.round(scrollProgress)}%)`}
+            className="group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#050505] border border-[#ff2f2f]/90 shadow-[0_0_18px_rgba(255,47,47,0.9),0_0_32px_rgba(255,47,47,0.55)] hover:scale-[1.04] active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff2f2f] focus:ring-offset-2 focus:ring-offset-[#09090B]"
           >
-            <span>{isFr ? "Haut de page" : "Back to top"}</span>
-            <span className="text-[#EF4444] font-mono text-[11px] font-bold">
-              {Math.round(scrollProgress)}%
-            </span>
-          </span>
+            <span className="absolute inset-0 rounded-full bg-[#ff2f2f]/10 blur-sm group-hover:bg-[#ff2f2f]/20 transition-all duration-200" />
 
-          {/* ── BOUTON PRINCIPAL CIRCULAIRE AVEC GLOW & PROGRESSION SVG ── */}
-          <div className="relative flex items-center justify-center">
-            {/* Halo lumineux pulsant */}
-            <div className="absolute -inset-1.5 bg-[#EF4444]/40 rounded-full blur-md group-hover:bg-[#EF4444]/65 group-hover:blur-lg transition-all duration-300 animate-pulse pointer-events-none" />
-
-            {/* Bouton cliquable */}
-            <button
-              type="button"
-              onClick={scrollToTop}
-              aria-label={isFr ? "Remonter en haut de page" : "Scroll back to top"}
-              title={isFr ? `Remonter en haut (${Math.round(scrollProgress)}%)` : `Back to top (${Math.round(scrollProgress)}%)`}
-              className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#121215]/95 hover:bg-[#1C1C22] backdrop-blur-xl border border-white/10 flex items-center justify-center text-white shadow-[0_10px_35px_rgba(239,68,68,0.45)] hover:shadow-[0_15px_45px_rgba(239,68,68,0.7)] group-hover:border-[#EF4444]/80 active:scale-95 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:ring-offset-2 focus:ring-offset-[#09090B]"
+            <svg
+              className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
+              viewBox="0 0 56 56"
             >
-              {/* Cercle SVG de progression dynamique */}
-              <svg
-                className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
-                viewBox="0 0 56 56"
-              >
-                {/* Anneau de fond */}
-                <circle
-                  cx="28"
-                  cy="28"
-                  r={radius}
-                  className="stroke-[#27272A]/70"
-                  strokeWidth="3"
-                  fill="transparent"
-                />
-                {/* Anneau de progression actif néon */}
-                <circle
-                  cx="28"
-                  cy="28"
-                  r={radius}
-                  className="stroke-[#EF4444] transition-[stroke-dashoffset] duration-150 ease-out"
-                  strokeWidth="3.5"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  fill="transparent"
-                />
-              </svg>
+              <circle
+                cx="28"
+                cy="28"
+                r={23}
+                className="stroke-[#ff2f2f]/70"
+                strokeWidth="1.7"
+                fill="transparent"
+              />
+              <circle
+                cx="28"
+                cy="28"
+                r={23}
+                className="stroke-[#ff2f2f] transition-[stroke-dashoffset] duration-150 ease-out"
+                strokeWidth="2.1"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                fill="transparent"
+              />
+            </svg>
 
-              {/* Icône Chevron avec rebond au survol */}
-              <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:text-[#EF4444] group-hover:-translate-y-1 transition-all duration-300 stroke-[2.75]" />
-            </button>
-          </div>
+            <ChevronUp className="relative w-5 h-5 sm:w-6 sm:h-6 text-[#ff2f2f] drop-shadow-[0_0_8px_rgba(255,47,47,0.8)]" strokeWidth={2.6} />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

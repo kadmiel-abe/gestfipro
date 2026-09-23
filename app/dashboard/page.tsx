@@ -297,9 +297,9 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
 export default function GestFiProDashboard() {
   const supabase = createClient();
   const { theme, toggleTheme, setTheme } = useTheme();
-  const { language, setLanguage, t, isEn } = useLanguage();
+  const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("XOF");
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
   const [showModal, setShowModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -356,6 +356,15 @@ export default function GestFiProDashboard() {
   }, [userName, firstName]);
 
   // ─── Data Loading from Supabase ───────────────────────────────────────────
+  useEffect(() => {
+    setSelectedCurrency(currency);
+  }, [currency]);
+
+  const handleCurrencyChange = (nextCurrency: Currency) => {
+    setCurrency(nextCurrency);
+    setSelectedCurrency(nextCurrency);
+  };
+
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
     try {
@@ -1415,7 +1424,7 @@ export default function GestFiProDashboard() {
               <span className="mr-1.5 text-[#EF4444]">💱</span>
               <select
                 value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
+                onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
                 className="bg-transparent text-white font-bold cursor-pointer outline-none text-xs"
                 aria-label="Currency selector"
               >

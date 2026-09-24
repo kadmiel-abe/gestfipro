@@ -157,7 +157,7 @@ export default function AddExpenseModal({
             account_id: isUuid ? accountId : null,
             title: title.trim(),
             category,
-            amount: parsedAmount,
+            amount: type === "expense" ? -parsedAmount : parsedAmount,
             type,
             transaction_date: txDate,
             note: note.trim() || null,
@@ -187,6 +187,7 @@ export default function AddExpenseModal({
 
           if (accError) {
             console.error("Erreur mise à jour solde :", accError);
+            throw accError;
           }
         }
 
@@ -211,7 +212,7 @@ export default function AddExpenseModal({
             id: String(Date.now()),
             title: title.trim(),
             category,
-            amount: parsedAmount,
+            amount: type === "expense" ? -parsedAmount : parsedAmount,
             type,
             transaction_date: txDate,
             account_id: isUuid ? accountId : null,

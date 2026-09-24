@@ -452,8 +452,11 @@ export default function GestFiProDashboard() {
           setAccounts([]);
         }
 
-        if (!accountsError && accs && accs.length > 0) {
-          setAccounts(accs.map((a: any) => ({
+        const accountRows = accs ?? [];
+        const accountNames = new Map(accountRows.map((a: any) => [a.id, a.name]));
+
+        if (!accountsError && accountRows.length > 0) {
+          setAccounts(accountRows.map((a: any) => ({
             id: a.id,
             name: a.name,
             type: a.type,
@@ -484,7 +487,7 @@ export default function GestFiProDashboard() {
             amount: Number(t.amount) || 0,
             type: t.type,
             date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "À l'instant",
-            account: t.note || "Compte",
+            account: accountNames.get(t.account_id) || t.note || "Compte",
             icon: t.type === "income" ? "⬇" : "⬆",
           })));
         } else {
@@ -631,22 +634,31 @@ export default function GestFiProDashboard() {
     if (currentUser) {
       try {
         const isUuid = targetAccount && typeof targetAccount.id === "string" && targetAccount.id.length > 10;
-        await supabase.from("transactions").insert({
+        const { error: transactionError } = await supabase.from("transactions").insert({
           user_id: currentUser.id,
           account_id: isUuid ? targetAccount.id : null,
           title: tx.label,
           category: tx.category,
-          amount: Math.abs(tx.amount),
+          amount: tx.amount,
           type: tx.type,
           transaction_date: new Date().toISOString(),
           note: tx.account,
         });
+        if (transactionError) throw transactionError;
 
         if (isUuid) {
-          await supabase.from("accounts").update({ balance: newBalance }).eq("id", targetAccount.id);
+          const { error: accountError } = await supabase
+            .from("accounts")
+            .update({ balance: newBalance })
+            .eq("id", targetAccount.id)
+            .eq("user_id", currentUser.id);
+          if (accountError) throw accountError;
         }
+        await loadData();
       } catch (err) {
         console.error("Erreur insertion transaction Supabase :", err);
+        setTransactions((prev) => prev.filter((item) => item.id !== tempId));
+        setAccounts(accounts);
       }
     } else {
       // Persistance locale
@@ -745,7 +757,7 @@ export default function GestFiProDashboard() {
 
     if (currentUser) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("accounts")
           .insert({
             user_id: currentUser.id,
@@ -756,6 +768,7 @@ export default function GestFiProDashboard() {
           .select()
           .single();
 
+        if (error) throw error;
         if (data) {
           setAccounts((prev) => [
             ...prev,
@@ -796,7 +809,8 @@ export default function GestFiProDashboard() {
 
     if (currentUser) {
       try {
-        await supabase.from("accounts").delete().eq("id", accId);
+        const { error } = await supabase.from("accounts").delete().eq("id", accId).eq("user_id", currentUser.id);
+        if (error) throw error;
       } catch (err) {
         console.error("Erreur suppression compte Supabase :", err);
       }
@@ -813,7 +827,8 @@ export default function GestFiProDashboard() {
 
     if (currentUser) {
       try {
-        await supabase.from("accounts").update({ balance: newBal }).eq("id", accId);
+        const { error } = await supabase.from("accounts").update({ balance: newBal }).eq("id", accId).eq("user_id", currentUser.id);
+        if (error) throw error;
       } catch (err) {
         console.error("Erreur mise à jour solde compte Supabase :", err);
       }
@@ -827,7 +842,8 @@ export default function GestFiProDashboard() {
 
     if (currentUser) {
       try {
-        await supabase.from("accounts").delete().eq("user_id", currentUser.id);
+        const { error } = await supabase.from("accounts").delete().eq("user_id", currentUser.id);
+        if (error) throw error;
       } catch (err) {
         console.error("Erreur suppression tous les comptes Supabase :", err);
       }

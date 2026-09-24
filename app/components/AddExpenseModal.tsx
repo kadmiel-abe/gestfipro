@@ -37,25 +37,31 @@ export default function AddExpenseModal({
     const currencySymbol = getCurrencyMeta(currency).symbol;
     const [montant, setMontant] = useState("");
     const [categorie, setCategorie] = useState(CATEGORIES[0]);
+    const [customCategory, setCustomCategory] = useState("");
     const [compteId, setCompteId] = useState(comptes[0]?.id || 1);
     const [note, setNote] = useState("");
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
 
     if (!isOpen) return null;
 
+    const isOther = categorie === "Autre";
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!montant || Number(montant) <= 0) return;
 
+        const resolvedCategory = (isOther && customCategory.trim()) ? customCategory.trim() : categorie;
+
         onAddTransaction({
             montant: Number(montant),
-            categorie,
+            categorie: resolvedCategory,
             compteId: Number(compteId),
             note,
             date,
         });
 
         setMontant("");
+        setCustomCategory("");
         setNote("");
         onClose();
     };
@@ -104,6 +110,21 @@ export default function AddExpenseModal({
                             ))}
                         </select>
                     </div>
+
+                    {/* Préciser la catégorie si Autre */}
+                    {isOther && (
+                        <div>
+                            <label className="text-xs text-[#EF4444] font-medium block mb-1">Préciser la catégorie</label>
+                            <input
+                                type="text"
+                                value={customCategory}
+                                onChange={(e) => setCustomCategory(e.target.value)}
+                                placeholder="Ex: Cadeau, Coiffure, Abonnement..."
+                                className="w-full bg-[#09090B] border border-[#EF4444]/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#EF4444] transition text-sm"
+                                autoFocus
+                            />
+                        </div>
+                    )}
 
                     {/* Compte source */}
                     <div>

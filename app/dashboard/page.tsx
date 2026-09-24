@@ -166,10 +166,13 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Nourriture");
+  const [customCategory, setCustomCategory] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
   const [account, setAccount] = useState(accounts[0]?.name ?? "");
 
-  const categories = ["Nourriture", "Transport", "Logement", "Loisirs", "Santé", "Éducation", "Vêtements", "Divers"];
+  const categories = ["Nourriture", "Transport", "Logement", "Factures", "Loisirs", "Santé", "Éducation", "Vêtements", "Autre"];
+
+  const isOther = category === "Autre" || category === "Divers";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,9 +182,10 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
       alert("Veuillez d'abord ajouter un compte financier dans l'onglet Comptes avant d'enregistrer une opération.");
       return;
     }
+    const resolvedCategory = (isOther && customCategory.trim()) ? customCategory.trim() : category;
     onAdd({
       label,
-      category,
+      category: resolvedCategory,
       amount: type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount)),
       type,
       date: "À l'instant",
@@ -302,6 +306,22 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
               </div>
             </div>
           </div>
+
+          {isOther && (
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#EF4444", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Préciser la catégorie
+              </label>
+              <input
+                className="input-field"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Ex: Cadeau, Abonnement, Tontine..."
+                style={{ borderColor: "rgba(239,68,68,0.4)" }}
+                autoFocus
+              />
+            </div>
+          )}
 
           <button type="submit" className="btn-primary" style={{ justifyContent: "center", marginTop: 4 }}>
             <Plus size={14} />

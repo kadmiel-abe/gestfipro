@@ -82,6 +82,7 @@ export default function AddExpenseModal({
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(categoriesList[0].label);
+  const [customCategory, setCustomCategory] = useState("");
   const [accountId, setAccountId] = useState<string>("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -90,6 +91,12 @@ export default function AddExpenseModal({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isOtherCategory =
+    category === categoriesList.find((c) => c.key === "other")?.label ||
+    category === "Autre" ||
+    category === "Other" ||
+    category === "Divers";
 
   // Initialiser le compte sélectionné quand les comptes changent
   useEffect(() => {
@@ -105,6 +112,7 @@ export default function AddExpenseModal({
       setTitle("");
       setAmount("");
       setCategory(categoriesList[0].label);
+      setCustomCategory("");
       setNote("");
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
@@ -148,13 +156,15 @@ export default function AddExpenseModal({
         ? new Date(date).toISOString()
         : new Date().toISOString();
 
+      const resolvedCategory = (isOtherCategory && customCategory.trim()) ? customCategory.trim() : (category || "Divers");
+
       // 1. Insérer la transaction dans Supabase
       if (userId) {
         const insertPayload: Record<string, any> = {
           user_id: userId,
           account_id: isUuid ? accountId : null,
           title: title.trim(),
-          category: category || "Divers",
+          category: resolvedCategory,
           amount: type === "expense" ? -parsedAmount : parsedAmount,
           type,
           transaction_date: txDate,
@@ -221,7 +231,7 @@ export default function AddExpenseModal({
           onTransactionAdded({
             id: txData.id,
             title: txData.title,
-            category: txData.category,
+            category: txData.category || resolvedCategory,
             amount: txData.amount,
             type: txData.type,
             transaction_date: txData.transaction_date,
@@ -236,7 +246,7 @@ export default function AddExpenseModal({
           onTransactionAdded({
             id: String(Date.now()),
             title: title.trim(),
-            category,
+            category: resolvedCategory,
             amount: type === "expense" ? -parsedAmount : parsedAmount,
             type,
             transaction_date: txDate,
@@ -542,6 +552,30 @@ export default function AddExpenseModal({
               </select>
             </div>
           </div>
+
+          {/* ── Champ catégorie personnalisée si "Autre" est sélectionné ── */}
+          {isOtherCategory && (
+            <div style={{ animation: "fadeIn 0.2s ease" }}>
+              <label style={labelStyle}>
+                <Tag size={10} style={{ display: "inline", marginRight: 4, color: "#EF4444" }} />
+                {isEn ? "Specify custom category" : "Préciser la catégorie"}
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  placeholder={isEn ? "Ex: Haircut, Gift, Subscription, Tontine..." : "Ex: Coiffure, Cadeau, Abonnement, Tontine..."}
+                  style={{
+                    ...inputStyle,
+                    borderColor: "rgba(239,68,68,0.4)",
+                    background: "rgba(239,68,68,0.04)",
+                  }}
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
 
           {/* ── Grille 2 colonnes : Date + Note ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>

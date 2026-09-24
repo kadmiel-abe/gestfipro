@@ -373,11 +373,13 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 20px 12px;
+  padding: 16px 12px 24px;
   flex-shrink: 0;
   /* Desktop: toujours visible dans le flux */
   position: relative;
   height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   z-index: 50;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
 }

@@ -895,7 +895,7 @@ export default function GestFiProDashboard() {
         className={`sidebar ${sidebarOpen ? "sidebar-open" : ""} ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
       >
         {/* ══ SIDEBAR CONTENT ══════════════════════════════════════════════ */}
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflowY: "auto" }}>
 
           {/* ── Logo + sous-titre + bouton toggle ouverture/fermeture ──────── */}
           {!sidebarCollapsed ? (
@@ -1068,7 +1068,7 @@ export default function GestFiProDashboard() {
           </div>
 
           {/* ── Bascule Thème Dark / Light ── */}
-          <div style={{ marginTop: "auto", paddingTop: 10, paddingBottom: 4 }}>
+          <div style={{ marginTop: 14, paddingTop: 6, paddingBottom: 4 }}>
             {!sidebarCollapsed ? (
               <button
                 type="button"

@@ -125,8 +125,8 @@ export default function DashboardView({
 
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-5 px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
-      {/* ── BANNIÈRE SALUTATION + SALAIRE ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* ── BANNIÈRE SALUTATION + SOLDE TOTAL & SALAIRE ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           {isLoading ? (
             <div className="flex flex-col gap-2 min-h-[48px]">
@@ -147,16 +147,38 @@ export default function DashboardView({
           )}
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-3.5 self-start sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
-          <div className="text-left sm:text-right bg-[#18181B] border border-[#27272A] rounded-xl px-3.5 py-2">
-            <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider">
-              {t.dashboard.paydayCard.salaryLabel}
-            </p>
-            <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
-              {formatCurrencyValue(netSalary, displayCurrency as any, locale, true)}
-            </p>
+        {/* ── CARTES SOLDE TOTAL + SALAIRE NET + BOUTON D'ACTION ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 flex-1 lg:flex-initial">
+            {/* 1. Solde Total (Visible en haut de salaire net sur mobile) */}
+            <div className="bg-[#18181B] border border-[#EF4444]/40 bg-gradient-to-r from-[#EF4444]/15 via-[#18181B] to-[#18181B] rounded-xl px-3.5 py-2 flex items-center justify-between sm:flex-col sm:items-end sm:justify-center shadow-md shadow-black/40">
+              <div className="flex items-center gap-1.5 sm:mb-0.5">
+                <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse inline-block" />
+                <p className="text-[10px] text-[#EF4444] font-extrabold uppercase tracking-wider">
+                  {isEn ? "Total Balance" : "Solde Total"}
+                </p>
+              </div>
+              <p className="text-base sm:text-lg font-black text-[#FAFAFA] tabular-nums">
+                {formatCurrencyValue(totalBalance, displayCurrency as any, locale, true)}
+              </p>
+            </div>
+
+            {/* 2. Salaire Net Mensuel (En-dessous du solde total sur mobile, côte à côte sur desktop) */}
+            <div className="bg-[#18181B] border border-[#27272A] rounded-xl px-3.5 py-2 flex items-center justify-between sm:flex-col sm:items-end sm:justify-center">
+              <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider sm:mb-0.5">
+                {t.dashboard.paydayCard.salaryLabel}
+              </p>
+              <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
+                {formatCurrencyValue(netSalary, displayCurrency as any, locale, true)}
+              </p>
+            </div>
           </div>
-          <button onClick={() => onOpenModal ? onOpenModal() : setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
+
+          {/* 3. Bouton Ajouter une dépense */}
+          <button
+            onClick={() => onOpenModal ? onOpenModal() : setShowExpenseModal(true)}
+            className="btn-primary py-2.5 px-4 text-xs shrink-0 flex items-center justify-center gap-2 shadow-lg shadow-[#EF4444]/25 hover:shadow-[#EF4444]/40 cursor-pointer"
+          >
             <Plus className="w-4 h-4" />
             <span>{t.dashboard.addTransaction}</span>
           </button>

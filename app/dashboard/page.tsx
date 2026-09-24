@@ -152,186 +152,7 @@ function formatDateFr(d: Date): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// ─── Modal Component ─────────────────────────────────────────────────────────
-
-interface AddTransactionModalProps {
-  accounts: Account[];
-  onClose: () => void;
-  onAdd: (tx: Omit<Transaction, "id">) => void;
-}
-
-function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalProps) {
-  const { currency, isEn } = useLanguage();
-  const currencySymbol = getCurrencyMeta(currency).symbol;
-  const [label, setLabel] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Nourriture");
-  const [customCategory, setCustomCategory] = useState("");
-  const [type, setType] = useState<"expense" | "income">("expense");
-  const [account, setAccount] = useState(accounts[0]?.name ?? "");
-
-  const categories = ["Nourriture", "Transport", "Logement", "Factures", "Loisirs", "Santé", "Éducation", "Vêtements", "Autre"];
-
-  const isOther = category === "Autre" || category === "Divers";
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!label.trim() || !amount) return;
-    const selectedAcc = account || accounts[0]?.name;
-    if (!selectedAcc) {
-      alert("Veuillez d'abord ajouter un compte financier dans l'onglet Comptes avant d'enregistrer une opération.");
-      return;
-    }
-    const resolvedCategory = (isOther && customCategory.trim()) ? customCategory.trim() : category;
-    onAdd({
-      label,
-      category: resolvedCategory,
-      amount: type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount)),
-      type,
-      date: "À l'instant",
-      account: selectedAcc,
-      icon: type === "income" ? "⬇" : "⬆",
-    });
-    onClose();
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.7)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="card animate-fade-in-up"
-        style={{ width: "100%", maxWidth: 440, padding: 24, margin: 16 }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#FAFAFA" }}>Nouvelle saisie</h3>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", color: "#A1A1AA", cursor: "pointer", padding: 4 }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Type toggle */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 10,
-                border: type === "expense" ? "1px solid rgba(239,68,68,0.5)" : "1px solid #27272A",
-                background: type === "expense" ? "rgba(239,68,68,0.1)" : "#09090B",
-                color: type === "expense" ? "#f87171" : "#A1A1AA",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Dépense
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 10,
-                border: type === "income" ? "1px solid rgba(255,255,255,0.3)" : "1px solid #27272A",
-                background: type === "income" ? "rgba(255,255,255,0.08)" : "#09090B",
-                color: type === "income" ? "#FAFAFA" : "#A1A1AA",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Entrée d'argent
-            </button>
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Libellé</label>
-            <input className="input-field" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Supermarché Hayat..." required />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isEn ? `Amount (${currencySymbol})` : `Montant (${currencySymbol})`}</label>
-            <input className="input-field" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Ex: 35000" required min={1} />
-          </div>
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Catégorie</label>
-              <select
-                className="input-field"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{ appearance: "none" }}
-              >
-                {categories.map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#A1A1AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Compte</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {/* Prévisualisation icône opérateur sélectionné */}
-                <AccountIcon name={account} size={32} radius={8} />
-                <select
-                  className="input-field"
-                  value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  style={{ appearance: "none", flex: 1 }}
-                >
-                  {accounts.length === 0 ? (
-                    <option value="">Aucun compte configuré</option>
-                  ) : (
-                    accounts.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)
-                  )}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {isOther && (
-            <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#EF4444", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Préciser la catégorie
-              </label>
-              <input
-                className="input-field"
-                value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value)}
-                placeholder="Ex: Cadeau, Abonnement, Tontine..."
-                style={{ borderColor: "rgba(239,68,68,0.4)" }}
-                autoFocus
-              />
-            </div>
-          )}
-
-          <button type="submit" className="btn-primary" style={{ justifyContent: "center", marginTop: 4 }}>
-            <Plus size={14} />
-            Enregistrer
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
+import AddExpenseModal from "../components/dashboard/add-expense-modal";
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
@@ -2928,14 +2749,17 @@ export default function GestFiProDashboard() {
         </div>
       </main>
 
-      {/* ── MODAL ─────────────────────────────────────────────────────────── */}
-      {showModal && (
-        <AddTransactionModal
-          accounts={accounts}
-          onClose={() => setShowModal(false)}
-          onAdd={handleAddTransaction}
-        />
-      )}
+      {/* ── MODAL UNIFIÉE D'AJOUT DE TRANSACTION ── */}
+      <AddExpenseModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        accounts={accounts as any}
+        userId={currentUser?.id || null}
+        onTransactionAdded={() => {
+          setShowModal(false);
+          loadData();
+        }}
+      />
 
       {/* ── MODAL DÉTAIL NOTIFICATION ──────────────────────────────────────── */}
       {activeNotif && (

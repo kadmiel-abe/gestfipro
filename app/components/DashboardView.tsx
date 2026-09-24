@@ -156,7 +156,7 @@ export default function DashboardView({
               {new Intl.NumberFormat(locale, { style: "currency", currency: displayCurrency === "USD" ? "USD" : displayCurrency === "EUR" ? "EUR" : displayCurrency === "NGN" ? "NGN" : displayCurrency === "KES" ? "KES" : displayCurrency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0, minimumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0 }).format(netSalary)}
             </p>
           </div>
-          <button onClick={() => setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
+          <button onClick={() => onOpenModal ? onOpenModal() : setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
             <Plus className="w-4 h-4" />
             <span>{t.dashboard.addTransaction}</span>
           </button>

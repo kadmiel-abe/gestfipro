@@ -29,6 +29,12 @@ END $$;
 -- ║  ÉTAPE 2 : ACTIVER ROW LEVEL SECURITY SUR TOUTES LES TABLES                ║
 -- ╚═══════════════════════════════════════════════════════════════════════════════╝
 
+-- S'assurer que les colonnes nécessaires existent
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS net_salary NUMERIC(15, 2) DEFAULT 0 NOT NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS payday_with_month INTEGER;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+
 ALTER TABLE public.profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.accounts     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;

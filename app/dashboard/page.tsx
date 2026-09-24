@@ -612,14 +612,15 @@ export default function GestFiProDashboard() {
     }
   }
 
-  const dailyBudget = isPaydayConfigured && daysRemaining > 0 ? Math.round(totalBalance / daysRemaining) : 0;
+  const effectiveBalance = totalBalance > 0 ? totalBalance : (monthlySalary > 0 ? monthlySalary : 0);
+  const dailyBudget = isPaydayConfigured && daysRemaining > 0 ? Math.round(effectiveBalance / daysRemaining) : 0;
 
   const todayExpenses = transactions
     .filter((t) => (t.type === "expense" || t.amount < 0) && (t.date?.startsWith("Auj") || t.date?.includes("instant")))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
-  const isBudgetCritical = isPaydayConfigured && dailyBudget < 10000;
-  const rhythmAlert = isPaydayConfigured && todayExpenses > dailyBudget;
+  const isBudgetCritical = isPaydayConfigured && dailyBudget < 10000 && effectiveBalance > 0;
+  const rhythmAlert = isPaydayConfigured && dailyBudget > 0 && todayExpenses > dailyBudget;
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleAddTransaction = async (tx: Omit<Transaction, "id">) => {
@@ -717,6 +718,7 @@ export default function GestFiProDashboard() {
   const handleSaveSettings = async () => {
     setSettingsError(null);
     const cleanPayday = paydayDate > 0 && paydayDate <= 31 ? paydayDate : null;
+    const cleanSalary = Math.max(0, Number(monthlySalary) || 0);
 
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -726,9 +728,8 @@ export default function GestFiProDashboard() {
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
         full_name: userName.trim(),
-        net_salary: Math.max(0, Number(monthlySalary) || 0),
+        net_salary: cleanSalary,
         payday_with_month: cleanPayday,
-        updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
       if (profileError) throw profileError;
 
@@ -746,7 +747,7 @@ export default function GestFiProDashboard() {
     setTimeout(() => setSettingsSaved(false), 3000);
     localStorage.setItem(
       "gestfipro_profile",
-      JSON.stringify({ userName, monthlySalary, paydayDate: cleanPayday || 0 })
+      JSON.stringify({ userName, monthlySalary: cleanSalary, paydayDate: cleanPayday || 0 })
     );
   };
 

@@ -174,7 +174,6 @@ export default function SettingsPage() {
           full_name: cleanName,
           net_salary: cleanSalary,
           payday_with_month: cleanPayday,
-          updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
 
         if (upsertErr) throw upsertErr;

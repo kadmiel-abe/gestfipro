@@ -11,6 +11,8 @@ interface PaydayCardProps {
   paydayDate?: number | null;
   /** Solde agrégé de tous les comptes */
   totalBalance: number;
+  /** Salaire net mensuel pour calibrer le budget quotidien si pas encore de comptes */
+  netSalary?: number;
   /** Devise affichée, synchronisée avec la préférence globale */
   currency?: string;
   /** Navigation vers un onglet (ex: réglages) */
@@ -28,6 +30,7 @@ function fmt(n: number): string {
 export default function PaydayCard({
   paydayDate,
   totalBalance,
+  netSalary = 0,
   currency = "XOF",
   onNavigate,
 }: PaydayCardProps) {
@@ -59,7 +62,8 @@ export default function PaydayCard({
       days += daysInMonth;
     }
 
-    const budget = days > 0 ? Math.max(0, Math.floor(totalBalance / days)) : 0;
+    const effectiveBalance = totalBalance > 0 ? totalBalance : (netSalary > 0 ? netSalary : 0);
+    const budget = days > 0 ? Math.max(0, Math.floor(effectiveBalance / days)) : 0;
     const urgent = days <= 5;
 
     // Progression dans le cycle (sur 30 jours environ)
@@ -74,7 +78,7 @@ export default function PaydayCard({
       isUrgent: urgent,
       progressPercent: progress,
     };
-  }, [paydayDate, totalBalance, isConfigured]);
+  }, [paydayDate, totalBalance, netSalary, isConfigured]);
 
   return (
     <div

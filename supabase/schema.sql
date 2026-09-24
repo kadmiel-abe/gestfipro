@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS net_salary NUMERIC(15, 2) DEFAULT 0 NOT NULL;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS payday_with_month INTEGER;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
 ALTER TABLE public.profiles ALTER COLUMN payday_with_month DROP DEFAULT;
 ALTER TABLE public.profiles ALTER COLUMN payday_with_month DROP NOT NULL;
 

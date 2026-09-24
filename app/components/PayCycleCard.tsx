@@ -40,7 +40,11 @@ function fmt(n: number, locale: string) {
   return Math.round(n).toLocaleString(locale);
 }
 
-export function computePayCycle(paydayWithMonth: number | null | undefined, totalBalance: number) {
+export function computePayCycle(
+  paydayWithMonth: number | null | undefined,
+  totalBalance: number,
+  netSalary: number = 0
+) {
   const now = new Date();
   const todayNum = now.getDate();
   const isConfigured = Boolean(paydayWithMonth && paydayWithMonth > 0 && paydayWithMonth <= 31);
@@ -64,8 +68,9 @@ export function computePayCycle(paydayWithMonth: number | null | undefined, tota
     daysRemaining += daysInMonth;
   }
 
-  const dailyBudget = daysRemaining > 0 ? Math.round(totalBalance / daysRemaining) : 0;
-  const isBudgetCritical = dailyBudget < 10000 && totalBalance > 0;
+  const effectiveBalance = totalBalance > 0 ? totalBalance : (netSalary > 0 ? netSalary : 0);
+  const dailyBudget = daysRemaining > 0 ? Math.round(effectiveBalance / daysRemaining) : 0;
+  const isBudgetCritical = dailyBudget < 10000 && effectiveBalance > 0;
 
   return {
     daysRemaining,
@@ -92,7 +97,8 @@ export default function PayCycleCard({
   const currencySymbol = getCurrencyMeta(activeCurrency).symbol;
   const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
-    totalBalance
+    totalBalance,
+    netSalary
   );
 
   const rhythmAlert = isConfigured && dailyBudget > 0 && todayExpenses > dailyBudget;

@@ -56,7 +56,6 @@ export default function OnboardingPage() {
           full_name: fullName,
           net_salary: netSalary,
           payday_with_month: paydayNum,
-          updated_at: new Date().toISOString(),
         });
         if (profileError) throw profileError;
 

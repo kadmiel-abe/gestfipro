@@ -167,6 +167,7 @@ export default function DashboardView({
       <PaydayCard
         paydayDate={paydayWithMonth}
         totalBalance={totalBalance}
+        netSalary={netSalary}
         currency={displayCurrency}
         onNavigate={onNavigate}
       />

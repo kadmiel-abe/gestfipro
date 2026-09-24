@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, formatCurrencyValue, convertFromBase, Currency } from "@/lib/i18n/LanguageContext";
 
 interface DataPoint {
   day: string;
@@ -57,7 +57,7 @@ function CustomTooltip({ active, payload, label, currency = "XOF" }: CustomToolt
         {payload.map((p) => (
           <p key={p.name} style={{ color: p.color, fontWeight: 700, marginBottom: 2 }}>
             {p.name === "solde" ? (document.documentElement.lang === "en" ? "Balance" : "Solde") : (document.documentElement.lang === "en" ? "Expenses" : "Dépenses")} :{" "}
-            {new Intl.NumberFormat(locale, { style: "currency", currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0, minimumFractionDigits: currency === "USD" || currency === "EUR" || currency === "ZAR" ? 2 : 0 }).format(Number(p.value))}
+            {formatCurrencyValue(Number(p.value), currency as Currency, locale, true)}
           </p>
         ))}
       </div>
@@ -131,13 +131,14 @@ export default function CashflowChart({ transactions = [], totalBalance = 0, cur
             tick={{ fill: "#52525B", fontSize: 10 }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) =>
-              v >= 1000000
-                ? `${(v / 1000000).toFixed(1)}M`
-                : v >= 1000
-                ? `${(v / 1000).toFixed(0)}k`
-                : String(v)
-            }
+            tickFormatter={(v) => {
+              const cv = convertFromBase(Number(v), currency as Currency);
+              return cv >= 1000000
+                ? `${(cv / 1000000).toFixed(1)}M`
+                : cv >= 1000
+                ? `${(cv / 1000).toFixed(0)}k`
+                : String(Math.round(cv));
+            }}
             width={40}
           />
           <Tooltip content={<CustomTooltip currency={currency} />} />

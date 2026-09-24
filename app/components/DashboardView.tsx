@@ -16,7 +16,7 @@ import AddExpenseModal from "./dashboard/add-expense-modal";
 import GoalsCard from "./dashboard/goals-card";
 import MiniCalendar from "./MiniCalendar";
 import { AccountIcon } from "./AccountIcon";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, formatCurrencyValue, convertFromBase } from "@/lib/i18n/LanguageContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
 
 // Dynamic imports for chart components
@@ -153,7 +153,7 @@ export default function DashboardView({
               {t.dashboard.paydayCard.salaryLabel}
             </p>
             <p className="text-base sm:text-lg font-extrabold text-[#FAFAFA] tabular-nums">
-              {new Intl.NumberFormat(locale, { style: "currency", currency: displayCurrency === "USD" ? "USD" : displayCurrency === "EUR" ? "EUR" : displayCurrency === "NGN" ? "NGN" : displayCurrency === "KES" ? "KES" : displayCurrency === "ZAR" ? "ZAR" : "XOF", currencyDisplay: "narrowSymbol", maximumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0, minimumFractionDigits: displayCurrency === "USD" || displayCurrency === "EUR" || displayCurrency === "ZAR" ? 2 : 0 }).format(netSalary)}
+              {formatCurrencyValue(netSalary, displayCurrency as any, locale, true)}
             </p>
           </div>
           <button onClick={() => onOpenModal ? onOpenModal() : setShowExpenseModal(true)} className="btn-primary py-2.5 px-4 text-xs shrink-0">
@@ -286,7 +286,7 @@ export default function DashboardView({
                   </p>
                   <p className="text-[11px] text-[#A1A1AA]">{acc.type}</p>
                   <p className="text-sm sm:text-base font-extrabold text-[#FAFAFA] mt-1 tabular-nums">
-                    {fmt(acc.balance)} <span className="text-[10px] text-[#A1A1AA] font-semibold">FCFA</span>
+                    {formatCurrencyValue(acc.balance, displayCurrency as any, locale, true)}
                   </p>
                 </div>
               </div>
@@ -592,16 +592,7 @@ export default function DashboardView({
                         marginLeft: 12,
                       }}
                     >
-                      {isExpense ? "-" : "+"} {fmt(absAmount)}{" "}
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 500,
-                          color: "#71717A",
-                        }}
-                      >
-                        FCFA
-                      </span>
+                      {isExpense ? "-" : "+"} {formatCurrencyValue(absAmount, displayCurrency as any, locale, true)}
                     </p>
                   </div>
                 );
@@ -868,17 +859,18 @@ export default function DashboardView({
                     style={{
                       position: "absolute",
                       textAlign: "center",
+                      maxWidth: 100,
                     }}
                   >
                     <p
                       style={{
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: 800,
                         color: "#FAFAFA",
-                        lineHeight: 1,
+                        lineHeight: 1.1,
                       }}
                     >
-                      {fmt(grandTotal)}
+                      {formatCurrencyValue(grandTotal, displayCurrency as any, locale, true)}
                     </p>
                     <p
                       style={{
@@ -888,7 +880,7 @@ export default function DashboardView({
                         marginTop: 2,
                       }}
                     >
-                      FCFA {isEn ? "this month" : "ce mois"}
+                      {isEn ? "this month" : "ce mois"}
                     </p>
                   </div>
                 </div>
@@ -966,7 +958,7 @@ export default function DashboardView({
                               color: "#FAFAFA",
                             }}
                           >
-                            {fmt(cat.value)}
+                            {formatCurrencyValue(cat.value, displayCurrency as any, locale, true)}
                           </span>
                           <span
                             style={{

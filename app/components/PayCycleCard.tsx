@@ -10,20 +10,10 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
-import { useLanguage, getCurrencyMeta } from "@/lib/i18n/LanguageContext";
+import { useLanguage, getCurrencyMeta, formatCurrencyValue, Currency } from "@/lib/i18n/LanguageContext";
 
 function formatMoney(value: number, currency: string, locale: string) {
-  const code = currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "XOF";
-  if (currency === "XOF" || currency === "XAF") {
-    return `${Math.round(value).toLocaleString(locale)} ${currency}`;
-  }
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: code,
-    currencyDisplay: "narrowSymbol",
-    maximumFractionDigits: code === "USD" || code === "EUR" || code === "ZAR" ? 2 : 0,
-    minimumFractionDigits: code === "USD" || code === "EUR" || code === "ZAR" ? 2 : 0,
-  }).format(value);
+  return formatCurrencyValue(value, currency as Currency, locale, true);
 }
 
 interface PayCycleCardProps {
@@ -197,10 +187,10 @@ export default function PayCycleCard({
 
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-[#EF4444]">
-                {formatMoney(dailyBudget, activeCurrency, locale).replace(/^[^0-9-]*/, "").trim()}
+                {formatMoney(dailyBudget, activeCurrency, locale)}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-[#A1A1AA]">
-                {currencySymbol} / {isEn ? "day" : "jour"}
+                / {isEn ? "day" : "jour"}
               </span>
             </div>
 
@@ -212,7 +202,7 @@ export default function PayCycleCard({
                 {isBudgetCritical ? (
                   <span className="badge badge-danger text-[10px] px-2 py-0.5">
                     <AlertTriangle className="w-3 h-3" />
-                    {isEn ? "Warning: daily budget under 10,000 FCFA" : "Vigilance : budget sous 10 000 FCFA/j"}
+                    {isEn ? `Warning: daily budget under ${formatMoney(10000, activeCurrency, locale)}/day` : `Vigilance : budget sous ${formatMoney(10000, activeCurrency, locale)}/j`}
                   </span>
                 ) : (
                   <span className="badge badge-success text-[10px] px-2 py-0.5">

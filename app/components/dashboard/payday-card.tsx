@@ -398,7 +398,7 @@ export default function PaydayCard({
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              {isConfigured ? fmt(dailyBudget) : "--"}
+              {isConfigured ? formatCurrencyValue(dailyBudget, activeCurrency, language === "en" ? "en-US" : "fr-FR") : "--"}
             </span>
             <span
               style={{
@@ -407,7 +407,7 @@ export default function PaydayCard({
                 color: "#A1A1AA",
               }}
             >
-              {currency}
+              / {isEn ? "day" : "jour"}
             </span>
           </div>
 

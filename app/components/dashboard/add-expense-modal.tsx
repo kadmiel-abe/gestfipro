@@ -17,6 +17,7 @@ import {
   formatCurrencyValue,
   getCurrencyMeta,
   useLanguage,
+  convertToBase,
 } from "@/lib/i18n/LanguageContext";
 import type { Account } from "@/lib/types";
 
@@ -157,6 +158,7 @@ export default function AddExpenseModal({
         : new Date().toISOString();
 
       const resolvedCategory = (isOtherCategory && customCategory.trim()) ? customCategory.trim() : (category || "Divers");
+      const baseAmount = convertToBase(parsedAmount, currency);
 
       // 1. Insérer la transaction dans Supabase
       if (userId) {
@@ -165,7 +167,7 @@ export default function AddExpenseModal({
           account_id: isUuid ? accountId : null,
           title: title.trim(),
           category: resolvedCategory,
-          amount: type === "expense" ? -parsedAmount : parsedAmount,
+          amount: type === "expense" ? -baseAmount : baseAmount,
           type,
           transaction_date: txDate,
           note: note.trim() || null,
@@ -183,7 +185,7 @@ export default function AddExpenseModal({
             user_id: userId,
             account_id: isUuid ? accountId : null,
             title: title.trim() || "Dépense",
-            amount: type === "expense" ? -parsedAmount : parsedAmount,
+            amount: type === "expense" ? -baseAmount : baseAmount,
             type,
             transaction_date: txDate,
           };
@@ -212,7 +214,7 @@ export default function AddExpenseModal({
         // 2. Mettre à jour le solde du compte
         if (isUuid && selectedAccount) {
           const balanceDelta =
-            type === "expense" ? -parsedAmount : parsedAmount;
+            type === "expense" ? -baseAmount : baseAmount;
           const newBalance = (selectedAccount.balance || 0) + balanceDelta;
 
           const { error: accError } = await supabase
@@ -247,7 +249,7 @@ export default function AddExpenseModal({
             id: String(Date.now()),
             title: title.trim(),
             category: resolvedCategory,
-            amount: type === "expense" ? -parsedAmount : parsedAmount,
+            amount: type === "expense" ? -baseAmount : baseAmount,
             type,
             transaction_date: txDate,
             account_id: isUuid ? accountId : null,

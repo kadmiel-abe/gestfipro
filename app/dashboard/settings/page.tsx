@@ -584,7 +584,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <p style={{ fontSize: 11, color: "#A1A1AA", margin: "0 0 4px" }}>
-                    Budget journalier estimé
+                    {isEn ? "Estimated daily budget" : "Budget journalier estimé"}
                   </p>
                   <p
                     style={{
@@ -594,14 +594,18 @@ export default function SettingsPage() {
                       margin: 0,
                     }}
                   >
-                    {isConfigured ? fmt(dailyBudgetPreview) : "--"}{" "}
+                    {isConfigured ? formatCurrencyValue(dailyBudgetPreview, currency, language === "en" ? "en-US" : "fr-FR") : "--"}{" "}
                     <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 500 }}>
-                      FCFA/j
+                      / {isEn ? "day" : "jour"}
                     </span>
                   </p>
                   <p style={{ fontSize: 10, color: "#71717A", margin: "4px 0 0" }}>
                     {isConfigured
-                      ? `(basé sur ${fmt(monthlySalary)} FCFA)`
+                      ? isEn
+                        ? `(based on ${formatCurrencyValue(monthlySalary, currency, "en-US")})`
+                        : `(basé sur ${formatCurrencyValue(monthlySalary, currency, "fr-FR")})`
+                      : isEn
+                      ? "Payday required"
                       : "Jour de paie requis"}
                   </p>
                 </div>

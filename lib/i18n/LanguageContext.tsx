@@ -17,14 +17,65 @@ export const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: str
   EUR: { label: "EUR (€)", shortLabel: "EUR", symbol: "€", digits: 2 },
 };
 
+/**
+ * Taux de change avec le Franc CFA (XOF) comme devise de référence (Base = 1 XOF)
+ */
+export const EXCHANGE_RATES: Record<Currency, number> = {
+  XOF: 1,
+  XAF: 1,                // Parité 1:1 exacte avec le XOF
+  EUR: 1 / 655.957,      // 1 EUR = 655.957 XOF (Taux fixe officiel)
+  USD: 1 / 600,          // 1 USD = 600 XOF (Taux de référence)
+  NGN: 2.5,              // 1 XOF = 2.5 NGN
+  KES: 0.215,            // 1 XOF = 0.215 KES
+  ZAR: 0.030,            // 1 XOF = 0.030 ZAR
+};
+
 export function getCurrencyMeta(currency: Currency = "XOF") {
   return CURRENCY_OPTIONS[currency] ?? CURRENCY_OPTIONS.XOF;
 }
 
-export function formatCurrencyValue(value: number, currency: Currency = "XOF", locale: string = "fr-FR") {
+/**
+ * Convertit un montant stocké en devise de base (XOF) vers la devise cible.
+ */
+export function convertFromBase(amountInXOF: number, targetCurrency: Currency = "XOF"): number {
+  if (amountInXOF === 0 || !amountInXOF || isNaN(amountInXOF)) return 0;
+  const rate = EXCHANGE_RATES[targetCurrency] ?? 1;
+  return amountInXOF * rate;
+}
+
+/**
+ * Convertit un montant saisi dans une devise vers la devise de base (XOF).
+ */
+export function convertToBase(amountInTargetCurrency: number, fromCurrency: Currency = "XOF"): number {
+  if (amountInTargetCurrency === 0 || !amountInTargetCurrency || isNaN(amountInTargetCurrency)) return 0;
+  const rate = EXCHANGE_RATES[fromCurrency] ?? 1;
+  return amountInTargetCurrency / rate;
+}
+
+/**
+ * Convertit entre deux devises quelconques.
+ */
+export function convertCurrency(amount: number, fromCurrency: Currency, toCurrency: Currency): number {
+  if (amount === 0 || !amount || isNaN(amount)) return 0;
+  if (fromCurrency === toCurrency) return amount;
+  const inBase = convertToBase(amount, fromCurrency);
+  return convertFromBase(inBase, toCurrency);
+}
+
+/**
+ * Formate un montant en effectuant la conversion automatique depuis la devise de base (XOF).
+ */
+export function formatCurrencyValue(
+  value: number,
+  currency: Currency = "XOF",
+  locale: string = "fr-FR",
+  shouldConvert: boolean = true
+) {
   const meta = getCurrencyMeta(currency);
+  const converted = shouldConvert ? convertFromBase(value, currency) : value;
+
   if (currency === "XOF" || currency === "XAF") {
-    return `${Math.round(value).toLocaleString(locale)} ${meta.symbol}`;
+    return `${Math.round(converted).toLocaleString(locale)} ${meta.symbol}`;
   }
 
   const formatted = new Intl.NumberFormat(locale, {
@@ -33,7 +84,7 @@ export function formatCurrencyValue(value: number, currency: Currency = "XOF", l
     currencyDisplay: "narrowSymbol",
     minimumFractionDigits: meta.digits,
     maximumFractionDigits: meta.digits,
-  }).format(value);
+  }).format(converted);
 
   return formatted;
 }
@@ -44,6 +95,10 @@ interface LanguageContextType {
   toggleLanguage: () => void;
   currency: Currency;
   setCurrency: (currency: Currency) => void;
+  convertFromBase: (amountInXOF: number, targetCurrency?: Currency) => number;
+  convertToBase: (amountInTargetCurrency: number, fromCurrency?: Currency) => number;
+  convertCurrency: (amount: number, fromCurrency: Currency, toCurrency: Currency) => number;
+  formatMoney: (amountInXOF: number, targetCurrency?: Currency, customLocale?: string, shouldConvert?: boolean) => string;
   t: Translations;
   isFr: boolean;
   isEn: boolean;
@@ -60,6 +115,10 @@ const LanguageContext = createContext<LanguageContextType>({
   toggleLanguage: () => {},
   currency: "XOF",
   setCurrency: () => {},
+  convertFromBase: (amount) => amount,
+  convertToBase: (amount) => amount,
+  convertCurrency: (amount) => amount,
+  formatMoney: (amount) => String(amount),
   t: fr,
   isFr: true,
   isEn: false,
@@ -148,6 +207,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       toggleLanguage,
       currency,
       setCurrency,
+      convertFromBase: (amountInXOF: number, targetCurrency: Currency = currency) =>
+        convertFromBase(amountInXOF, targetCurrency),
+      convertToBase: (amountInTarget: number, fromCurrency: Currency = currency) =>
+        convertToBase(amountInTarget, fromCurrency),
+      convertCurrency: (amount: number, from: Currency, to: Currency) =>
+        convertCurrency(amount, from, to),
+      formatMoney: (amountInXOF: number, targetCurrency: Currency = currency, customLocale?: string, shouldConvert: boolean = true) =>
+        formatCurrencyValue(amountInXOF, targetCurrency, customLocale || (language === "en" ? "en-US" : "fr-FR"), shouldConvert),
       t: dictionaries[language] || fr,
       isFr: language === "fr",
       isEn: language === "en",

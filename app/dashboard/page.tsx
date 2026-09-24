@@ -45,7 +45,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
-import { getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
+import { getCurrencyMeta, useLanguage, formatCurrencyValue, convertFromBase, convertToBase } from "@/lib/i18n/LanguageContext";
 
 // Dynamic imports for chart components (client-only)
 const CashflowChart = dynamic(() => import("../components/CashflowChart"), {
@@ -126,21 +126,9 @@ function fmt(n: number) {
   return n.toLocaleString(locale);
 }
 
-function formatMoney(n: number, currency: Currency) {
+function formatMoney(n: number, currency: Currency = "XOF") {
   const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
-  const meta = CURRENCY_OPTIONS[currency] ?? CURRENCY_OPTIONS.XOF;
-
-  if (currency === "XOF" || currency === "XAF") {
-    return `${Math.round(n).toLocaleString(locale)} ${meta.symbol}`;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currency === "USD" ? "USD" : currency === "EUR" ? "EUR" : currency === "NGN" ? "NGN" : currency === "KES" ? "KES" : currency === "ZAR" ? "ZAR" : "USD",
-    currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: meta.digits,
-    maximumFractionDigits: meta.digits,
-  }).format(n);
+  return formatCurrencyValue(n, currency, locale, true);
 }
 
 function formatDateFr(d: Date): string {

@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, convertFromBase, Currency, getCurrencyMeta } from "@/lib/i18n/LanguageContext";
 
 interface Category {
   label: string;
@@ -36,6 +35,8 @@ export default function DonutChart({ transactions = [], currency = "XOF" }: Donu
   const { isEn } = useLanguage();
   const expenseList = transactions.filter((t) => t.type === "expense" || t.amount < 0);
   const totalExpense = expenseList.reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const convertedTotal = convertFromBase(totalExpense, currency as Currency);
+  const currencyMeta = getCurrencyMeta(currency as Currency);
 
   if (totalExpense === 0) {
     return (
@@ -130,10 +131,14 @@ export default function DonutChart({ transactions = [], currency = "XOF" }: Donu
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#FAFAFA"
-            fontSize="15"
+            fontSize="14"
             fontWeight="800"
           >
-            {totalExpense >= 1000000 ? `${(totalExpense / 1000000).toFixed(1)}M` : totalExpense.toLocaleString("fr-FR")}
+            {convertedTotal >= 1000000
+              ? `${(convertedTotal / 1000000).toFixed(1)}M`
+              : currencyMeta.digits > 0
+              ? convertedTotal.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+              : Math.round(convertedTotal).toLocaleString("fr-FR")}
           </text>
           <text
             x={SIZE / 2}
@@ -144,7 +149,7 @@ export default function DonutChart({ transactions = [], currency = "XOF" }: Donu
             fontSize="9"
             fontWeight="600"
           >
-            {currency === "USD" ? (isEn ? "spent" : "dép.") : currency === "EUR" ? (isEn ? "spent" : "dép.") : currency === "NGN" || currency === "KES" || currency === "ZAR" ? (isEn ? "spent" : "dép.") : (isEn ? "spent" : "dép.")}
+            {currencyMeta.symbol} {isEn ? "spent" : "dép."}
           </text>
         </svg>
       </div>

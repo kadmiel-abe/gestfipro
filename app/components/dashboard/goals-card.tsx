@@ -16,6 +16,7 @@ import {
   formatCurrencyValue,
   getCurrencyMeta,
   useLanguage,
+  convertToBase,
 } from "@/lib/i18n/LanguageContext";
 import type { Goal } from "@/lib/types";
 
@@ -101,11 +102,12 @@ function CreateGoalModal({
 
     setLoading(true);
     try {
+      const baseAmount = convertToBase(amount, currency);
       if (userId) {
         const { error: insertErr } = await supabase.from("goals").insert({
           user_id: userId,
           title: title.trim(),
-          target_amount: amount,
+          target_amount: baseAmount,
           current_amount: 0,
           target_date: targetDate || null,
         });
@@ -393,8 +395,9 @@ export default function GoalsCard({
       const goal = goals.find((g) => g.id === goalId);
       if (!goal) return;
 
+      const baseAmount = convertToBase(amount, currency);
       const newAmount = Math.min(
-        goal.current_amount + amount,
+        goal.current_amount + baseAmount,
         goal.target_amount
       );
 

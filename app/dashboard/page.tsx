@@ -641,16 +641,30 @@ export default function GestFiProDashboard() {
     if (currentUser) {
       try {
         const isUuid = targetAccount && typeof targetAccount.id === "string" && targetAccount.id.length > 10;
-        const { error: transactionError } = await supabase.from("transactions").insert({
+        const insertPayload: Record<string, any> = {
           user_id: currentUser.id,
           account_id: isUuid ? targetAccount.id : null,
           title: tx.label,
-          category: tx.category,
+          category: tx.category || "Divers",
           amount: tx.amount,
           type: tx.type,
           transaction_date: new Date().toISOString(),
           note: tx.account,
-        });
+        };
+
+        let { error: transactionError } = await supabase.from("transactions").insert(insertPayload);
+        if (transactionError && (transactionError as any).code === "PGRST204") {
+          const fallbackPayload = {
+            user_id: currentUser.id,
+            account_id: isUuid ? targetAccount.id : null,
+            title: tx.label,
+            amount: tx.amount,
+            type: tx.type,
+            transaction_date: new Date().toISOString(),
+          };
+          const retry = await supabase.from("transactions").insert(fallbackPayload);
+          transactionError = retry.error;
+        }
         if (transactionError) throw transactionError;
 
         if (isUuid) {

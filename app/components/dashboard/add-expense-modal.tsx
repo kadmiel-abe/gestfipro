@@ -150,20 +150,45 @@ export default function AddExpenseModal({
 
       // 1. Insérer la transaction dans Supabase
       if (userId) {
-        const { data: txData, error: txError } = await supabase
+        const insertPayload: Record<string, any> = {
+          user_id: userId,
+          account_id: isUuid ? accountId : null,
+          title: title.trim(),
+          category: category || "Divers",
+          amount: type === "expense" ? -parsedAmount : parsedAmount,
+          type,
+          transaction_date: txDate,
+          note: note.trim() || null,
+        };
+
+        let { data: txData, error: txError } = await supabase
           .from("transactions")
-          .insert({
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        // Si la colonne category ou note manque dans la table distante (PGRST204)
+        if (txError && (txError as any).code === "PGRST204") {
+          const fallbackPayload = {
             user_id: userId,
             account_id: isUuid ? accountId : null,
-            title: title.trim(),
-            category,
+            title: title.trim() || "Dépense",
             amount: type === "expense" ? -parsedAmount : parsedAmount,
             type,
             transaction_date: txDate,
-            note: note.trim() || null,
-          })
-          .select()
-          .single();
+          };
+          const retryRes = await supabase
+            .from("transactions")
+            .insert(fallbackPayload)
+            .select()
+            .single();
+          if (!retryRes.error) {
+            txError = null;
+            txData = retryRes.data;
+          } else {
+            txError = retryRes.error;
+          }
+        }
 
         if (txError) {
           console.error("Erreur insertion transaction :", txError);

@@ -315,8 +315,10 @@ function AddTransactionModal({ accounts, onClose, onAdd }: AddTransactionModalPr
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
+// Stable Supabase client — created once at module level via singleton
+const supabase = createClient();
+
 export default function GestFiProDashboard() {
-  const supabase = createClient();
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
   const currencySymbol = getCurrencyMeta(currency).symbol;
@@ -549,7 +551,9 @@ export default function GestFiProDashboard() {
     } finally {
       setIsLoadingData(false);
     }
-  }, [supabase]);
+  // supabase is a stable singleton — no need to include it as a dependency
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -572,8 +576,8 @@ export default function GestFiProDashboard() {
         setCurrentUser(session.user);
         const meta = session.user.user_metadata;
         const metaName = meta?.full_name || meta?.name || "";
-        if (metaName && !userName) {
-          setUserName(metaName);
+        if (metaName) {
+          setUserName((prev) => prev || metaName);
         }
         if (event === "SIGNED_IN" || event === "USER_UPDATED") {
           loadData();
@@ -586,7 +590,9 @@ export default function GestFiProDashboard() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [loadData, supabase, userName]);
+  // loadData is stable (deps: []), supabase is a singleton — run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadData]);
 
   // ─── Computed values ──────────────────────────────────────────────────────
   const now = new Date();

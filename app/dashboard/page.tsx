@@ -318,6 +318,8 @@ export default function GestFiProDashboard() {
             amount: Number(t.amount) || 0,
             type: t.type,
             date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "À l'instant",
+            transaction_date: t.transaction_date,
+            created_at: t.created_at,
             account: accountNames.get(t.account_id) || t.note || "Compte",
             icon: t.type === "income" ? "⬇" : "⬆",
           })));
@@ -1977,7 +1979,7 @@ export default function GestFiProDashboard() {
                   <div className="card p-4 sm:p-6 lg:col-span-2">
                     <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{t.dashboard.home.cashflowTitle}</h3>
                     <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>{t.dashboard.home.cashflowSubtitle}</p>
-                    <CashflowChart transactions={transactions} totalBalance={totalBalance} />
+                    <CashflowChart transactions={transactions} totalBalance={totalBalance} currency={selectedCurrency} />
                   </div>
                 </div>
               )}

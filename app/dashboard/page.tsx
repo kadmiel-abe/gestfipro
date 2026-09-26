@@ -446,8 +446,24 @@ export default function GestFiProDashboard() {
   const effectiveBalance = totalBalance > 0 ? totalBalance : (monthlySalary > 0 ? monthlySalary : 0);
   const dailyBudget = isPaydayConfigured && daysRemaining > 0 ? Math.round(effectiveBalance / daysRemaining) : 0;
 
+  const isTodayTx = (t: { date?: string; transaction_date?: string; created_at?: string }) => {
+    if (t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today"))) {
+      return true;
+    }
+    const dateVal = t.transaction_date || t.created_at;
+    if (!dateVal) return false;
+    const txDate = new Date(dateVal);
+    if (isNaN(txDate.getTime())) return false;
+    const today = new Date();
+    return (
+      txDate.getFullYear() === today.getFullYear() &&
+      txDate.getMonth() === today.getMonth() &&
+      txDate.getDate() === today.getDate()
+    );
+  };
+
   const todayExpenses = transactions
-    .filter((t) => (t.type === "expense" || t.amount < 0) && (t.date?.startsWith("Auj") || t.date?.includes("instant")))
+    .filter((t) => (t.type === "expense" || t.amount < 0) && isTodayTx(t))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
   const isBudgetCritical = isPaydayConfigured && dailyBudget < 10000 && effectiveBalance > 0;

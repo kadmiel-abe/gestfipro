@@ -123,6 +123,21 @@ export default function DashboardView({
       ? `${greetingPrefix} ${firstName} 👋`
       : `${greetingPrefix} 👋`;
 
+  const isTodayTx = (t: { date?: string; transaction_date?: string; created_at?: string }) => {
+    if (t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today"))) {
+      return true;
+    }
+    const dateVal = t.transaction_date || t.created_at;
+    if (!dateVal) return false;
+    const txDate = new Date(dateVal);
+    if (isNaN(txDate.getTime())) return false;
+    return (
+      txDate.getFullYear() === now.getFullYear() &&
+      txDate.getMonth() === now.getMonth() &&
+      txDate.getDate() === now.getDate()
+    );
+  };
+
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-5 px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
       {/* ── BANNIÈRE SALUTATION + SALAIRE (Desktop) / SOLDE TOTAL & SALAIRE (Mobile) ── */}
@@ -219,7 +234,7 @@ export default function DashboardView({
         todayExpenses={todayExpenses}
         currency={displayCurrency}
         accountsCount={accounts.length}
-        todayTransactionsCount={transactions.filter((t) => t.date?.startsWith("Auj") || t.date?.includes("instant")).length}
+        todayTransactionsCount={transactions.filter((t) => isTodayTx(t)).length}
       />
 
       {/* ── BENTO GRID ANALYTICS ── */}

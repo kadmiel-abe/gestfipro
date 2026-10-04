@@ -5,20 +5,16 @@ import { Calendar } from "lucide-react";
 
 interface DashboardHeaderProps {
   userName?: string;
-  timeZone?: string;
 }
 
-export default function DashboardHeader({
-  userName = "Kadmiel",
-  timeZone = "Africa/Abidjan",
-}: DashboardHeaderProps) {
+export default function DashboardHeader({ userName = "Kadmiel" }: DashboardHeaderProps = {}) {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
   useEffect(() => {
     // Initialisation et mise à jour automatique
     const updateDate = () => setCurrentDate(new Date());
     updateDate();
-
+    
     // Actualisation toutes les minutes pour garantir la précision
     const intervalId = setInterval(updateDate, 60000);
     return () => clearInterval(intervalId);
@@ -30,7 +26,7 @@ export default function DashboardHeader({
 
   // Formatage forcé sur le fuseau horaire local (Abidjan)
   const fullDate = new Intl.DateTimeFormat("fr-FR", {
-    timeZone,
+    timeZone: "Africa/Abidjan",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -38,7 +34,7 @@ export default function DashboardHeader({
   }).format(currentDate);
 
   const currentMonth = new Intl.DateTimeFormat("fr-FR", {
-    timeZone,
+    timeZone: "Africa/Abidjan",
     month: "long",
   }).format(currentDate);
 

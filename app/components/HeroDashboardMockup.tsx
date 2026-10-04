@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatMonthYear } from "@/lib/date-utils";
 import Image from "next/image";
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import {
@@ -258,7 +259,7 @@ export default function HeroDashboardMockup() {
                 </div>
 
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] bg-[#09090B] px-2.5 py-1 rounded-md border border-[#27272A]">
-                  Septembre 2026
+                  {formatMonthYear(new Date())}
                 </span>
               </div>
 

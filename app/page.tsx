@@ -1259,7 +1259,7 @@ export default function GestFiProPanAfricanLanding() {
                   </div>
 
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] bg-[#09090B] px-2.5 py-1 rounded-md border border-[#27272A]">
-                    {lang === "fr" ? "Septembre 2026" : "September 2026"}
+                    {new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", { month: "long", year: "numeric", timeZone: "Africa/Abidjan" }).format(new Date())}
                   </span>
                 </div>
 

@@ -1,32 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
+import { useToday } from "@/hooks/useToday";
 
 interface DashboardHeaderProps {
   userName?: string;
+  timeZone?: string;
 }
 
-export default function DashboardHeader({ userName = "Kadmiel" }: DashboardHeaderProps = {}) {
-  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+export default function DashboardHeader({
+  userName = "Kadmiel",
+  timeZone = "Africa/Abidjan",
+}: DashboardHeaderProps = {}) {
+  const currentDate = useToday();
 
-  useEffect(() => {
-    // Initialisation et mise à jour automatique
-    const updateDate = () => setCurrentDate(new Date());
-    updateDate();
-    
-    // Actualisation toutes les minutes pour garantir la précision
-    const intervalId = setInterval(updateDate, 60000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  if (!currentDate) {
-    return <div className="h-14 bg-[#18181B] border border-[#27272A] rounded-lg animate-pulse mb-8" />;
-  }
-
-  // Formatage forcé sur le fuseau horaire local (Abidjan)
+  // Formatage sur le fuseau horaire d'Abidjan
   const fullDate = new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Africa/Abidjan",
+    timeZone,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -34,7 +24,7 @@ export default function DashboardHeader({ userName = "Kadmiel" }: DashboardHeade
   }).format(currentDate);
 
   const currentMonth = new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Africa/Abidjan",
+    timeZone,
     month: "long",
   }).format(currentDate);
 

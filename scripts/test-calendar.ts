@@ -5,6 +5,8 @@ import {
   isSameDay,
   isSameMonth,
   getMsUntilNextMidnight,
+  formatLocalDateKey,
+  getDateKey,
 } from "../lib/date-utils";
 
 function assert(condition: boolean, message: string) {
@@ -48,6 +50,14 @@ assert(isSameDay(d1, d2) === true, "4 Oct 10h30 et 4 Oct 22h15 doivent être rec
 assert(isSameDay(d1, dDiffMonth) === false, "4 Octobre et 4 Septembre ne doivent PAS être le même jour");
 assert(isSameMonth(d1, d2) === true, "4 Octobre et 4 Octobre sont dans le même mois");
 assert(isSameMonth(d1, dDiffMonth) === false, "4 Octobre et 4 Septembre ne sont PAS dans le même mois");
+assert(
+  getDateKey(new Date(2026, 9, 8).toISOString()) === "2026-10-08",
+  "Une date sérialisée en UTC doit conserver le jour local d'origine"
+);
+assert(
+  formatLocalDateKey(new Date(2026, 9, 8)) === "2026-10-08",
+  "Les clés calendrier doivent utiliser YYYY-MM-DD local"
+);
 
 // 6. Calcul minuit
 const msMidnight = getMsUntilNextMidnight();

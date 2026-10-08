@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useLanguage, formatCurrencyValue, convertFromBase, Currency } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
+import { formatLocalDateKey, getDateKey } from "@/lib/date-utils";
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -70,24 +72,17 @@ export default function CashflowChart({
   currency = "XOF",
 }: CashflowChartProps) {
   const { isEn } = useLanguage();
+  const today = useToday();
 
   const chartData = useMemo(() => {
     const daysCount = 10;
-    const today = new Date();
 
     // Regrouper les transactions par date YYYY-MM-DD
     const dailyMap: Record<string, { expenses: number; incomes: number }> = {};
 
     (transactions || []).forEach((t) => {
-      let rawDate: Date | null = null;
-      if (t.transaction_date) {
-        rawDate = new Date(t.transaction_date);
-      } else if (t.created_at) {
-        rawDate = new Date(t.created_at);
-      }
-
-      if (rawDate && !isNaN(rawDate.getTime())) {
-        const key = rawDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      const key = getDateKey(t.transaction_date || t.created_at);
+      if (key) {
         if (!dailyMap[key]) dailyMap[key] = { expenses: 0, incomes: 0 };
         const amt = Math.abs(Number(t.amount) || 0);
         if (t.type === "expense" || Number(t.amount) < 0) {
@@ -103,7 +98,7 @@ export default function CashflowChart({
     for (let i = daysCount - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split("T")[0];
+      const key = formatLocalDateKey(d);
       const dayLabel = String(d.getDate());
       const fullDate = d.toLocaleDateString(isEn ? "en-US" : "fr-FR", {
         day: "numeric",
@@ -134,7 +129,7 @@ export default function CashflowChart({
         depenses: dayData.expenses,
       };
     });
-  }, [transactions, totalBalance, isEn]);
+  }, [transactions, totalBalance, isEn, today]);
 
   if (transactions.length === 0 && totalBalance === 0) {
     return (

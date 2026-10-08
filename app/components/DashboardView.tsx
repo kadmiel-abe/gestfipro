@@ -15,6 +15,8 @@ import PaydayCard from "./dashboard/payday-card";
 import AddExpenseModal from "./dashboard/add-expense-modal";
 import GoalsCard from "./dashboard/goals-card";
 import MiniCalendar from "./MiniCalendar";
+import { useToday } from "@/hooks/useToday";
+import { getCalendarDayDifference, isSameDay, parseLocalDateKey, getDateKey } from "@/lib/date-utils";
 import { AccountIcon } from "./AccountIcon";
 import { useLanguage, formatCurrencyValue, convertFromBase } from "@/lib/i18n/LanguageContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
@@ -92,7 +94,7 @@ export default function DashboardView({
   const { t, isEn, language, currency: globalCurrency } = useLanguage();
   const displayCurrency = currency || globalCurrency || "XOF";
   const locale = language === "en" ? "en-US" : "fr-FR";
-  const now = new Date();
+  const now = useToday();
   const todayNum = now.getDate();
 
   // Format de date dynamique selon la langue
@@ -124,18 +126,9 @@ export default function DashboardView({
       : `${greetingPrefix} 👋`;
 
   const isTodayTx = (t: { date?: string; transaction_date?: string; created_at?: string }) => {
-    if (t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today"))) {
-      return true;
-    }
     const dateVal = t.transaction_date || t.created_at;
-    if (!dateVal) return false;
-    const txDate = new Date(dateVal);
-    if (isNaN(txDate.getTime())) return false;
-    return (
-      txDate.getFullYear() === now.getFullYear() &&
-      txDate.getMonth() === now.getMonth() &&
-      txDate.getDate() === now.getDate()
-    );
+    if (dateVal) return isSameDay(dateVal, now);
+    return Boolean(t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today")));
   };
 
   return (
@@ -484,16 +477,14 @@ export default function DashboardView({
                 // Date relative
                 let relativeDate = tx.date || "";
                 if (tx.transaction_date) {
-                  const txD = new Date(tx.transaction_date);
-                  const diffMs = now.getTime() - txD.getTime();
-                  const diffDays = Math.floor(
-                    diffMs / (1000 * 60 * 60 * 24)
-                  );
+                  const txKey = getDateKey(tx.transaction_date);
+                  const txD = txKey ? parseLocalDateKey(txKey) : null;
+                  const diffDays = txD ? getCalendarDayDifference(txD, now) : -1;
                   if (diffDays === 0) relativeDate = t.dashboard.historyPage.today;
                   else if (diffDays === 1) relativeDate = t.dashboard.historyPage.yesterday;
-                  else if (diffDays < 7)
+                  else if (diffDays >= 0 && diffDays < 7)
                     relativeDate = isEn ? `${diffDays} days ago` : `Il y a ${diffDays} jours`;
-                  else
+                  else if (txD)
                     relativeDate = txD.toLocaleDateString(language === "en" ? "en-US" : "fr-FR", {
                       day: "numeric",
                       month: "short",
@@ -736,11 +727,10 @@ export default function DashboardView({
               const isExp = t.type === "expense" || t.amount < 0;
               if (!isExp) return false;
               if (t.transaction_date) {
-                const d = new Date(t.transaction_date);
-                return (
-                  d.getMonth() === currentMonth &&
-                  d.getFullYear() === currentYear
-                );
+                const dateKey = getDateKey(t.transaction_date);
+                return dateKey?.startsWith(
+                  `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-`
+                ) ?? false;
               }
               return true;
             });

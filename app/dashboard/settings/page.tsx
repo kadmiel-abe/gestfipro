@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
 
 type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
@@ -39,6 +40,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
   const { currency, setCurrency, isEn, language } = useLanguage();
+  const today = useToday();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,7 +117,7 @@ export default function SettingsPage() {
       };
     }
 
-    const now = new Date();
+    const now = today;
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
@@ -151,7 +153,7 @@ export default function SettingsPage() {
       dailyBudgetPreview: budget,
       isConfigured: true,
     };
-  }, [paydayDate, monthlySalary]);
+  }, [paydayDate, monthlySalary, today]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

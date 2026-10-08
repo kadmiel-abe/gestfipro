@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, DollarSign, Calendar, Tag, CreditCard, FileText } from "lucide-react";
 import { formatCurrencyValue, getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
+import { formatLocalDateKey, getTodayInAbidjan } from "@/lib/date-utils";
 
 interface AddExpenseModalProps {
     isOpen: boolean;
@@ -40,7 +41,7 @@ export default function AddExpenseModal({
     const [customCategory, setCustomCategory] = useState("");
     const [compteId, setCompteId] = useState(comptes[0]?.id || 1);
     const [note, setNote] = useState("");
-    const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [date, setDate] = useState(() => formatLocalDateKey(getTodayInAbidjan()));
 
     if (!isOpen) return null;
 

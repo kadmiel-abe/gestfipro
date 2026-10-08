@@ -21,6 +21,7 @@ export function useToday(): Date {
     };
 
     const scheduleMidnightUpdate = () => {
+      if (timerId) clearTimeout(timerId);
       const msUntilMidnight = getMsUntilNextMidnight();
       timerId = setTimeout(() => {
         updateToday();
@@ -28,29 +29,26 @@ export function useToday(): Date {
       }, msUntilMidnight);
     };
 
-    // Initialisation et abonnement minuit
-    updateToday();
-    scheduleMidnightUpdate();
+    const refreshDate = () => {
+      updateToday();
+      scheduleMidnightUpdate();
+    };
 
-    // Gestionnaire visibilitychange
+    refreshDate();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        updateToday();
+        refreshDate();
       }
     };
 
-    // Gestionnaire focus
-    const handleFocus = () => {
-      updateToday();
-    };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener("focus", refreshDate);
 
     return () => {
       if (timerId) clearTimeout(timerId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", refreshDate);
     };
   }, []);
 

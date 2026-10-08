@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { formatMonthYear } from "@/lib/date-utils";
+import { useToday } from "@/hooks/useToday";
 import Image from "next/image";
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import {
@@ -34,6 +35,7 @@ interface TransactionItem {
 }
 
 export default function HeroDashboardMockup() {
+  const today = useToday();
   // ── Tilt 3D au survol avec Framer Motion ─────────────────────────────────
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -110,18 +112,13 @@ export default function HeroDashboardMockup() {
   const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR");
 
   // Date du jour formatée
-  const [dateFormatted, setDateFormatted] = useState("Lundi 14 Septembre 2026");
-  useEffect(() => {
-    try {
-      const now = new Date();
-      const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-      const months = [
-        "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-        "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
-      ];
-      setDateFormatted(`${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`);
-    } catch (e) {}
-  }, []);
+  const dateFormatted = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Africa/Abidjan",
+  }).format(today);
 
   // Gestion de la saisie rapide
   const handleQuickSubmit = (e: React.FormEvent) => {
@@ -259,7 +256,7 @@ export default function HeroDashboardMockup() {
                 </div>
 
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] bg-[#09090B] px-2.5 py-1 rounded-md border border-[#27272A]">
-                  {formatMonthYear(new Date())}
+                  {formatMonthYear(today)}
                 </span>
               </div>
 

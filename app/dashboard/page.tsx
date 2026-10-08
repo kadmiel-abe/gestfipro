@@ -46,6 +46,8 @@ import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
 import { getCurrencyMeta, useLanguage, formatCurrencyValue, convertFromBase, convertToBase } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
+import { getDateKey, getTodayInAbidjan, isSameDay, parseLocalDateKey } from "@/lib/date-utils";
 
 // Dynamic imports for chart components (client-only)
 const CashflowChart = dynamic(() => import("../components/CashflowChart"), {
@@ -150,6 +152,7 @@ const supabase = createClient();
 export default function GestFiProDashboard() {
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
+  const now = useToday();
   const currencySymbol = getCurrencyMeta(currency).symbol;
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
@@ -317,7 +320,13 @@ export default function GestFiProDashboard() {
             category: t.category || "Divers",
             amount: Number(t.amount) || 0,
             type: t.type,
-            date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "À l'instant",
+            date: (() => {
+              const dateKey = getDateKey(t.transaction_date);
+              const transactionDate = dateKey ? parseLocalDateKey(dateKey) : null;
+              return transactionDate
+                ? transactionDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                : "À l'instant";
+            })(),
             transaction_date: t.transaction_date,
             created_at: t.created_at,
             account: accountNames.get(t.account_id) || t.note || "Compte",
@@ -426,7 +435,6 @@ export default function GestFiProDashboard() {
   }, [loadData]);
 
   // ─── Computed values ──────────────────────────────────────────────────────
-  const now = new Date();
   const todayNum = now.getDate();
   const dateStr = formatDateFr(now);
 
@@ -447,19 +455,9 @@ export default function GestFiProDashboard() {
   const dailyBudget = isPaydayConfigured && daysRemaining > 0 ? Math.round(effectiveBalance / daysRemaining) : 0;
 
   const isTodayTx = (t: { date?: string; transaction_date?: string; created_at?: string }) => {
-    if (t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today"))) {
-      return true;
-    }
     const dateVal = t.transaction_date || t.created_at;
-    if (!dateVal) return false;
-    const txDate = new Date(dateVal);
-    if (isNaN(txDate.getTime())) return false;
-    const today = new Date();
-    return (
-      txDate.getFullYear() === today.getFullYear() &&
-      txDate.getMonth() === today.getMonth() &&
-      txDate.getDate() === today.getDate()
-    );
+    if (dateVal) return isSameDay(dateVal, now);
+    return Boolean(t.date && (t.date.startsWith("Auj") || t.date.toLowerCase().includes("instant") || t.date.toLowerCase().includes("today")));
   };
 
   const todayExpenses = transactions
@@ -495,7 +493,7 @@ export default function GestFiProDashboard() {
           category: tx.category || "Divers",
           amount: tx.amount,
           type: tx.type,
-          transaction_date: new Date().toISOString(),
+          transaction_date: getTodayInAbidjan().toISOString(),
           note: tx.account,
         };
 
@@ -507,7 +505,7 @@ export default function GestFiProDashboard() {
             title: tx.label,
             amount: tx.amount,
             type: tx.type,
-            transaction_date: new Date().toISOString(),
+            transaction_date: getTodayInAbidjan().toISOString(),
           };
           const retry = await supabase.from("transactions").insert(fallbackPayload);
           transactionError = retry.error;

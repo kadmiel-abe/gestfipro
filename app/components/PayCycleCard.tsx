@@ -11,6 +11,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useLanguage, getCurrencyMeta, formatCurrencyValue, Currency } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
+import { getTodayInAbidjan } from "@/lib/date-utils";
 
 function formatMoney(value: number, currency: string, locale: string) {
   return formatCurrencyValue(value, currency as Currency, locale, true);
@@ -33,9 +35,9 @@ function fmt(n: number, locale: string) {
 export function computePayCycle(
   paydayWithMonth: number | null | undefined,
   totalBalance: number,
-  netSalary: number = 0
+  netSalary: number = 0,
+  now: Date = getTodayInAbidjan()
 ) {
-  const now = new Date();
   const todayNum = now.getDate();
   const isConfigured = Boolean(paydayWithMonth && paydayWithMonth > 0 && paydayWithMonth <= 31);
 
@@ -82,13 +84,15 @@ export default function PayCycleCard({
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
   const { language, t, isEn, currency: currentCurrency } = useLanguage();
+  const today = useToday();
   const locale = language === "en" ? "en-US" : "fr-FR";
   const activeCurrency = (currency || currentCurrency) as any;
   const currencySymbol = getCurrencyMeta(activeCurrency).symbol;
   const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
     totalBalance,
-    netSalary
+    netSalary,
+    today
   );
 
   const rhythmAlert = isConfigured && dailyBudget > 0 && todayExpenses > dailyBudget;

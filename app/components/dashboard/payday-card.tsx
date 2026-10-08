@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { CalendarClock, Wallet, TrendingDown, Settings, AlertCircle } from "lucide-react";
 import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ export default function PaydayCard({
   onNavigate,
 }: PaydayCardProps) {
   const { t, isEn, currency: globalCurrency, language } = useLanguage();
+  const today = useToday();
   const activeCurrency = (currency || globalCurrency) as any;
   const isConfigured = Boolean(paydayDate && paydayDate > 0 && paydayDate <= 31);
 
@@ -48,15 +50,14 @@ export default function PaydayCard({
       };
     }
 
-    const now = new Date();
-    const todayNum = now.getDate();
+    const todayNum = today.getDate();
     const safe = paydayDate;
 
     let days = safe - todayNum;
     if (days <= 0) {
       const daysInMonth = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
+        today.getFullYear(),
+        today.getMonth() + 1,
         0
       ).getDate();
       days += daysInMonth;
@@ -78,7 +79,7 @@ export default function PaydayCard({
       isUrgent: urgent,
       progressPercent: progress,
     };
-  }, [paydayDate, totalBalance, netSalary, isConfigured]);
+  }, [paydayDate, totalBalance, netSalary, isConfigured, today]);
 
   return (
     <div

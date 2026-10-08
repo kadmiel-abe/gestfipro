@@ -20,6 +20,7 @@ import {
   convertToBase,
 } from "@/lib/i18n/LanguageContext";
 import type { Account } from "@/lib/types";
+import { formatLocalDateKey, getTodayInAbidjan, parseLocalDateKey } from "@/lib/date-utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ export default function AddExpenseModal({
   const [customCategory, setCustomCategory] = useState("");
   const [accountId, setAccountId] = useState<string>("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => formatLocalDateKey(getTodayInAbidjan()));
 
   // ── UI state ──
   const [loading, setLoading] = useState(false);
@@ -115,7 +116,7 @@ export default function AddExpenseModal({
       setCategory(categoriesList[0].label);
       setCustomCategory("");
       setNote("");
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(formatLocalDateKey(getTodayInAbidjan()));
       setError(null);
       setSuccess(false);
       if (accounts.length > 0) {
@@ -153,9 +154,8 @@ export default function AddExpenseModal({
     try {
       const isUuid =
         typeof accountId === "string" && accountId.length > 10;
-      const txDate = date
-        ? new Date(date).toISOString()
-        : new Date().toISOString();
+      const txDate = (date ? parseLocalDateKey(date) : null)?.toISOString()
+        ?? getTodayInAbidjan().toISOString();
 
       const resolvedCategory = (isOtherCategory && customCategory.trim()) ? customCategory.trim() : (category || "Divers");
       const baseAmount = convertToBase(parsedAmount, currency);

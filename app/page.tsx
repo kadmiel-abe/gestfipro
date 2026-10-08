@@ -50,6 +50,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useToday } from "@/hooks/useToday";
 
 type Language = "fr" | "en";
 type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
@@ -195,6 +196,7 @@ const scrollBadgeItem = {
 
 export default function GestFiProPanAfricanLanding() {
   const { language, setLanguage, currency, setCurrency } = useLanguage();
+  const today = useToday();
   const [lang, setLang] = useState<Language>(language);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -344,8 +346,12 @@ export default function GestFiProPanAfricanLanding() {
 
   const fmt = (n: number) => Math.round(n).toLocaleString(language === "fr" ? "fr-FR" : "en-US");
 
-  // Date dynamique
-  const currentDateStr = "Lundi 14 Septembre";
+  const currentDateStr = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Africa/Abidjan",
+  }).format(today);
 
   // Saisie rapide interactive
   const handleQuickSubmit = (e: React.FormEvent) => {
@@ -1259,7 +1265,7 @@ export default function GestFiProPanAfricanLanding() {
                   </div>
 
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] bg-[#09090B] px-2.5 py-1 rounded-md border border-[#27272A]">
-                    {new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", { month: "long", year: "numeric", timeZone: "Africa/Abidjan" }).format(new Date())}
+                    {new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", { month: "long", year: "numeric", timeZone: "Africa/Abidjan" }).format(today)}
                   </span>
                 </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useToday } from "@/hooks/useToday";
 import {
@@ -26,65 +26,101 @@ export default function MiniCalendar({
   onSelectDate,
 }: MiniCalendarProps) {
   const today = useToday();
-  const [viewDate, setViewDate] = useState<Date>(today);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(today);
 
-  // Synchronise le mois d'affichage si aujourd'hui change (ex. au passage de minuit)
+  /**
+   * viewDate = 1er du mois affiché — source de vérité unique.
+   * Initialisé à null pour éviter toute désynchronisation SSR/CSR (Next.js).
+   * Le useEffect ci-dessous le positionne côté client uniquement.
+   */
+  const [viewDate, setViewDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Traque si l'utilisateur a navigué manuellement (pour ne pas écraser sa vue à minuit)
+  const userNavigatedRef = useRef(false);
+
+  /**
+   * Initialisation client-side + rafraîchissement automatique (minuit, visibilitychange…).
+   * On ne réinitialise viewDate que si l'utilisateur n'a pas navigué manuellement.
+   */
   useEffect(() => {
     setViewDate((prev) => {
-      // Conserve le mois de l'utilisateur si une navigation explicite a eu lieu
-      if (prev.getMonth() === today.getMonth() && prev.getFullYear() === today.getFullYear()) {
-        return today;
+      // Premier mount : on positionne sur le mois courant
+      if (prev === null) {
+        userNavigatedRef.current = false;
+        return new Date(today.getFullYear(), today.getMonth(), 1);
+      }
+      // Rafraîchissement automatique : seulement si pas de navigation manuelle
+      if (!userNavigatedRef.current) {
+        return new Date(today.getFullYear(), today.getMonth(), 1);
       }
       return prev;
     });
+    setSelectedDate((prev) => (prev === null ? today : prev));
   }, [today]);
 
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
+  // On dérive année et mois depuis viewDate ; avant le mount client, on prend today
+  const year = viewDate ? viewDate.getFullYear() : today.getFullYear();
+  const month = viewDate ? viewDate.getMonth() : today.getMonth();
 
   const firstDayOffset = getStartDayOfWeek(year, month);
   const daysInMonth = getDaysInMonth(year, month);
   const totalCells = Math.ceil((firstDayOffset + daysInMonth) / 7) * 7;
 
-  // Filtrer les jours de dépense pour le mois/année affiché uniquement
-  const activeExpenseDays = React.useMemo(() => {
-    if (expenseDays && expenseDays.length > 0) return expenseDays;
-
-    return transactions
-      .filter((t) => {
+  /**
+   * Index (Set) des jours avec dépenses pour le mois/année AFFICHÉ uniquement.
+   * On parse la date locale (YYYY-MM-DD) sans passer par toISOString() pour éviter
+   * le décalage UTC qui ferait glisser la date d'un jour.
+   */
+  const activeExpenseDays = useMemo<Set<number>>(() => {
+    if (transactions.length > 0) {
+      const days = new Set<number>();
+      for (const t of transactions) {
         const dStr = t.transaction_date || t.created_at;
-        if (!dStr) return false;
-        const txDate = new Date(dStr);
-        return (
-          !isNaN(txDate.getTime()) &&
-          txDate.getFullYear() === year &&
-          txDate.getMonth() === month &&
-          (t.type === "expense" || (t.amount !== undefined && t.amount < 0))
-        );
-      })
-      .map((t) => new Date(t.transaction_date || t.created_at!).getDate());
+        if (!dStr) continue;
+        const datePart = dStr.split("T")[0]; // "YYYY-MM-DD"
+        const parts = datePart.split("-");
+        const y = Number(parts[0]);
+        const m = Number(parts[1]) - 1; // Convertit en index JS 0-11
+        const d = Number(parts[2]);
+        if (y === year && m === month) {
+          if (t.type === "expense" || (t.amount !== undefined && t.amount < 0)) {
+            if (d > 0) days.add(d);
+          }
+        }
+      }
+      return days;
+    }
+    // Repli sur prop legacy expenseDays (numéros de jours sans filtre mois)
+    if (expenseDays && expenseDays.length > 0) return new Set(expenseDays);
+    return new Set<number>();
   }, [transactions, expenseDays, year, month]);
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = useCallback(() => {
+    userNavigatedRef.current = true;
     setViewDate(new Date(year, month - 1, 1));
-  };
+  }, [year, month]);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
+    userNavigatedRef.current = true;
     setViewDate(new Date(year, month + 1, 1));
-  };
+  }, [year, month]);
 
-  const handleGoToday = () => {
-    setViewDate(today);
+  const handleGoToday = useCallback(() => {
+    userNavigatedRef.current = false;
+    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
     setSelectedDate(today);
     if (onSelectDate) onSelectDate(today);
-  };
+  }, [today, onSelectDate]);
 
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < totalCells; i++) {
-    const day = i - firstDayOffset + 1;
-    cells.push(day >= 1 && day <= daysInMonth ? day : null);
-  }
+  // Mémoïsation de la grille — recalculée seulement si mois ou offset changent
+  const cells = useMemo<(number | null)[]>(() => {
+    const result: (number | null)[] = [];
+    for (let i = 0; i < totalCells; i++) {
+      const day = i - firstDayOffset + 1;
+      result.push(day >= 1 && day <= daysInMonth ? day : null);
+    }
+    return result;
+  }, [totalCells, firstDayOffset, daysInMonth]);
 
   return (
     <div className="w-full">
@@ -92,7 +128,7 @@ export default function MiniCalendar({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <span className="text-xs sm:text-sm font-bold text-[#FAFAFA]">
-            {formatMonthYear(viewDate)}
+            {formatMonthYear(new Date(year, month, 1))}
           </span>
           <div className="flex items-center gap-0.5 ml-1">
             <button
@@ -100,16 +136,18 @@ export default function MiniCalendar({
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded transition-colors"
               title="Mois précédent"
               type="button"
+              aria-label="Mois précédent"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={14} aria-hidden="true" />
             </button>
             <button
               onClick={handleNextMonth}
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded transition-colors"
               title="Mois suivant"
               type="button"
+              aria-label="Mois suivant"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={14} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -119,6 +157,7 @@ export default function MiniCalendar({
             onClick={handleGoToday}
             className="text-[10px] font-bold bg-[#EF4444]/15 border border-[#EF4444]/30 rounded px-2 py-0.5 text-[#f87171] hover:bg-[#EF4444]/25 transition-colors"
             type="button"
+            aria-label="Revenir au mois actuel"
           >
             Auj.
           </button>
@@ -140,15 +179,17 @@ export default function MiniCalendar({
       </div>
 
       {/* Grille des jours */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1" role="grid">
         {cells.map((day, idx) => {
-          if (!day) return <div key={idx} className="aspect-square" />;
+          if (!day) return <div key={`empty-${idx}`} className="aspect-square" role="gridcell" aria-hidden="true" />;
 
           const cellDate = new Date(year, month, day);
+          // Clé stable basée sur la date locale YYYY-MM-DD (pas toISOString() — décalage UTC)
+          const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isToday = isSameDay(cellDate, today);
           const isSelected = selectedDate ? isSameDay(cellDate, selectedDate) : false;
           const isPayday = paydayDate > 0 && day === paydayDate;
-          const hasExpense = activeExpenseDays.includes(day);
+          const hasExpense = activeExpenseDays.has(day);
 
           let cellClass = "bg-transparent text-[#A1A1AA] hover:bg-[#27272A]/50";
 
@@ -164,8 +205,11 @@ export default function MiniCalendar({
 
           return (
             <button
-              key={idx}
+              key={dateKey}
               type="button"
+              role="gridcell"
+              aria-label={`${day} ${formatMonthYear(new Date(year, month, 1))}${isToday ? " — aujourd'hui" : ""}`}
+              aria-current={isToday ? "date" : undefined}
               onClick={() => {
                 setSelectedDate(cellDate);
                 if (onSelectDate) onSelectDate(cellDate);
@@ -174,7 +218,7 @@ export default function MiniCalendar({
             >
               <span>{day}</span>
               {hasExpense && !isToday && !isPayday && (
-                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#EF4444] opacity-80" />
+                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#EF4444] opacity-80" aria-hidden="true" />
               )}
             </button>
           );

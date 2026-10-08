@@ -256,15 +256,8 @@ export default function DashboardView({
         {/* Mini Calendrier du cycle */}
         <div className="card animate-fade-in-up-5 p-4 sm:p-5 flex flex-col justify-between">
           <MiniCalendar
-            today={todayNum}
             paydayDate={paydayWithMonth}
-            expenseDays={transactions
-              .filter((t) => t.type === "expense" || t.amount < 0)
-              .map((t) => {
-                if (t.transaction_date) return new Date(t.transaction_date).getDate();
-                return 0;
-              })
-              .filter((d) => d > 0)}
+            transactions={transactions}
           />
         </div>
 

@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCalendar } from "@/hooks/useCalendar";
-import { formatLocalDateKey, formatMonthYear, isSameDay } from "@/lib/date-utils";
 
 interface DashboardCalendarProps {
   payDay?: number;
@@ -17,51 +15,95 @@ export default function DashboardCalendar({
   transactions = [],
   onSelectDate,
 }: DashboardCalendarProps) {
-  const calendar = useCalendar(transactions);
-  const { year, month } = calendar;
+  // 1. Initialise l'état du calendrier dynamiquement sur la date système actuelle avec new Date() (aucune date codée en dur)
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // 2. Affichage dynamique du mois et de l'année avec Intl.DateTimeFormat et première lettre en majuscule
+  const formattedTitle = new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+  }).format(currentDate);
+  const monthTitle = formattedTitle.charAt(0).toUpperCase() + formattedTitle.slice(1);
+
+  // Calcul du nombre de jours dans le mois et du premier jour
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const startDay = (firstDayIndex + 6) % 7; // Lundi = 0, Mardi = 1, ..., Dimanche = 6
+  const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
+
+  // 4. Changement de mois via new Date(year, month - 1, 1) et new Date(year, month + 1, 1)
+  const handlePreviousMonth = useCallback(() => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  }, [year, month]);
+
+  const handleNextMonth = useCallback(() => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  }, [year, month]);
+
+  // 3. Bouton "Auj." réinitialise currentDate sur new Date()
+  const handleGoToday = useCallback(() => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(today);
+    onSelectDate?.(today);
+  }, [onSelectDate]);
+
+  const handleGoPayDay = useCallback(() => {
+    const payday = new Date(year, month, payDay);
+    setSelectedDate(payday);
+    onSelectDate?.(payday);
+  }, [month, payDay, year, onSelectDate]);
+
+  const grid = useMemo<(Date | null)[]>(() => {
+    const dates: (Date | null)[] = [];
+    for (let index = 0; index < totalCells; index++) {
+      const day = index - startDay + 1;
+      dates.push(day >= 1 && day <= daysInMonth ? new Date(year, month, day) : null);
+    }
+    return dates;
+  }, [daysInMonth, month, startDay, totalCells, year]);
+
   const expenseDays = useMemo(() => {
     const days = new Set<number>();
     const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
-    for (const [key, events] of calendar.eventsByDate) {
+    for (const event of transactions) {
+      const rawDate = event.transaction_date || event.created_at;
+      if (!rawDate) continue;
+      const key = rawDate.split("T")[0];
       if (!key.startsWith(monthPrefix)) continue;
-      if (events.some((event) => event.type === "expense" || (event.amount ?? 0) < 0)) {
+      if (event.type === "expense" || (event.amount ?? 0) < 0) {
         days.add(Number(key.slice(-2)));
       }
     }
     return days;
-  }, [calendar.eventsByDate, month, year]);
-
-  const handleGoToday = () => {
-    calendar.goToToday();
-    onSelectDate?.(calendar.today);
-  };
-
-  const handleGoPayDay = () => {
-    const payday = new Date(calendar.year, calendar.month, payDay);
-    calendar.selectDate(payday);
-    onSelectDate?.(payday);
-  };
+  }, [month, transactions, year]);
 
   return (
     <div className="bg-[#18181B] border border-[#27272A] rounded-xl p-5 w-full max-w-md">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-[#FAFAFA]">
-            {formatMonthYear(calendar.viewDate)}
+            {monthTitle}
           </h2>
           <div className="flex gap-1 ml-1">
             <button
-              onClick={calendar.goToPreviousMonth}
+              onClick={handlePreviousMonth}
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded-md transition-colors"
               title="Mois précédent"
+              aria-label="Mois précédent"
               type="button"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={calendar.goToNextMonth}
+              onClick={handleNextMonth}
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded-md transition-colors"
               title="Mois suivant"
+              aria-label="Mois suivant"
               type="button"
             >
               <ChevronRight className="w-4 h-4" />
@@ -96,23 +138,29 @@ export default function DashboardCalendar({
       </div>
 
       <div className="grid grid-cols-7 gap-y-2 gap-x-1">
-        {calendar.grid.map((cellDate, index) => {
+        {grid.map((cellDate, index) => {
           if (!cellDate) return <div key={`empty-${index}`} className="p-2" />;
 
           const day = cellDate.getDate();
-          const isToday = isSameDay(cellDate, calendar.today);
-          const isSelected = calendar.selectedDate
-            ? isSameDay(cellDate, calendar.selectedDate)
+          const today = new Date();
+          const isToday =
+            cellDate.getDate() === today.getDate() &&
+            cellDate.getMonth() === today.getMonth() &&
+            cellDate.getFullYear() === today.getFullYear();
+          const isSelected = selectedDate
+            ? cellDate.getDate() === selectedDate.getDate() &&
+              cellDate.getMonth() === selectedDate.getMonth() &&
+              cellDate.getFullYear() === selectedDate.getFullYear()
             : false;
           const isPayDay = day === payDay;
           const hasExpense = expenseDays.has(day);
 
           return (
             <button
-              key={formatLocalDateKey(cellDate)}
+              key={`${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`}
               type="button"
               onClick={() => {
-                calendar.selectDate(cellDate);
+                setSelectedDate(cellDate);
                 onSelectDate?.(cellDate);
               }}
               className={cn(

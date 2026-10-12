@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCalendar } from "@/hooks/useCalendar";
-import { formatMonthYear, formatLocalDateKey, isSameDay } from "@/lib/date-utils";
 
 interface MiniCalendarProps {
   paydayDate?: number;
@@ -20,37 +18,70 @@ export default function MiniCalendar({
   expenseDays,
   onSelectDate,
 }: MiniCalendarProps) {
-  const {
-    today,
-    selectedDate,
-    year,
-    month,
-    eventsByDate,
-    grid,
-    goToPreviousMonth,
-    goToNextMonth,
-    goToToday,
-    selectDate,
-  } = useCalendar(transactions);
+  // 1. Initialise l'état du calendrier dynamiquement sur la date système actuelle avec new Date() (aucune date codée en dur)
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // 2. Affichage direct du mois et de l'année via Intl.DateTimeFormat avec première lettre en majuscule
+  const formattedTitle = new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+  }).format(currentDate);
+  const monthTitle = formattedTitle.charAt(0).toUpperCase() + formattedTitle.slice(1);
+
+  // Calcul du nombre de jours dans le mois et du décalage initial (lundi = 0)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const startDay = (firstDayIndex + 6) % 7;
+  const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
+
+  // 4. Changement de mois via new Date(year, month - 1, 1) et new Date(year, month + 1, 1)
+  const handlePreviousMonth = useCallback(() => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  }, [year, month]);
+
+  const handleNextMonth = useCallback(() => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  }, [year, month]);
+
+  // 3. Bouton "Auj." réinitialise currentDate sur new Date()
+  const handleGoToday = useCallback(() => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(today);
+    if (onSelectDate) onSelectDate(today);
+  }, [onSelectDate]);
+
+  const grid = useMemo<(Date | null)[]>(() => {
+    const dates: (Date | null)[] = [];
+    for (let index = 0; index < totalCells; index++) {
+      const day = index - startDay + 1;
+      dates.push(day >= 1 && day <= daysInMonth ? new Date(year, month, day) : null);
+    }
+    return dates;
+  }, [daysInMonth, month, startDay, totalCells, year]);
 
   const activeExpenseDays = useMemo(() => {
     const days = new Set<number>();
-    for (const [key, dayEvents] of eventsByDate) {
-      if (!key.startsWith(`${year}-${String(month + 1).padStart(2, "0")}-`)) continue;
-      if (dayEvents.some((event) => event.type === "expense" || (event.amount ?? 0) < 0)) {
-        days.add(Number(key.slice(-2)));
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+    for (const t of transactions) {
+      const dStr = t.transaction_date || t.created_at;
+      if (!dStr) continue;
+      const key = dStr.split("T")[0];
+      if (key.startsWith(monthPrefix)) {
+        if (t.type === "expense" || (t.amount !== undefined && t.amount < 0)) {
+          days.add(Number(key.slice(-2)));
+        }
       }
     }
     if (transactions.length === 0 && expenseDays?.length) {
       return new Set(expenseDays);
     }
     return days;
-  }, [eventsByDate, expenseDays, month, transactions.length, year]);
-
-  const handleGoToday = () => {
-    goToToday();
-    if (onSelectDate) onSelectDate(today);
-  };
+  }, [expenseDays, month, transactions, year]);
 
   return (
     <div className="w-full">
@@ -58,11 +89,11 @@ export default function MiniCalendar({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <span className="text-xs sm:text-sm font-bold text-[#FAFAFA]">
-            {formatMonthYear(new Date(year, month, 1))}
+            {monthTitle}
           </span>
           <div className="flex items-center gap-0.5 ml-1">
             <button
-              onClick={goToPreviousMonth}
+              onClick={handlePreviousMonth}
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded transition-colors"
               title="Mois précédent"
               type="button"
@@ -71,7 +102,7 @@ export default function MiniCalendar({
               <ChevronLeft size={14} aria-hidden="true" />
             </button>
             <button
-              onClick={goToNextMonth}
+              onClick={handleNextMonth}
               className="p-1 text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] rounded transition-colors"
               title="Mois suivant"
               type="button"
@@ -114,9 +145,17 @@ export default function MiniCalendar({
           if (!cellDate) return <div key={`empty-${idx}`} className="aspect-square" role="gridcell" aria-hidden="true" />;
 
           const day = cellDate.getDate();
-          const dateKey = formatLocalDateKey(cellDate);
-          const isToday = isSameDay(cellDate, today);
-          const isSelected = selectedDate ? isSameDay(cellDate, selectedDate) : false;
+          const dateKey = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const today = new Date();
+          const isToday =
+            cellDate.getDate() === today.getDate() &&
+            cellDate.getMonth() === today.getMonth() &&
+            cellDate.getFullYear() === today.getFullYear();
+          const isSelected = selectedDate
+            ? cellDate.getDate() === selectedDate.getDate() &&
+              cellDate.getMonth() === selectedDate.getMonth() &&
+              cellDate.getFullYear() === selectedDate.getFullYear()
+            : false;
           const isPayday = paydayDate > 0 && day === paydayDate;
           const hasExpense = activeExpenseDays.has(day);
 
@@ -137,10 +176,10 @@ export default function MiniCalendar({
               key={dateKey}
               type="button"
               role="gridcell"
-              aria-label={`${day} ${formatMonthYear(new Date(year, month, 1))}${isToday ? " — aujourd'hui" : ""}`}
+              aria-label={`${day} ${monthTitle}${isToday ? " — aujourd'hui" : ""}`}
               aria-current={isToday ? "date" : undefined}
               onClick={() => {
-                selectDate(cellDate);
+                setSelectedDate(cellDate);
                 if (onSelectDate) onSelectDate(cellDate);
               }}
               className={`aspect-square flex items-center justify-center rounded-lg text-xs font-medium relative transition-colors ${cellClass}`}

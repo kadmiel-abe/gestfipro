@@ -618,6 +618,7 @@ export default function GestFiProDashboard() {
     const lower = name.toLowerCase();
     if (lower.includes("wave")) detectedType = "wave";
     else if (lower.includes("orange") || lower.includes("mtn") || lower.includes("moov") || lower.includes("mobile")) detectedType = "mobile_money";
+    else if (lower.includes("boa") || lower.includes("bank of africa")) detectedType = "bank";
     else if (lower.includes("banque") || lower.includes("bank")) detectedType = "bank";
     else if (lower.includes("espèce") || lower.includes("espece") || lower.includes("cash")) detectedType = "cash";
 

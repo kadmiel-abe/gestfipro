@@ -336,6 +336,7 @@ export default function OnboardingPage() {
                       <option value="Wave">🌊 Wave</option>
                       <option value="Orange Money">🟠 Orange Money</option>
                       <option value="Mobile Money">📱 Mobile Money (Autre)</option>
+                      <option value="BOA">🏦 BOA (Bank of Africa)</option>
                       <option value="Banque">🏦 Compte Bancaire</option>
                     </select>
                   </div>

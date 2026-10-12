@@ -6,7 +6,7 @@
  * sans fond, sans padding parasite.
  *
  * Fichiers dans /public/icons/ :
- *   wave.jpg · orange.jpg · mtn.jpg · moov.png · banque.png · cash.svg
+ *   Bank_of_africa-logo.png · wave.jpg · orange.jpg · mtn.jpg · moov.png · banque.jpg · cash.svg
  */
 
 import React from "react";
@@ -14,9 +14,10 @@ import Image from "next/image";
 
 // ─── Mapping opérateur → fichier ──────────────────────────────────────────────
 
-type ResolvedType = "wave" | "orange" | "mtn" | "moov" | "cash" | "bank" | "custom";
+type ResolvedType = "boa" | "wave" | "orange" | "mtn" | "moov" | "cash" | "bank" | "custom";
 
-const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: string; fit: "cover" | "contain"; bg?: string }> = {
+const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: string; fit: "cover" | "contain"; bg?: string; padding?: number }> = {
+  boa:    { src: "/icons/Bank_of_africa-logo.png", label: "Bank of Africa (BOA)", fit: "contain", bg: "#ffffff", padding: 3 },
   wave:   { src: "/icons/wave.jpg",   label: "Wave",         fit: "cover"   },
   orange: { src: "/icons/orange.jpg", label: "Orange Money", fit: "cover"   },
   mtn:    { src: "/icons/mtn.jpg",    label: "MTN Money",    fit: "cover"   },
@@ -29,6 +30,7 @@ const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: st
 
 export function resolveAccountType(name = "", type = ""): ResolvedType {
   const k = `${name} ${type}`.toLowerCase();
+  if (k.includes("boa") || k.includes("bank of africa") || k.includes("b.o.a") || k.includes("bank_of_africa")) return "boa";
   if (k.includes("wave"))                                                         return "wave";
   if (k.includes("orange"))                                                       return "orange";
   if (k.includes("mtn"))                                                          return "mtn";
@@ -54,7 +56,8 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
 
   // ── Image directe sans wrapper coloré ────────────────────────────────────
   if (resolved !== "custom") {
-    const { src, label, fit, bg } = ICON_MAP[resolved];
+    const { src, label, fit, bg, padding } = ICON_MAP[resolved];
+    const pad = padding ? Math.round(size * (padding / 46)) : 0;
     return (
       <div
         style={{
@@ -73,7 +76,7 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
           alt={label}
           fill
           sizes={`${size}px`}
-          style={{ objectFit: fit }}
+          style={{ objectFit: fit, padding: pad }}
         />
       </div>
     );
@@ -107,6 +110,7 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
 // ─── Helpers couleur ─────────────────────────────────────────────────────────
 
 const COLORS: Record<Exclude<ResolvedType, "custom">, string> = {
+  boa:    "#00558F",
   wave:   "#0BBFD6",
   orange: "#FF7A00",
   mtn:    "#FFCC00",

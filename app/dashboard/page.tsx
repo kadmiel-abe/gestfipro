@@ -1564,6 +1564,7 @@ export default function GestFiProDashboard() {
               onOpenModal={() => setShowModal(true)}
               onNavigate={(tab) => setActiveTab(tab as TabKey)}
               onQuickSubmit={handleQuickSubmit}
+              onAddTransaction={handleAddTransaction}
               quickInputText={quickInputText}
               setQuickInputText={setQuickInputText}
               todayExpenses={todayExpenses}

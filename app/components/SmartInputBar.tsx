@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Mic,
+  MicOff,
   Send,
   Loader2,
   Sparkles,
@@ -34,16 +35,19 @@ interface Toast {
   type: ToastType;
 }
 
-// ─── Composant ──────────────────────────────────────────────────────────────
 export default function SmartInputBar({
   onSuccess,
   onOpenManualEntry,
 }: SmartInputBarProps) {
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   // ── Toast helper ────────────────────────────────────────────────────────
   const showToast = useCallback((message: string, type: ToastType) => {
@@ -52,11 +56,118 @@ export default function SmartInputBar({
     toastTimeoutRef.current = setTimeout(() => setToast(null), 4000);
   }, []);
 
+  // ── Nettoyage lors du démontage ──────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  // ── Gestion de la reconnaissance vocale Web Speech API ───────────────────
+  const toggleListening = () => {
+    // Si l'enregistrement est déjà en cours, on l'arrête
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+      setIsListening(false);
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    // Support standard ou préfixé webkit (Chrome, Edge, Safari)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition =
+      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      showToast(
+        "La reconnaissance vocale n'est pas supportée par ce navigateur (utilisez Chrome, Edge ou Safari).",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+
+      recognition.lang = "fr-FR";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          setText((prev) => {
+            const trimmed = prev.trim();
+            return trimmed ? `${trimmed}, ${transcript}` : transcript;
+          });
+        }
+        setIsListening(false);
+        inputRef.current?.focus();
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        console.warn("[SpeechRecognition Error]", event.error);
+        setIsListening(false);
+
+        if (event.error === "not-allowed") {
+          showToast(
+            "Accès au microphone refusé. Veuillez autoriser le micro dans votre navigateur.",
+            "error"
+          );
+        } else if (event.error !== "no-speech") {
+          showToast("Erreur lors de la capture vocale.", "error");
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("[SpeechRecognition Init Error]", err);
+      setIsListening(false);
+      showToast("Impossible de démarrer la saisie vocale.", "error");
+    }
+  };
+
   // ── Submit handler ──────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
+
+    // Arrêt de la reconnaissance si soumission en cours
+    if (isListening && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+      setIsListening(false);
+    }
 
     setIsLoading(true);
     try {
@@ -128,44 +239,56 @@ export default function SmartInputBar({
         )}
       </AnimatePresence>
 
-      {/* ── Floating Smart Input Bar ───────────────────────────────────── */}
+      {/* ── Floating Smart Input Bar (Fixed Bottom) ────────────────────── */}
       <div className="fixed bottom-0 inset-x-0 z-50 pointer-events-none">
-        {/* Gradient de fondu entre le contenu et la barre */}
-        <div className="h-6 bg-gradient-to-t from-[var(--bg-root)] to-transparent" />
+        {/* Gradient de fondu discret au-dessus de la barre */}
+        <div className="h-6 bg-gradient-to-t from-[#09090B] to-transparent" />
 
-        <div className="bg-[var(--bg-root)] pb-[env(safe-area-inset-bottom)] pointer-events-auto">
+        <div className="bg-[#09090B] pb-[env(safe-area-inset-bottom)] pointer-events-auto">
           <form
             onSubmit={handleSubmit}
             className="mx-auto max-w-2xl px-3 pb-3"
           >
-            {/* ── AI Badge ───────────────────────────────────────────── */}
+            {/* ── AI / Voice Badge ──────────────────────────────────────── */}
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              <motion.div
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 3,
-                  ease: "easeInOut",
-                }}
-              >
-                <Sparkles className="w-3 h-3 text-[var(--accent)]" />
-              </motion.div>
-              <span className="text-[10px] font-semibold tracking-wider uppercase text-[var(--text-muted)]">
-                Saisie IA
-              </span>
+              {isListening ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 text-[10px] font-bold uppercase tracking-wider text-[#EF4444] animate-pulse">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444] animate-ping" />
+                  Écoute en cours...
+                </span>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <motion.div
+                    animate={{ rotate: [0, 15, -15, 0] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 3,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Sparkles className="w-3 h-3 text-[#EF4444]" />
+                  </motion.div>
+                  <span className="text-[10px] font-semibold tracking-wider uppercase text-[#A1A1AA]">
+                    Saisie IA & Vocale
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* ── Main Bar ───────────────────────────────────────────── */}
             <div
               className={`
                 flex items-center gap-2
-                bg-[var(--bg-card)] border border-[var(--border)]
+                bg-[#18181B] border border-[#27272A]
                 rounded-2xl px-2 py-1.5
-                shadow-lg shadow-black/20
+                shadow-xl shadow-black/40
                 transition-all duration-300
                 ${isLoading ? "opacity-80" : ""}
-                focus-within:border-[var(--accent)]/50
-                focus-within:shadow-[0_0_20px_rgba(239,68,68,0.08)]
+                ${
+                  isListening
+                    ? "border-[#EF4444] shadow-[0_0_25px_rgba(239,68,68,0.20)]"
+                    : "focus-within:border-[#EF4444]/60 focus-within:shadow-[0_0_20px_rgba(239,68,68,0.10)]"
+                }
               `}
             >
               {/* Bouton + (saisie manuelle) */}
@@ -177,8 +300,8 @@ export default function SmartInputBar({
                 className="
                   flex items-center justify-center
                   w-9 h-9 rounded-xl shrink-0
-                  bg-[var(--border)]/50 text-[var(--text-muted)]
-                  hover:bg-[var(--border)] hover:text-[var(--text-primary)]
+                  bg-[#27272A]/50 text-[#A1A1AA]
+                  hover:bg-[#27272A] hover:text-[#FAFAFA]
                   active:scale-95
                   transition-all duration-200
                   disabled:opacity-40
@@ -188,23 +311,32 @@ export default function SmartInputBar({
                 <Plus className="w-5 h-5" />
               </motion.button>
 
-              {/* Bouton Micro */}
+              {/* Bouton Micro (Reconnaissance Vocale Native) */}
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.9 }}
+                onClick={toggleListening}
                 disabled={isLoading}
-                className="
+                className={`
                   flex items-center justify-center
                   w-9 h-9 rounded-xl shrink-0
-                  text-[var(--text-muted)]
-                  hover:text-[var(--accent)] hover:bg-[var(--accent)]/10
                   active:scale-95
                   transition-all duration-200
                   disabled:opacity-40
-                "
-                aria-label="Saisie vocale"
+                  ${
+                    isListening
+                      ? "bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/40 animate-pulse shadow-md shadow-red-500/20"
+                      : "text-[#A1A1AA] hover:text-[#EF4444] hover:bg-[#EF4444]/10"
+                  }
+                `}
+                aria-label={isListening ? "Arrêter l'écoute" : "Démarrer la saisie vocale"}
+                title={isListening ? "Arrêter l'écoute" : "Démarrer la saisie vocale"}
               >
-                <Mic className="w-5 h-5" />
+                {isListening ? (
+                  <MicOff className="w-5 h-5 text-[#EF4444]" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
               </motion.button>
 
               {/* Input Field */}
@@ -214,12 +346,16 @@ export default function SmartInputBar({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 disabled={isLoading}
-                placeholder="Ex: taxi 5000, riz 3000..."
+                placeholder={
+                  isListening
+                    ? "Parlez maintenant... (ex: taxi 5000, riz 3000)"
+                    : "Ex: taxi 5000, riz 3000..."
+                }
                 className="
                   flex-1 min-w-0
                   bg-transparent border-none outline-none
-                  text-[var(--text-primary)] text-sm
-                  placeholder:text-[var(--text-muted)]
+                  text-[#FAFAFA] text-sm
+                  placeholder:text-[#A1A1AA]
                   disabled:opacity-50
                   py-2
                 "
@@ -239,8 +375,8 @@ export default function SmartInputBar({
                   transition-all duration-300
                   ${
                     canSubmit
-                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/25 hover:brightness-110"
-                      : "bg-[var(--border)]/50 text-[var(--text-subtle)]"
+                      ? "bg-[#EF4444] text-[#FAFAFA] shadow-lg shadow-red-500/25 hover:bg-red-600"
+                      : "bg-[#27272A]/50 text-[#71717A]"
                   }
                 `}
                 aria-label={isLoading ? "Traitement en cours" : "Envoyer"}

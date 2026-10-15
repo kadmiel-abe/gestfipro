@@ -119,15 +119,23 @@ export default function DataExportCard({
     try {
       setIsExportingPDF(true);
 
-      // Import dynamique côté client de jsPDF et jspdf-autotable
-      // (évite les erreurs de pré-rendu SSR sous Next.js)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const jsPDFModule: any = await import("jspdf");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const autoTableModule: any = await import("jspdf-autotable");
+      // Chargement dynamique sécurisé pour Next.js / Vercel
+      let jsPDF: any;
+      let autoTable: any;
 
-      const jsPDF = jsPDFModule.default || jsPDFModule;
-      const autoTable = autoTableModule.default || autoTableModule;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        const dynamicImport = new Function("m", "return import(m)");
+        const jsPDFModule = await dynamicImport("jspdf");
+        const autoTableModule = await dynamicImport("jspdf-autotable");
+        jsPDF = jsPDFModule.default || jsPDFModule;
+        autoTable = autoTableModule.default || autoTableModule;
+      } catch (importErr) {
+        console.warn("[PDF Export] jspdf non chargé:", importErr);
+        showFeedback("Module PDF indisponible. Téléchargez en CSV ou installez jspdf.");
+        setIsExportingPDF(false);
+        return;
+      }
 
       const doc = new jsPDF({
         orientation: "portrait",

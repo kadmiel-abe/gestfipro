@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { FileText, FileDown, Download, CheckCircle2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export interface TransactionExportItem {
   date: string;
@@ -115,130 +117,33 @@ export default function DataExportCard({
   };
 
   // ── 2. Export PDF ─────────────────────────────────────────────────────────
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     try {
       setIsExportingPDF(true);
 
-      // Chargement dynamique sécurisé pour Next.js / Vercel
-      let jsPDF: any;
-      let autoTable: any;
+      const doc = new jsPDF();
 
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval
-        const dynamicImport = new Function("m", "return import(m)");
-        const jsPDFModule = await dynamicImport("jspdf");
-        const autoTableModule = await dynamicImport("jspdf-autotable");
-        jsPDF = jsPDFModule.default || jsPDFModule;
-        autoTable = autoTableModule.default || autoTableModule;
-      } catch (importErr) {
-        console.warn("[PDF Export] jspdf non chargé:", importErr);
-        showFeedback("Module PDF indisponible. Téléchargez en CSV ou installez jspdf.");
-        setIsExportingPDF(false);
-        return;
-      }
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+      doc.text("Relevé des transactions GestFiPro", 14, 15);
 
       const items = transactions.length > 0 ? transactions : MOCK_TRANSACTIONS;
-
-      // ── En-tête du document PDF ───────────────────────────────────────────
-      // Bandeau supérieur sombre
-      doc.setFillColor(24, 24, 27); // #18181B
-      doc.rect(0, 0, 210, 36, "F");
-
-      // Ligne d'accentuation rouge GestFiPro
-      doc.setFillColor(239, 68, 68); // #EF4444
-      doc.rect(0, 36, 210, 2, "F");
-
-      // Titre principal
-      doc.setTextColor(250, 250, 250); // #FAFAFA
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("Relevé GestFiPro", 14, 20);
-
-      // Sous-titre date
-      doc.setTextColor(161, 161, 170); // #A1A1AA
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      const todayFormatted = new Date().toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      doc.text(`Document généré le ${todayFormatted}`, 14, 28);
-      doc.text("GestFiPro V2 • Gestion Financière", 140, 28);
-
-      // ── Préparation du tableau ────────────────────────────────────────────
-      const tableHeaders = [["Date", "Description", "Montant (FCFA)", "Type", "Compte"]];
       const tableRows = items.map((t) => [
         t.date,
         t.description,
-        `${t.montant.toLocaleString("fr-FR")} FCFA`,
-        t.type,
         t.compte,
+        `${t.montant.toLocaleString("fr-FR")} FCFA`,
       ]);
 
-      // Calcul des totaux pour le récapitulatif
-      const totalDepenses = items
-        .filter((i) => i.type === "Dépense")
-        .reduce((sum, i) => sum + i.montant, 0);
-
-      const totalRevenus = items
-        .filter((i) => i.type === "Revenu")
-        .reduce((sum, i) => sum + i.montant, 0);
-
-      // ── Génération du tableau avec jspdf-autotable ─────────────────────────
       autoTable(doc, {
-        head: tableHeaders,
+        head: [["Date", "Description", "Catégorie", "Montant"]],
         body: tableRows,
-        startY: 46,
-        theme: "grid",
-        styles: {
-          font: "helvetica",
-          fontSize: 9,
-          cellPadding: 4,
-          textColor: [39, 39, 42],
-        },
-        headStyles: {
-          fillColor: [24, 24, 27],
-          textColor: [250, 250, 250],
-          fontStyle: "bold",
-          fontSize: 9,
-        },
-        alternateRowStyles: {
-          fillColor: [248, 248, 250],
-        },
-        margin: { left: 14, right: 14 },
+        startY: 22,
       });
 
-      // Position finale du tableau
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const finalY = (doc as any).lastAutoTable?.finalY || 120;
-
-      // ── Récapitulatif en bas de page ───────────────────────────────────────
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(113, 113, 122);
-      doc.text(`Total Dépenses : ${totalDepenses.toLocaleString("fr-FR")} FCFA`, 14, finalY + 12);
-      doc.text(`Total Revenus : ${totalRevenus.toLocaleString("fr-FR")} FCFA`, 14, finalY + 18);
-
-      doc.setFontSize(8);
-      doc.text(
-        "Ce document est un extrait d'archives pour usage personnel. GestFiPro © 2026",
-        14,
-        finalY + 28
-      );
-
-      // Téléchargement du fichier PDF
-      doc.save("gestfipro_export.pdf");
+      doc.save("gestfipro_historique.pdf");
       showFeedback("Export PDF téléchargé avec succès !");
     } catch (err) {
       console.error("[Export PDF Error]", err);
-      showFeedback("Erreur lors de la génération du PDF. Vérifiez l'installation de jspdf.");
+      showFeedback("Erreur lors de la génération du PDF.");
     } finally {
       setIsExportingPDF(false);
     }

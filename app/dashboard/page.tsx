@@ -37,6 +37,7 @@ import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
 import { AccountIcon, getAccountColor } from "../components/AccountIcon";
 import DashboardView from "../components/DashboardView";
 import RecurringExpensesManager from "../components/RecurringExpensesManager";
+import SidebarProfile from "../components/SidebarProfile";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser, AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -277,15 +278,6 @@ export default function GestFiProDashboard() {
     }
     return "";
   }, [userName, currentUser]);
-
-  const initials = React.useMemo(() => {
-    const target = userName || firstName || "U";
-    const parts = target.trim().split(" ");
-    if (parts.length >= 2 && parts[0] && parts[1]) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return target.substring(0, 2).toUpperCase();
-  }, [userName, firstName]);
 
   // ─── Data Loading from Supabase ───────────────────────────────────────────
   const handleCurrencyChange = (nextCurrency: Currency) => {
@@ -1375,34 +1367,20 @@ export default function GestFiProDashboard() {
             </div>
           ) : (
             <>
-              {/* Avatar initiales */}
-              <div
-                title={userName || firstName || "Utilisateur"}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #EF4444, #DC2626)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: "white",
-                  flexShrink: 0,
-                  boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
-                }}
-              >
-                {initials}
+              {/* Zone Profil utilisateur cliquable avec Modale Dialog */}
+              <div className="flex-1 min-w-0">
+                <SidebarProfile
+                  initialFullName={userName || firstName || "Utilisateur"}
+                  initialEmail={currentUser?.email || "utilisateur@gestfipro.com"}
+                  subtitle={t.dashboard.personalAccount}
+                  collapsed={sidebarCollapsed}
+                  onProfileUpdate={(updated) => {
+                    setUserName(updated.fullName);
+                  }}
+                />
               </div>
               {!sidebarCollapsed ? (
                 <>
-                  <div style={{ overflow: "hidden", flex: 1 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#FAFAFA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {userName || firstName || "Utilisateur"}
-                    </p>
-                    <p style={{ fontSize: 9, color: "#52525B", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{t.dashboard.personalAccount}</p>
-                  </div>
                   <button
                     onClick={() => setActiveTab("reglages")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}

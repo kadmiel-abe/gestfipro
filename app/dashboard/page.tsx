@@ -83,6 +83,25 @@ const DonutChart = dynamic(() => import("../components/DonutChart"), {
   ),
 });
 
+const MonthlyComparisonChart = dynamic(() => import("../components/MonthlyComparisonChart"), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        height: 240,
+        background: "#18181B",
+        border: "1px solid #27272A",
+        borderRadius: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <span style={{ color: "#52525B", fontSize: 12 }}>Chargement du graphique…</span>
+    </div>
+  ),
+});
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type TabKey = "accueil" | "comptes" | "historique" | "statistiques" | "objectifs" | "reglages" | "guide";
@@ -2239,6 +2258,10 @@ export default function GestFiProDashboard() {
                     <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{t.dashboard.home.cashflowTitle}</h3>
                     <p style={{ fontSize: 11, color: "#A1A1AA", marginBottom: 16 }}>{t.dashboard.home.cashflowSubtitle}</p>
                     <CashflowChart transactions={transactions} totalBalance={totalBalance} currency={selectedCurrency} />
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <MonthlyComparisonChart transactions={transactions} currency={selectedCurrency} />
                   </div>
                 </div>
               )}

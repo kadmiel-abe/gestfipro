@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -9,51 +9,16 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
-import { BarChart3, TrendingUp, TrendingDown } from "lucide-react";
-import { motion } from "framer-motion";
-import {
-  useLanguage,
-  formatCurrencyValue,
-  convertFromBase,
-  Currency,
-  getCurrencyMeta,
-} from "@/lib/i18n/LanguageContext";
+import { BarChart3, TrendingDown, TrendingUp } from "lucide-react";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-interface MonthData {
+// ─── Données factices (Mock Data par défaut : 6 derniers mois en FCFA) ────────
+export interface MonthExpenseItem {
   month: string;
   amount: number;
 }
 
-interface MonthlyComparisonChartProps {
-  /** Transactions brutes de Supabase — si fournies, le graphique les agrège automatiquement */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transactions?: any[];
-  /** Devise utilisée (par défaut XOF / FCFA) */
-  currency?: string;
-}
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{ value: number; payload?: MonthData }>;
-  label?: string;
-  currency: string;
-}
-
-// ─── Mois français / anglais ────────────────────────────────────────────────
-const MONTH_LABELS_FR = [
-  "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-  "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
-];
-const MONTH_LABELS_EN = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-// ─── Mock data (utilisé si aucune transaction n'est passée) ─────────────────
-const MOCK_DATA: MonthData[] = [
+export const mockMonthlyExpenses: MonthExpenseItem[] = [
   { month: "Jan", amount: 185000 },
   { month: "Fév", amount: 142000 },
   { month: "Mar", amount: 235000 },
@@ -62,342 +27,237 @@ const MOCK_DATA: MonthData[] = [
   { month: "Juin", amount: 165000 },
 ];
 
-// ─── Custom Tooltip ─────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, currency }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null;
+export interface MonthlyComparisonChartProps {
+  /** Données personnalisées optionnelles (mois et montant) */
+  data?: MonthExpenseItem[];
+  /** Transactions réelles optionnelles pour calcul dynamique automatique */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transactions?: any[];
+  /** Devise d'affichage (défaut : "FCFA") */
+  currency?: string;
+}
 
-  const value = payload[0].value;
-  const monthLabel = payload[0].payload?.month ?? "";
-  const isEn =
-    typeof document !== "undefined" && document.documentElement.lang === "en";
-  const locale = isEn ? "en-US" : "fr-FR";
+// ─── Tooltip personnalisé Dark Mode Premium ─────────────────────────────────
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number; payload?: MonthExpenseItem }>;
+  label?: string;
+  currency: string;
+}
+
+function CustomChartTooltip({ active, payload, label, currency }: CustomTooltipProps) {
+  if (!active || !payload || !payload.length) return null;
+
+  const value = payload[0].value ?? 0;
 
   return (
-    <div
-      style={{
-        background: "#18181B",
-        border: "1px solid #27272A",
-        borderRadius: 12,
-        padding: "12px 16px",
-        fontSize: 12,
-        boxShadow: "0 12px 30px -8px rgba(0,0,0,0.6)",
-        minWidth: 140,
-      }}
-    >
-      <p
-        style={{
-          color: "#A1A1AA",
-          marginBottom: 6,
-          fontWeight: 600,
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-        }}
-      >
-        {monthLabel}
+    <div className="rounded-xl bg-[#18181B] border border-[#27272A] p-3 shadow-2xl min-w-[140px]">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A1A1AA] mb-1">
+        {label || payload[0].payload?.month}
       </p>
-      <p
-        style={{
-          color: "#FAFAFA",
-          fontWeight: 800,
-          fontSize: 16,
-          margin: 0,
-        }}
-      >
-        {formatCurrencyValue(
-          Number(value),
-          currency as Currency,
-          locale,
-          true
-        )}
+      <p className="text-sm font-extrabold text-[#FAFAFA]">
+        {value.toLocaleString("fr-FR")} {currency}
       </p>
     </div>
   );
 }
 
-// ─── Composant principal ────────────────────────────────────────────────────
+// ─── Composant principal MonthlyComparisonChart ──────────────────────────────
 export default function MonthlyComparisonChart({
-  transactions = [],
-  currency = "XOF",
+  data,
+  transactions,
+  currency = "FCFA",
 }: MonthlyComparisonChartProps) {
-  const { isEn } = useLanguage();
-  const currencyMeta = getCurrencyMeta(currency as Currency);
+  // Garde-fou d'hydratation côté client pour Next.js App Router (Recharts)
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Agréger les dépenses par mois sur les 6 derniers mois, ou utiliser le mock
-  const chartData = useMemo<MonthData[]>(() => {
-    const expenseList = transactions.filter(
-      (t) => t.type === "expense" || Number(t.amount) < 0
-    );
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-    if (expenseList.length === 0) return MOCK_DATA;
+  // Détermination des données à afficher :
+  // 1. data explicite si fournie
+  // 2. agrégation dynamique si transactions fournies
+  // 3. sinon mockData par défaut (6 mois)
+  const chartData = useMemo<MonthExpenseItem[]>(() => {
+    if (data && data.length > 0) return data;
 
-    const labels = isEn ? MONTH_LABELS_EN : MONTH_LABELS_FR;
-    const now = new Date();
-    const monthlyMap: Record<string, number> = {};
-    const monthKeys: string[] = [];
+    if (transactions && transactions.length > 0) {
+      const expenses = transactions.filter(
+        (t) => t.type === "expense" || Number(t.amount) < 0
+      );
 
-    // Préparer les 6 derniers mois
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      monthlyMap[key] = 0;
-      monthKeys.push(key);
-    }
+      if (expenses.length > 0) {
+        const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+        const now = new Date();
+        const map: Record<string, number> = {};
+        const keys: { key: string; label: string }[] = [];
 
-    // Cumuler les dépenses
-    for (const t of expenseList) {
-      const date = new Date(t.transaction_date || t.created_at);
-      if (isNaN(date.getTime())) continue;
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      if (key in monthlyMap) {
-        monthlyMap[key] += Math.abs(Number(t.amount));
+        // Préparer les 6 derniers mois
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          map[key] = 0;
+          keys.push({ key, label: monthNames[d.getMonth()] });
+        }
+
+        // Cumuler les montants
+        for (const t of expenses) {
+          const rawDate = t.transaction_date || t.created_at || t.date;
+          const d = new Date(rawDate);
+          if (isNaN(d.getTime())) continue;
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          if (key in map) {
+            map[key] += Math.abs(Number(t.amount));
+          }
+        }
+
+        return keys.map((k) => ({
+          month: k.label,
+          amount: Math.round(map[k.key]),
+        }));
       }
     }
 
-    return monthKeys.map((key) => {
-      const monthIndex = parseInt(key.split("-")[1], 10) - 1;
-      return {
-        month: labels[monthIndex],
-        amount: monthlyMap[key],
-      };
-    });
-  }, [transactions, isEn]);
+    return mockMonthlyExpenses;
+  }, [data, transactions]);
 
-  // Calculer la tendance (variation mois courant vs mois précédent)
+  // Calcul de la tendance entre le dernier mois et le mois précédent
   const trend = useMemo(() => {
     if (chartData.length < 2) return null;
     const current = chartData[chartData.length - 1].amount;
-    const previous = chartData[chartData.length - 2].amount;
-    if (previous === 0) return null;
-    const pct = ((current - previous) / previous) * 100;
-    return { value: Math.abs(pct), isUp: pct > 0 };
+    const prev = chartData[chartData.length - 2].amount;
+    if (prev <= 0) return null;
+    const pct = ((current - prev) / prev) * 100;
+    return {
+      percent: Math.abs(Math.round(pct)),
+      isIncrease: pct > 0,
+    };
   }, [chartData]);
 
-  // Trouver le mois avec le plus de dépenses pour le mettre en surbrillance
-  const maxAmount = useMemo(
-    () => Math.max(...chartData.map((d) => d.amount)),
-    [chartData]
-  );
+  // Total des 6 mois
+  const totalAmount = useMemo(() => {
+    return chartData.reduce((acc, item) => acc + item.amount, 0);
+  }, [chartData]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      style={{
-        background: "var(--bg-card, #18181B)",
-        border: "1px solid var(--border, #27272A)",
-        borderRadius: 16,
-        padding: "20px 20px 12px",
-        width: "100%",
-      }}
-    >
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Icône avec fond accent */}
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: "var(--accent-muted, rgba(239, 68, 68, 0.12))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <BarChart3
-              style={{ width: 18, height: 18, color: "var(--accent, #EF4444)" }}
-            />
+    <div className="w-full">
+      {/* ── Card Shadcn UI Dark Mode Premium ───────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-[#18181B] border border-[#27272A] p-5 sm:p-6 shadow-xl shadow-black/40">
+        {/* Halo discret en arrière-plan */}
+        <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#EF4444]/5 blur-3xl" />
+
+        {/* ── En-tête de la Card ───────────────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            {/* Icône BarChart3 stylisée */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#EF4444]">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#FAFAFA] tracking-tight">
+                Évolution des dépenses
+              </h3>
+              <p className="text-xs text-[#A1A1AA] mt-0.5">
+                Comparaison mois par mois
+              </p>
+            </div>
           </div>
-          <div>
-            <h3
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: "var(--text-primary, #FAFAFA)",
-                margin: 0,
-                lineHeight: 1.3,
-              }}
+
+          {/* Badge tendance dynamique */}
+          {trend && (
+            <div
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                trend.isIncrease
+                  ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30"
+                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              }`}
             >
-              {isEn ? "Spending Evolution" : "Évolution des dépenses"}
-            </h3>
-            <p
-              style={{
-                fontSize: 12,
-                color: "var(--text-muted, #A1A1AA)",
-                margin: 0,
-                marginTop: 2,
-              }}
-            >
-              {isEn
-                ? "Month-by-month comparison"
-                : "Comparaison mois par mois"}
-            </p>
-          </div>
+              {trend.isIncrease ? (
+                <>
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>+{trend.percent}% vs mois préc.</span>
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="w-3.5 h-3.5" />
+                  <span>-{trend.percent}% vs mois préc.</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Badge tendance */}
-        {trend && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "4px 10px",
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 700,
-              background: trend.isUp
-                ? "rgba(239, 68, 68, 0.12)"
-                : "rgba(34, 197, 94, 0.12)",
-              color: trend.isUp ? "#EF4444" : "#22C55E",
-            }}
-          >
-            {trend.isUp ? (
-              <TrendingUp style={{ width: 14, height: 14 }} />
-            ) : (
-              <TrendingDown style={{ width: 14, height: 14 }} />
-            )}
-            {trend.value.toFixed(1)}%
-          </div>
-        )}
-      </div>
-
-      {/* ── Bar Chart ──────────────────────────────────────────────────── */}
-      <div style={{ width: "100%", height: 220 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
-            barCategoryGap="20%"
-          >
-            <defs>
-              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#EF4444" stopOpacity={1} />
-                <stop offset="100%" stopColor="#EF4444" stopOpacity={0.6} />
-              </linearGradient>
-              <linearGradient
-                id="barGradientMuted"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
+        {/* ── Graphique Recharts BarChart ─────────────────────────────────── */}
+        <div className="w-full h-64 sm:h-72">
+          {!isMounted ? (
+            <div className="w-full h-full flex items-center justify-center text-xs text-[#71717A]">
+              Chargement du graphique…
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                barCategoryGap="25%"
               >
-                <stop offset="0%" stopColor="#EF4444" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#EF4444" stopOpacity={0.25} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid
-              strokeDasharray="4 4"
-              stroke="var(--border, #27272A)"
-              vertical={false}
-            />
-
-            <XAxis
-              dataKey="month"
-              tick={{
-                fill: "var(--text-muted, #A1A1AA)",
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-              tickLine={false}
-              axisLine={false}
-            />
-
-            <YAxis
-              tick={{
-                fill: "var(--text-muted, #A1A1AA)",
-                fontSize: 10,
-              }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => {
-                const cv = convertFromBase(Number(v), currency as Currency);
-                return cv >= 1000000
-                  ? `${(cv / 1000000).toFixed(1)}M`
-                  : cv >= 1000
-                    ? `${(cv / 1000).toFixed(0)}k`
-                    : String(Math.round(cv));
-              }}
-              width={42}
-            />
-
-            <Tooltip
-              content={<ChartTooltip currency={currency} />}
-              cursor={{
-                fill: "rgba(239, 68, 68, 0.06)",
-                radius: 8,
-              }}
-            />
-
-            <Bar
-              dataKey="amount"
-              radius={[8, 8, 0, 0]}
-              maxBarSize={48}
-              animationDuration={800}
-              animationEasing="ease-out"
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    entry.amount === maxAmount
-                      ? "url(#barGradient)"
-                      : "url(#barGradientMuted)"
-                  }
+                {/* Grille discrète */}
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#27272A"
+                  vertical={false}
                 />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
 
-      {/* ── Footer (total) ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: 12,
-          paddingTop: 12,
-          borderTop: "1px solid var(--border, #27272A)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            color: "var(--text-muted, #A1A1AA)",
-            fontWeight: 600,
-          }}
-        >
-          {isEn ? "6-month total" : "Total 6 mois"}
-        </span>
-        <span
-          style={{
-            fontSize: 14,
-            color: "var(--text-primary, #FAFAFA)",
-            fontWeight: 800,
-          }}
-        >
-          {formatCurrencyValue(
-            chartData.reduce((s, d) => s + d.amount, 0),
-            currency as Currency,
-            isEn ? "en-US" : "fr-FR",
-            true
+                {/* Axe X (Mois) */}
+                <XAxis
+                  dataKey="month"
+                  stroke="#A1A1AA"
+                  tick={{ fill: "#A1A1AA", fontSize: 11, fontWeight: 500 }}
+                  tickLine={false}
+                  axisLine={{ stroke: "#27272A" }}
+                />
+
+                {/* Axe Y (Montants abrégés) */}
+                <YAxis
+                  stroke="#A1A1AA"
+                  tick={{ fill: "#A1A1AA", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val: number) => {
+                    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                    if (val >= 1000) return `${Math.round(val / 1000)}k`;
+                    return `${val}`;
+                  }}
+                  width={42}
+                />
+
+                {/* Tooltip personnalisé */}
+                <Tooltip
+                  content={<CustomChartTooltip currency={currency} />}
+                  cursor={{ fill: "rgba(239, 68, 68, 0.06)", radius: 6 }}
+                />
+
+                {/* Barres de dépenses avec radius [4, 4, 0, 0] */}
+                <Bar
+                  dataKey="amount"
+                  fill="#EF4444"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={48}
+                  animationDuration={900}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           )}
-        </span>
+        </div>
+
+        {/* ── Pied de carte : Total cumulé ───────────────────────────────── */}
+        <div className="mt-4 pt-4 border-t border-[#27272A] flex items-center justify-between text-xs">
+          <span className="text-[#A1A1AA]">Total sur la période (6 mois)</span>
+          <span className="text-sm font-extrabold text-[#FAFAFA]">
+            {totalAmount.toLocaleString("fr-FR")} {currency}
+          </span>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

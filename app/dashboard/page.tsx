@@ -36,6 +36,8 @@ import {
   Sun,
   Moon,
   Loader2,
+  FileText,
+  FileDown,
 } from "lucide-react";
 import MiniCalendar from "../components/MiniCalendar";
 import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
@@ -168,6 +170,7 @@ export default function GestFiProDashboard() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "expense" | "income">("all");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataLoadError, setDataLoadError] = useState<string | null>(null);
@@ -634,6 +637,184 @@ export default function GestFiProDashboard() {
     });
     setQuickInputText("");
   };
+
+  // ── Filtrage dynamique de l'historique ───────────────────────────────────
+  const filteredHistoryTransactions = React.useMemo(() => {
+    return transactions.filter((tx) => {
+      const matchType =
+        historyTypeFilter === "all" ||
+        (historyTypeFilter === "expense" && (tx.type === "expense" || tx.amount < 0)) ||
+        (historyTypeFilter === "income" && (tx.type === "income" || tx.amount > 0));
+
+      if (!matchType) return false;
+
+      if (!historySearch.trim()) return true;
+      const q = historySearch.toLowerCase();
+      return (
+        tx.label.toLowerCase().includes(q) ||
+        tx.category.toLowerCase().includes(q) ||
+        tx.account.toLowerCase().includes(q)
+      );
+    });
+  }, [transactions, historyTypeFilter, historySearch]);
+
+  // ── Export CSV des transactions filtrées ──────────────────────────────────
+  const handleExportCSV = useCallback(() => {
+    if (filteredHistoryTransactions.length === 0) {
+      alert(isEn ? "No transactions to export." : "Aucune transaction à exporter.");
+      return;
+    }
+
+    try {
+      const headers = ["Date", "Description", "Catégorie", "Compte", `Montant (${selectedCurrency})`, "Type"];
+      const rows = filteredHistoryTransactions.map((tx) => [
+        tx.date,
+        `"${(tx.label || "").replace(/"/g, '""')}"`,
+        `"${(tx.category || "").replace(/"/g, '""')}"`,
+        `"${(tx.account || "").replace(/"/g, '""')}"`,
+        Math.abs(tx.amount),
+        tx.type === "income" || tx.amount > 0 ? "Revenu" : "Dépense",
+      ]);
+
+      const csvContent =
+        "\uFEFF" +
+        [headers.join(";"), ...rows.map((row) => row.join(";"))].join("\r\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "gestfipro_historique.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[Export CSV Error]", err);
+      alert(isEn ? "Error generating CSV export." : "Erreur lors de la génération de l'export CSV.");
+    }
+  }, [filteredHistoryTransactions, isEn, selectedCurrency]);
+
+  // ── Export PDF des transactions filtrées ──────────────────────────────────
+  const handleExportPDF = useCallback(async () => {
+    if (filteredHistoryTransactions.length === 0) {
+      alert(isEn ? "No transactions to export." : "Aucune transaction à exporter.");
+      return;
+    }
+
+    try {
+      let jsPDF: any;
+      let autoTable: any;
+
+      try {
+        const dynImport = new Function("m", "return import(m)");
+        const jsPDFModule = await dynImport("jspdf");
+        const autoTableModule = await dynImport("jspdf-autotable");
+        jsPDF = jsPDFModule.default || jsPDFModule;
+        autoTable = autoTableModule.default || autoTableModule;
+      } catch (importErr) {
+        console.error("[PDF Export] jspdf non chargé:", importErr);
+        alert(isEn ? "PDF export module unavailable." : "Module d'export PDF indisponible.");
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // Bandeau supérieur sombre (#18181B)
+      doc.setFillColor(24, 24, 27);
+      doc.rect(0, 0, 210, 36, "F");
+
+      // Ligne d'accentuation rouge (#EF4444)
+      doc.setFillColor(239, 68, 68);
+      doc.rect(0, 36, 210, 2, "F");
+
+      // Titre
+      doc.setTextColor(250, 250, 250);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Relevé GestFiPro", 14, 20);
+
+      // Sous-titre
+      doc.setTextColor(161, 161, 170);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const todayFormatted = new Date().toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      doc.text(`Historique des transactions • Généré le ${todayFormatted}`, 14, 28);
+      doc.text("GestFiPro V2", 160, 28);
+
+      // Tableau
+      const tableHeaders = [["Date", "Description", "Catégorie", "Compte", `Montant (${selectedCurrency})`, "Type"]];
+      const tableRows = filteredHistoryTransactions.map((tx) => [
+        tx.date,
+        tx.label,
+        tx.category,
+        tx.account,
+        `${(tx.type === "income" || tx.amount > 0 ? "+" : "-")}${Math.abs(tx.amount).toLocaleString("fr-FR")} ${selectedCurrency}`,
+        tx.type === "income" || tx.amount > 0 ? "Revenu" : "Dépense",
+      ]);
+
+      const totalExpenses = filteredHistoryTransactions
+        .filter((tx) => tx.type === "expense" || tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+      const totalIncome = filteredHistoryTransactions
+        .filter((tx) => tx.type === "income" || tx.amount > 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+      autoTable(doc, {
+        head: tableHeaders,
+        body: tableRows,
+        startY: 46,
+        theme: "grid",
+        styles: {
+          font: "helvetica",
+          fontSize: 8.5,
+          cellPadding: 3.5,
+          textColor: [39, 39, 42],
+        },
+        headStyles: {
+          fillColor: [24, 24, 27],
+          textColor: [250, 250, 250],
+          fontStyle: "bold",
+          fontSize: 8.5,
+        },
+        alternateRowStyles: {
+          fillColor: [248, 248, 250],
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      const finalY = (doc as any).lastAutoTable?.finalY || 120;
+
+      // Récapitulatif
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(39, 39, 42);
+      doc.text(
+        `Total Dépenses : ${totalExpenses.toLocaleString("fr-FR")} ${selectedCurrency}  |  Total Revenus : ${totalIncome.toLocaleString("fr-FR")} ${selectedCurrency}`,
+        14,
+        finalY + 12
+      );
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(113, 113, 122);
+      doc.text("Document généré pour archives personnelles. GestFiPro © 2026", 14, finalY + 22);
+
+      doc.save("gestfipro_historique.pdf");
+    } catch (err) {
+      console.error("[Export PDF Error]", err);
+      alert(isEn ? "Error generating PDF export." : "Erreur lors de la génération de l'export PDF.");
+    }
+  }, [filteredHistoryTransactions, isEn, selectedCurrency]);
 
   const handleSaveSettings = async () => {
     setSettingsError(null);
@@ -1877,7 +2058,7 @@ export default function GestFiProDashboard() {
               </div>
 
               <div className="card" style={{ padding: "20px 24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "10px 14px", marginBottom: 12 }}>
                   <Search size={14} color="#52525B" />
                   <input
                     className="input-field"
@@ -1896,27 +2077,120 @@ export default function GestFiProDashboard() {
                   )}
                 </div>
 
-                {transactions.length === 0 ? (
+                {/* ── BARRE DE FILTRES ET BOUTONS D'EXPORTATION ── */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+                  {/* Filtres par type (Tout, Dépenses, Revenus) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#09090B", padding: "3px", borderRadius: 8, border: "1px solid #27272A" }}>
+                    {[
+                      { key: "all", label: isEn ? "All" : "Tout" },
+                      { key: "expense", label: isEn ? "Expenses" : "Dépenses" },
+                      { key: "income", label: isEn ? "Income" : "Revenus" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setHistoryTypeFilter(tab.key as any)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          border: "none",
+                          background: historyTypeFilter === tab.key ? "#27272A" : "transparent",
+                          color: historyTypeFilter === tab.key ? "#FAFAFA" : "#A1A1AA",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Boutons d'exportation CSV et PDF */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={handleExportCSV}
+                      title={isEn ? "Export filtered transactions to CSV" : "Exporter les transactions filtrées en CSV"}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "6px 12px",
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        background: "transparent",
+                        color: "#A1A1AA",
+                        border: "1px solid #27272A",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#EF4444";
+                        e.currentTarget.style.color = "#FAFAFA";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#27272A";
+                        e.currentTarget.style.color = "#A1A1AA";
+                      }}
+                    >
+                      <FileText size={13} />
+                      <span>Export CSV</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleExportPDF}
+                      title={isEn ? "Export filtered transactions to PDF" : "Exporter les transactions filtrées en PDF"}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "6px 12px",
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        background: "transparent",
+                        color: "#A1A1AA",
+                        border: "1px solid #27272A",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#EF4444";
+                        e.currentTarget.style.color = "#FAFAFA";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#27272A";
+                        e.currentTarget.style.color = "#A1A1AA";
+                      }}
+                    >
+                      <FileDown size={13} />
+                      <span>Export PDF</span>
+                    </button>
+                  </div>
+                </div>
+
+                {filteredHistoryTransactions.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "#71717A" }}>
                     <Clock size={36} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>{t.dashboard.home.noTransactions}</p>
-                    <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, marginBottom: 18, maxWidth: 360, margin: "6px auto 18px" }}>
-                      {t.dashboard.home.addFirstExpense}
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>
+                      {transactions.length === 0 ? t.dashboard.home.noTransactions : (isEn ? "No transactions matching your criteria" : "Aucune transaction ne correspond à vos critères")}
                     </p>
-                    <button onClick={() => setShowModal(true)} className="btn-primary" style={{ margin: "0 auto" }}>
-                      <Plus size={14} /> {t.dashboard.addTransaction}
-                    </button>
+                    <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, marginBottom: 18, maxWidth: 360, margin: "6px auto 18px" }}>
+                      {transactions.length === 0 ? t.dashboard.home.addFirstExpense : (isEn ? "Try adjusting your search or filters." : "Essayez de modifier votre recherche ou le filtre actif.")}
+                    </p>
+                    {transactions.length === 0 && (
+                      <button onClick={() => setShowModal(true)} className="btn-primary" style={{ margin: "0 auto" }}>
+                        <Plus size={14} /> {t.dashboard.addTransaction}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {transactions
-                      .filter((tx) =>
-                        historySearch === "" ||
-                        tx.label.toLowerCase().includes(historySearch.toLowerCase()) ||
-                        tx.category.toLowerCase().includes(historySearch.toLowerCase()) ||
-                        tx.account.toLowerCase().includes(historySearch.toLowerCase())
-                      )
-                      .map((tx) => (
+                    {filteredHistoryTransactions.map((tx) => (
                       <div key={tx.id} className="tx-item">
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           {/* Icône transaction (catégorie) */}
@@ -1925,7 +2199,7 @@ export default function GestFiProDashboard() {
                               width: 38,
                               height: 38,
                               borderRadius: 10,
-                              background: tx.type === "income" ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.08)",
+                              background: tx.type === "income" || tx.amount > 0 ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.08)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1947,21 +2221,10 @@ export default function GestFiProDashboard() {
                           </div>
                         </div>
                         <span style={{ fontSize: 14, fontWeight: 800, color: "#FAFAFA" }}>
-                          {tx.type === "income" ? "+" : ""}{formatMoney(Math.abs(tx.amount), selectedCurrency)}
+                          {tx.type === "income" || tx.amount > 0 ? "+" : ""}{formatMoney(Math.abs(tx.amount), selectedCurrency)}
                         </span>
                       </div>
-                      ))
-                    }
-                    {transactions.filter((tx) =>
-                      historySearch === "" ||
-                      tx.label.toLowerCase().includes(historySearch.toLowerCase()) ||
-                      tx.category.toLowerCase().includes(historySearch.toLowerCase()) ||
-                      tx.account.toLowerCase().includes(historySearch.toLowerCase())
-                    ).length === 0 && (
-                      <div style={{ textAlign: "center", padding: "28px 0", color: "#52525B", fontSize: 13 }}>
-                        {isEn ? `No transactions for "${historySearch}"` : `Aucune transaction pour « ${historySearch} »`}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>

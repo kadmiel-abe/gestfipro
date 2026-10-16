@@ -44,6 +44,7 @@ import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
 import { AccountIcon, getAccountColor } from "../components/AccountIcon";
 import DashboardView from "../components/DashboardView";
 import PayCycleCard from "../components/PayCycleCard";
+import RecurringExpensesManager from "../components/RecurringExpensesManager";
 import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
@@ -2003,6 +2004,11 @@ export default function GestFiProDashboard() {
                   ))}
                 </div>
               )}
+
+              {/* ─── Charges fixes & Abonnements ─── */}
+              <div className="mt-8">
+                <RecurringExpensesManager />
+              </div>
             </div>
           )}
 

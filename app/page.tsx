@@ -17,42 +17,29 @@ import {
   Shield,
   Zap,
   TrendingUp,
-  TrendingDown,
   Calendar,
   ArrowRight,
   CheckCircle2,
   Sparkles,
   PieChart,
   Wallet,
-  Smartphone,
   Lock,
   Clock,
-  HelpCircle,
   ChevronDown,
   ChevronUp,
-  AlertTriangle,
-  Globe,
   Star,
   Users,
   Check,
   Coins,
-  Building2,
-  Banknote,
-  ArrowUpRight,
-  ArrowDownRight,
   Send,
   Plus,
-  Quote,
-  Menu,
   X,
   Mail,
   ShieldCheck,
-  ExternalLink,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useToday } from "@/hooks/useToday";
 
-type Language = "fr" | "en";
 type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
 interface CurrencyConfig {
@@ -197,8 +184,8 @@ const scrollBadgeItem = {
 export default function GestFiProPanAfricanLanding() {
   const { language, setLanguage, currency, setCurrency } = useLanguage();
   const today = useToday();
-  const [lang, setLang] = useState<Language>(language);
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
+  const lang = language;
+  const selectedCurrency = currency;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
@@ -262,17 +249,8 @@ export default function GestFiProPanAfricanLanding() {
     hamburgerBtnRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    setLang(language);
-  }, [language]);
-
-  useEffect(() => {
-    setSelectedCurrency(currency);
-  }, [currency]);
-
   const handleCurrencyChange = (curr: Currency) => {
     setCurrency(curr);
-    setSelectedCurrency(curr);
   };
 
   // Parallax global du Hero
@@ -289,11 +267,8 @@ export default function GestFiProPanAfricanLanding() {
 
   const rotateXScroll = useTransform(dashboardScroll, [0, 0.45, 0.85, 1], [14, 0, 0, -6]);
   const scaleScroll = useTransform(dashboardScroll, [0, 0.45, 0.85, 1], [0.92, 1.0, 1.0, 0.96]);
-  const opacityScroll = useTransform(dashboardScroll, [0, 1], [1.0, 1.0]); // 100% visible et opaque
-
   const smoothRotateX = useSpring(rotateXScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
   const smoothScale = useSpring(scaleScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
-  const smoothOpacity = useSpring(opacityScroll, { stiffness: 110, damping: 24, restDelta: 0.001 });
 
   // Parallaxe des badges 3D flottants
   const badge1Y = useTransform(dashboardScroll, [0, 1], [40, -45]);
@@ -844,7 +819,7 @@ export default function GestFiProPanAfricanLanding() {
           {/* Sélecteur de Langue FR | EN */}
           <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl p-1 text-xs font-bold">
             <button
-              onClick={() => setLang("fr")}
+              onClick={() => setLanguage("fr")}
               className={`px-2 py-1 rounded-lg transition-all ${
                 lang === "fr"
                   ? "bg-[#EF4444] text-white shadow-sm"
@@ -854,7 +829,7 @@ export default function GestFiProPanAfricanLanding() {
               FR
             </button>
             <button
-              onClick={() => setLang("en")}
+              onClick={() => setLanguage("en")}
               className={`px-2 py-1 rounded-lg transition-all ${
                 lang === "en"
                   ? "bg-[#EF4444] text-white shadow-sm"
@@ -1626,7 +1601,7 @@ export default function GestFiProPanAfricanLanding() {
               </p>
             </div>
             <div className="mt-5 pt-3 border-t border-[#27272A]/60 flex items-center text-[11px] font-semibold text-[#71717A] group-hover:text-[#A1A1AA] transition-colors">
-              <span>Stress d'attente du virement de paie</span>
+              <span>Stress d&apos;attente du virement de paie</span>
             </div>
           </motion.div>
         </motion.div>
@@ -2019,7 +1994,7 @@ export default function GestFiProPanAfricanLanding() {
 
                   {/* Avis utilisateur */}
                   <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
-                    "{item.text}"
+                    &ldquo;{item.text}&rdquo;
                   </p>
 
                   {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
@@ -2082,7 +2057,7 @@ export default function GestFiProPanAfricanLanding() {
 
                   {/* Avis utilisateur */}
                   <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
-                    "{item.text}"
+                    &ldquo;{item.text}&rdquo;
                   </p>
 
                   {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
@@ -2523,7 +2498,7 @@ export default function GestFiProPanAfricanLanding() {
                 {lang === "fr" ? "Couverture Afrique" : "Coverage"}
               </p>
               <div className="grid grid-cols-2 gap-1.5 text-xs text-[#A1A1AA] mb-4">
-                <span className="flex items-center gap-1.5">🇨🇮 Côte d'Ivoire</span>
+                <span className="flex items-center gap-1.5">🇨🇮 Côte d&apos;Ivoire</span>
                 <span className="flex items-center gap-1.5">🇸🇳 Sénégal</span>
                 <span className="flex items-center gap-1.5">🇳🇬 Nigeria</span>
                 <span className="flex items-center gap-1.5">🇰🇪 Kenya</span>

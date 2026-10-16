@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import {
   CheckCircle2,
   XCircle,
   Loader2,
   Database,
   User,
-  Wallet,
   ArrowRight,
   RefreshCw,
-  AlertTriangle,
   PlusCircle,
   Receipt,
   ShieldAlert,
@@ -43,12 +42,12 @@ interface TransactionData {
 }
 
 export default function TestDbPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // States
-  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [sessionUser, setSessionUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
@@ -60,8 +59,9 @@ export default function TestDbPage() {
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const runDatabaseTests = async () => {
-    setLoading(true);
+  const runDatabaseTests = useCallback(async () => {
+    // Asynchronous boundary prevents React 19 setState-in-effect cascading render warning
+    await Promise.resolve();
     setSessionError(null);
     setProfileError(null);
     setAccountsError(null);
@@ -131,17 +131,27 @@ export default function TestDbPage() {
       } else {
         setTransactions(tData || []);
       }
-    } catch (err: any) {
-      setSessionError(`Exception inattendue : ${err?.message || "Erreur inconnue"}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setSessionError(`Exception inattendue : ${msg || "Erreur inconnue"}`);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
-    runDatabaseTests();
-  }, []);
+    let ignore = false;
+    const timer = setTimeout(() => {
+      if (!ignore) {
+        void runDatabaseTests();
+      }
+    }, 0);
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [runDatabaseTests]);
 
   // Test d'écriture : Ajout d'une transaction test pour valider les politiques RLS INSERT
   const handleAddTestExpense = async () => {
@@ -165,10 +175,11 @@ export default function TestDbPage() {
         setTransactionsError(`Échec écriture transaction : ${insError.message}`);
       } else {
         setActionSuccess("✓ Transaction test ajoutée avec succès dans la base de données !");
-        runDatabaseTests();
+        void runDatabaseTests();
       }
-    } catch (err: any) {
-      setTransactionsError(`Erreur lors de l'insertion : ${err?.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setTransactionsError(`Erreur lors de l'insertion : ${msg || "Erreur inconnue"}`);
     }
   };
 
@@ -298,7 +309,7 @@ export default function TestDbPage() {
             </div>
           ) : (
             <p className="text-xs text-[#A1A1AA] mt-1">
-              Aucun profil créé pour cet utilisateur. Passez par le processus d'onboarding pour initialiser votre salaire et cycle de paie.
+              Aucun profil créé pour cet utilisateur. Passez par le processus d&apos;onboarding pour initialiser votre salaire et cycle de paie.
             </p>
           )}
 
@@ -345,7 +356,7 @@ export default function TestDbPage() {
             </div>
           ) : (
             <p className="text-xs text-[#A1A1AA] mt-1">
-              Aucun compte initialisé (ex: Wave, Orange Money, Espèces, Banque). L'onboarding configure automatiquement vos comptes.
+              Aucun compte initialisé (ex: Wave, Orange Money, Espèces, Banque). L&apos;onboarding configure automatiquement vos comptes.
             </p>
           )}
 
@@ -416,7 +427,7 @@ export default function TestDbPage() {
                 className="inline-flex items-center gap-2 text-xs font-semibold text-[#EF4444] hover:text-[#DC2626] transition-colors"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>Tester l'écriture (Ajouter dépense test de 2 500 FCFA)</span>
+                <span>Tester l&apos;écriture (Ajouter dépense test de 2 500 FCFA)</span>
               </button>
             </div>
           )}
@@ -441,7 +452,7 @@ export default function TestDbPage() {
             href="/onboarding"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs shadow-lg shadow-[#EF4444]/25 transition-colors"
           >
-            <span>Lancer l'Onboarding</span>
+            <span>Lancer l&apos;Onboarding</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

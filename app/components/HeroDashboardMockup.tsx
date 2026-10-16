@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { formatMonthYear } from "@/lib/date-utils";
 import { useToday } from "@/hooks/useToday";
 import Image from "next/image";
@@ -60,7 +60,7 @@ export default function HeroDashboardMockup() {
   };
 
   // ── Données et état interactif du Mockup ──────────────────────────────────
-  const [daysRemaining, setDaysRemaining] = useState<number>(16);
+  const [daysRemaining] = useState<number>(16);
   const [totalBalance, setTotalBalance] = useState<number>(360000);
   const [spentToday, setSpentToday] = useState<number>(4500);
   const [transactionCount, setTransactionCount] = useState<number>(2);
@@ -359,7 +359,7 @@ export default function HeroDashboardMockup() {
               <div className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA] block mb-1">
-                    Dépenses aujourd'hui
+                    Dépenses aujourd&apos;hui
                   </span>
                   <div className="text-2xl font-extrabold tracking-tight tabular-nums text-[#FAFAFA]">
                     {fmt(spentToday)}{" "}
@@ -450,7 +450,7 @@ export default function HeroDashboardMockup() {
                 <span>J-30 (Paie : 350k)</span>
                 <span className="text-[#EF4444] font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] inline-block" />
-                  Aujourd'hui (J-16 : {fmt(totalBalance)} FCFA)
+                  Aujourd&apos;hui (J-16 : {fmt(totalBalance)} FCFA)
                 </span>
                 <span>J-0 (Prochaine paie : 28)</span>
               </div>
@@ -533,7 +533,7 @@ export default function HeroDashboardMockup() {
         <div className="px-5 sm:px-6 pb-5">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">
-              Transactions Récentes (Aujourd'hui)
+              Transactions Récentes (Aujourd&apos;hui)
             </h4>
             <span className="text-xs font-semibold text-[#EF4444] flex items-center gap-1 cursor-pointer hover:underline">
               Historique complet <ChevronRight className="w-3 h-3" />

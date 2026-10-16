@@ -35,7 +35,7 @@ export default function ScrollToTop() {
     handleScroll(); // Vérification initiale
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isLandingLikePage]);
 
   const scrollToTop = () => {
     if (isLandingLikePage) {

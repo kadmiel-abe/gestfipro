@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Target,
   Plus,
@@ -33,12 +33,6 @@ interface GoalsCardProps {
   onNavigate?: (tab: string) => void;
 }
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  return Math.round(n).toLocaleString("fr-FR");
-}
-
 // ─── Couleurs par progression ────────────────────────────────────────────────
 
 function getProgressColor(pct: number): string {
@@ -58,14 +52,18 @@ interface CreateGoalModalProps {
   onGoalCreated?: () => void;
 }
 
-function CreateGoalModal({
-  isOpen,
+function CreateGoalModal(props: CreateGoalModalProps) {
+  if (!props.isOpen) return null;
+  return <CreateGoalModalContent {...props} />;
+}
+
+function CreateGoalModalContent({
   onClose,
   userId,
   onGoalCreated,
 }: CreateGoalModalProps) {
   const supabase = createClient();
-  const { t, isEn, currency, language } = useLanguage();
+  const { t, isEn, currency } = useLanguage();
   const currencySymbol = getCurrencyMeta(currency).symbol;
   const [title, setTitle] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
@@ -73,18 +71,6 @@ function CreateGoalModal({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTitle("");
-      setTargetAmount("");
-      setTargetDate("");
-      setError(null);
-      setSuccess(false);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,8 +109,9 @@ function CreateGoalModal({
         onClose();
         if (onGoalCreated) onGoalCreated();
       }, 600);
-    } catch (err: any) {
-      setError(err?.message || (isEn ? "Unexpected error." : "Erreur inattendue."));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || (isEn ? "Unexpected error." : "Erreur inattendue."));
     } finally {
       setLoading(false);
     }
@@ -381,12 +368,12 @@ export default function GoalsCard({
   const supabase = createClient();
   const { t, isEn, language, currency } = useLanguage();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [feedingGoalId, setFeedingGoalId] = useState<string | null>(null);
+  const [feedingGoalId, setFeedingGoalId] = useState<string | number | null>(null);
   const [feedAmount, setFeedAmount] = useState("");
   const [feedLoading, setFeedLoading] = useState(false);
 
   // Alimenter un objectif
-  const handleFeedGoal = async (goalId: string) => {
+  const handleFeedGoal = async (goalId: string | number) => {
     const amount = Number(feedAmount);
     if (!amount || amount <= 0) return;
 

@@ -16,38 +16,35 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+function applyThemeToDocument(t: Theme) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (t === "dark") {
+    root.classList.add("dark");
+    root.classList.remove("light");
+  } else {
+    root.classList.remove("dark");
+    root.classList.add("light");
+  }
+}
 
-  useEffect(() => {
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "dark";
     try {
       const stored = localStorage.getItem("gestfipro_theme") as Theme | null;
-      if (stored === "light" || stored === "dark") {
-        setThemeState(stored);
-        applyTheme(stored);
-      } else {
-        applyTheme("dark");
-      }
-    } catch {
-      applyTheme("dark");
-    }
-  }, []);
+      if (stored === "light" || stored === "dark") return stored;
+    } catch {}
+    return "dark";
+  });
 
-  const applyTheme = (t: Theme) => {
-    if (typeof document === "undefined") return;
-    const root = document.documentElement;
-    if (t === "dark") {
-      root.classList.add("dark");
-      root.classList.remove("light");
-    } else {
-      root.classList.remove("dark");
-      root.classList.add("light");
-    }
-  };
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    applyTheme(t);
+    applyThemeToDocument(t);
     try {
       localStorage.setItem("gestfipro_theme", t);
     } catch {}

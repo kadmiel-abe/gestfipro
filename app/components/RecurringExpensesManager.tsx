@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Repeat,
   Plus,
@@ -9,7 +9,6 @@ import {
   Calendar,
   Tag,
   CreditCard,
-  DollarSign,
   AlertCircle,
 } from "lucide-react";
 import { useCurrency } from "@/lib/context/CurrencyContext";
@@ -48,8 +47,25 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function RecurringExpensesManager() {
   const { currency, formatCurrency } = useCurrency();
 
-  // État local des charges fixes — tableau vide par défaut (aucune donnée fictive)
-  const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
+  // État local des charges fixes avec persistance localStorage — vide par défaut
+  const [expenses, setExpenses] = useState<RecurringExpense[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("gestfipro_recurring_expenses");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  // Sauvegarde automatique lors des modifications
+  useEffect(() => {
+    try {
+      localStorage.setItem("gestfipro_recurring_expenses", JSON.stringify(expenses));
+    } catch {}
+  }, [expenses]);
 
   // État de la modale Dialog
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Clock,
@@ -15,11 +15,11 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import RecurringExpensesManager from "@/app/components/RecurringExpensesManager";
 import { useCurrency } from "@/lib/context/CurrencyContext";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// ─── Types & Mock Transactions ────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 interface TransactionItem {
   id: string | number;
   label: string;
@@ -31,64 +31,80 @@ interface TransactionItem {
   icon: string;
 }
 
-const DEFAULT_MOCK_TRANSACTIONS: TransactionItem[] = [
-  {
-    id: "tx-1",
-    label: "Courses Alimentation",
-    category: "Nourriture",
-    amount: -18500,
-    type: "expense",
-    date: "14 Oct 2026",
-    account: "Wave",
-    icon: "🍔",
-  },
-  {
-    id: "tx-2",
-    label: "Carburant Station Total",
-    category: "Transport",
-    amount: -15000,
-    type: "expense",
-    date: "12 Oct 2026",
-    account: "Espèces",
-    icon: "🚕",
-  },
-  {
-    id: "tx-3",
-    label: "Virement Salaire Mensuel",
-    category: "Revenu",
-    amount: 450000,
-    type: "income",
-    date: "10 Oct 2026",
-    account: "Banque",
-    icon: "💼",
-  },
-  {
-    id: "tx-4",
-    label: "Facture CIE Électricité",
-    category: "Factures",
-    amount: -22500,
-    type: "expense",
-    date: "08 Oct 2026",
-    account: "Orange Money",
-    icon: "⚡",
-  },
-  {
-    id: "tx-5",
-    label: "Pharmacie Centrale",
-    category: "Santé",
-    amount: -9400,
-    type: "expense",
-    date: "05 Oct 2026",
-    account: "Wave",
-    icon: "💊",
-  },
-];
-
 export default function HistoriquePage() {
   const { currency, formatCurrency } = useCurrency();
-  const { isEn } = useLanguage();
 
-  const [transactions] = useState<TransactionItem[]>(DEFAULT_MOCK_TRANSACTIONS);
+  // Initialisation à partir de localStorage (ou vide par défaut)
+  const [transactions, setTransactions] = useState<TransactionItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("gestfipro_transactions");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((t: Record<string, unknown>) => ({
+            id: (t.id as string | number) || `tx-${Math.random()}`,
+            label: (t.label as string) || (t.title as string) || (t.note as string) || "Transaction",
+            category: (t.category as string) || "Divers",
+            amount: Number(t.amount) || 0,
+            type: t.type === "income" || Number(t.amount) > 0 ? "income" : "expense",
+            date:
+              (t.date as string) ||
+              (t.transaction_date
+                ? new Date(t.transaction_date as string).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                : "Récemment"),
+            account: (t.account as string) || "Compte",
+            icon: (t.icon as string) || (t.type === "income" ? "💼" : "🏷"),
+          }));
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  // Chargement des transactions réelles depuis Supabase
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchTransactions = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && !isCancelled) {
+          const { data: accs } = await supabase.from("accounts").select("id, name").eq("user_id", user.id);
+          const accountNames = new Map((accs || []).map((a: { id: string; name: string }) => [a.id, a.name]));
+
+          const { data: txs, error } = await supabase
+            .from("transactions")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("transaction_date", { ascending: false });
+
+          if (!error && txs && !isCancelled) {
+            setTransactions(
+              txs.map((t: Record<string, unknown>) => ({
+                id: t.id as string,
+                label: (t.title as string) || (t.note as string) || "Opération",
+                category: (t.category as string) || "Divers",
+                amount: Number(t.amount) || 0,
+                type: t.type === "income" || Number(t.amount) > 0 ? "income" : "expense",
+                date: t.transaction_date
+                  ? new Date(t.transaction_date as string).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                  : "Récemment",
+                account: accountNames.get(t.account_id as string) || (t.note as string) || "Compte",
+                icon: t.type === "income" ? "💼" : "🏷",
+              }))
+            );
+          }
+        }
+      } catch (e) {
+        console.warn("Historique: fetch error", e);
+      }
+    };
+    fetchTransactions();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
   const [historySearch, setHistorySearch] = useState<string>("");
   const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "expense" | "income">("all");
 
@@ -283,10 +299,25 @@ export default function HistoriquePage() {
               </div>
 
               {/* Liste des transactions */}
-              {filteredTransactions.length === 0 ? (
+              {transactions.length === 0 ? (
+                <div className="text-center py-16 px-4 rounded-xl border border-dashed border-[#27272A] bg-[#09090B]/30">
+                  <Clock className="w-10 h-10 text-[#52525B] mx-auto mb-3 opacity-40" />
+                  <p className="text-base font-bold text-[#FAFAFA]">Aucune transaction enregistrée</p>
+                  <p className="text-xs text-[#A1A1AA] mt-1.5 max-w-sm mx-auto">
+                    Votre historique est vide pour le moment. Enregistrez votre première dépense ou rentrée d&apos;argent depuis le tableau de bord.
+                  </p>
+                  <Link
+                    href="/dashboard"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EF4444] text-white text-xs font-bold hover:bg-[#DC2626] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Ajouter une opération</span>
+                  </Link>
+                </div>
+              ) : filteredTransactions.length === 0 ? (
                 <div className="text-center py-12 px-4 rounded-xl border border-dashed border-[#27272A] bg-[#09090B]/30">
                   <Clock className="w-8 h-8 text-[#52525B] mx-auto mb-2 opacity-50" />
-                  <p className="text-sm font-semibold text-[#FAFAFA]">Aucune transaction trouvée</p>
+                  <p className="text-sm font-semibold text-[#FAFAFA]">Aucune transaction ne correspond à vos filtres</p>
                   <p className="text-xs text-[#A1A1AA] mt-1">
                     Essayez de modifier votre recherche ou le filtre sélectionné.
                   </p>

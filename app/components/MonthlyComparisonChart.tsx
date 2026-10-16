@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo, useSyncExternalStore } from "react";
 import {
   BarChart,
   Bar,
@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { BarChart3, TrendingDown, TrendingUp } from "lucide-react";
 
-// ─── Données factices (Mock Data par défaut : 6 derniers mois en FCFA) ────────
+// ─── Données factices (Mock Data de présentation optionnelle) ─────────────────
 export interface MonthExpenseItem {
   month: string;
   amount: number;
@@ -27,12 +27,13 @@ export const mockMonthlyExpenses: MonthExpenseItem[] = [
   { month: "Juin", amount: 165000 },
 ];
 
+import type { Transaction } from "@/lib/types";
+
 export interface MonthlyComparisonChartProps {
   /** Données personnalisées optionnelles (mois et montant) */
   data?: MonthExpenseItem[];
   /** Transactions réelles optionnelles pour calcul dynamique automatique */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transactions?: any[];
+  transactions?: Array<Record<string, unknown> | Partial<Transaction> | Transaction>;
   /** Devise d'affichage (défaut : "FCFA") */
   currency?: string;
 }
@@ -62,61 +63,57 @@ function CustomChartTooltip({ active, payload, label, currency }: CustomTooltipP
   );
 }
 
+const emptySubscribe = () => () => {};
+
 // ─── Composant principal MonthlyComparisonChart ──────────────────────────────
 export default function MonthlyComparisonChart({
   data,
   transactions,
   currency = "FCFA",
 }: MonthlyComparisonChartProps) {
-  // Garde-fou d'hydratation côté client pour Next.js App Router (Recharts)
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // Garde-fou d'hydratation côté client sécurisé sans cascade de rendu
+  const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   // Détermination des données à afficher :
   // 1. data explicite si fournie
-  // 2. agrégation dynamique si transactions fournies
-  // 3. sinon mockData par défaut (6 mois)
+  // 2. agrégation dynamique si transactions fournies (même vides)
+  // 3. sinon mockData uniquement si transactions est undefined
   const chartData = useMemo<MonthExpenseItem[]>(() => {
     if (data && data.length > 0) return data;
 
-    if (transactions && transactions.length > 0) {
+    if (transactions !== undefined) {
+      const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+      const now = new Date();
+      const map: Record<string, number> = {};
+      const keys: { key: string; label: string }[] = [];
+
+      // Préparer les 6 derniers mois glissants
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        map[key] = 0;
+        keys.push({ key, label: monthNames[d.getMonth()] });
+      }
+
       const expenses = transactions.filter(
         (t) => t.type === "expense" || Number(t.amount) < 0
       );
 
-      if (expenses.length > 0) {
-        const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
-        const now = new Date();
-        const map: Record<string, number> = {};
-        const keys: { key: string; label: string }[] = [];
-
-        // Préparer les 6 derniers mois
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-          map[key] = 0;
-          keys.push({ key, label: monthNames[d.getMonth()] });
+      // Cumuler les montants réels
+      for (const t of expenses) {
+        const rawDate = (t.transaction_date || t.created_at || t.date) as string;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) continue;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (key in map) {
+          map[key] += Math.abs(Number(t.amount));
         }
-
-        // Cumuler les montants
-        for (const t of expenses) {
-          const rawDate = t.transaction_date || t.created_at || t.date;
-          const d = new Date(rawDate);
-          if (isNaN(d.getTime())) continue;
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-          if (key in map) {
-            map[key] += Math.abs(Number(t.amount));
-          }
-        }
-
-        return keys.map((k) => ({
-          month: k.label,
-          amount: Math.round(map[k.key]),
-        }));
       }
+
+      return keys.map((k) => ({
+        month: k.label,
+        amount: Math.round(map[k.key]),
+      }));
     }
 
     return mockMonthlyExpenses;

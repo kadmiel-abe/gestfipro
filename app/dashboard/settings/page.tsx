@@ -2,19 +2,16 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CalendarClock,
   Wallet,
-  Coins,
   User,
   CheckCircle2,
   Loader2,
   AlertCircle,
   Save,
   Sparkles,
-  TrendingDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
@@ -32,13 +29,8 @@ const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string }> 
   EUR: { label: "EUR €", shortLabel: "EUR" },
 };
 
-function fmt(n: number) {
-  return Math.round(n).toLocaleString("fr-FR");
-}
-
 export default function SettingsPage() {
-  const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const { currency, setCurrency, isEn, language } = useLanguage();
   const today = useToday();
 
@@ -96,7 +88,7 @@ export default function SettingsPage() {
             } catch {}
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Erreur chargement profil :", err);
       } finally {
         setLoading(false);
@@ -104,7 +96,7 @@ export default function SettingsPage() {
     }
 
     loadProfile();
-  }, []);
+  }, [supabase]);
 
   // Calculs dynamiques pour le Payday Preview
   const { daysRemaining, nextPaydayFormatted, dailyBudgetPreview, isConfigured } = useMemo(() => {
@@ -195,9 +187,10 @@ export default function SettingsPage() {
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur enregistrement profil :", err);
-      setError([err?.message, err?.code ? `Code: ${err.code}` : "", err?.details, err?.hint]
+      const errObj = err as { message?: string; code?: string; details?: string; hint?: string };
+      setError([errObj?.message, errObj?.code ? `Code: ${errObj.code}` : "", errObj?.details, errObj?.hint]
         .filter(Boolean)
         .join(" - ") || "Une erreur est survenue lors de l'enregistrement.");
     } finally {

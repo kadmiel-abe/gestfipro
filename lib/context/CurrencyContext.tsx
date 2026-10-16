@@ -4,7 +4,6 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
   useMemo,
 } from "react";
@@ -114,19 +113,16 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | null>(null);
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<Currency>("XOF");
-
-  // Initialisation côté client depuis localStorage / cookie
-  useEffect(() => {
+  const [currency, setCurrencyState] = useState<Currency>(() => {
+    if (typeof window === "undefined") return "XOF";
     try {
       const stored = localStorage.getItem("gestfipro_currency") as Currency | null;
       if (stored && (stored === "XOF" || stored === "EUR" || stored === "USD")) {
-        setCurrencyState(stored);
+        return stored;
       }
-    } catch {
-      // Ignorer si localStorage n'est pas disponible
-    }
-  }, []);
+    } catch {}
+    return "XOF";
+  });
 
   const setCurrency = useCallback((nextCurrency: Currency) => {
     setCurrencyState(nextCurrency);

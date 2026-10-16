@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -16,9 +16,6 @@ import {
   X,
   Plus,
   LogOut,
-  Sparkles,
-  CreditCard,
-  Calendar,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -38,12 +35,13 @@ const navItems = [
 
 export default function DashboardLayout({ children, onOpenNewExpense }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const supabase = createClient();
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    router.push("/login");
   };
 
   return (
@@ -283,7 +281,7 @@ export default function DashboardLayout({ children, onOpenNewExpense }: Dashboar
         {/* 3. Bouton central "+ Dépense" surélevé */}
         <div className="relative -top-4 flex items-center justify-center">
           <button
-            onClick={onOpenNewExpense ? onOpenNewExpense : () => (window.location.href = "/dashboard?action=new_expense")}
+            onClick={onOpenNewExpense ? onOpenNewExpense : () => router.push("/dashboard?action=new_expense")}
             className="w-12 h-12 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white flex items-center justify-center shadow-lg shadow-[#EF4444]/40 border-4 border-[#09090B] active:scale-95 transition-all cursor-pointer"
             aria-label="Ajouter une dépense"
           >

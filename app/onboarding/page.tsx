@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { User, Banknote, CalendarDays, ArrowRight, CheckCircle2, Plus, Trash2, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Profil", "Salaire", "Comptes", "Terminé"];
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const supabase = createClient();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -91,10 +93,11 @@ export default function OnboardingPage() {
       }));
 
       localStorage.setItem("gestfipro_accounts", JSON.stringify(customAccounts));
-      window.location.href = "/dashboard";
-    } catch (err: any) {
+      router.push("/dashboard");
+    } catch (err: unknown) {
       console.error("Erreur sauvegarde onboarding:", err);
-      setSaveError(err?.message || "Impossible d'enregistrer vos informations.");
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setSaveError(msg || "Impossible d'enregistrer vos informations.");
     } finally {
       setSaving(false);
     }
@@ -429,7 +432,7 @@ export default function OnboardingPage() {
             <div style={{ textAlign: "center", padding: "12px 0" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>🎊</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: "#FAFAFA", letterSpacing: "-0.03em", marginBottom: 8 }}>
-                C'est prêt, {name || "vous"} !
+                C&apos;est prêt, {name || "vous"} !
               </h2>
               <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.6 }}>
                 Votre profil GestFiPro est configuré. Accédez à votre tableau de bord pour commencer à suivre vos finances.
@@ -468,7 +471,7 @@ export default function OnboardingPage() {
         </div>
 
         <p style={{ fontSize: 11, color: "#52525B", textAlign: "center" }}>
-          GestFiPro · Gestion Financière Afrique de l'Ouest
+          GestFiPro · Gestion Financière Afrique de l&apos;Ouest
         </p>
       </div>
     </div>

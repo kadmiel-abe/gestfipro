@@ -134,7 +134,13 @@ export function useSpeechRecognition({
   onEnd,
 }: UseSpeechRecognitionOptions = {}): UseSpeechRecognitionReturn {
   const [isListening, setIsListening] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(
+      (window as unknown as { SpeechRecognition?: new () => ISpeechRecognition }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => ISpeechRecognition }).webkitSpeechRecognition
+    );
+  });
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -143,31 +149,19 @@ export function useSpeechRecognition({
 
   // Mémorisation des callbacks dans des refs pour éviter de recréer l'instance à chaque re-render
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
-
   const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
-
   const onStartRef = useRef(onStart);
-  onStartRef.current = onStart;
-
   const onEndRef = useRef(onEnd);
-  onEndRef.current = onEnd;
-
   const langRef = useRef(lang);
-  langRef.current = lang;
 
-  // Détection de la disponibilité de l'API au montage côté client
+  // Synchronisation des refs après le rendu
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: new () => ISpeechRecognition }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: new () => ISpeechRecognition }).webkitSpeechRecognition;
-
-    setIsSupported(Boolean(SpeechRecognition));
-  }, []);
+    onResultRef.current = onResult;
+    onErrorRef.current = onError;
+    onStartRef.current = onStart;
+    onEndRef.current = onEnd;
+    langRef.current = lang;
+  });
 
   // Nettoyage au démontage
   useEffect(() => {
@@ -214,7 +208,6 @@ export function useSpeechRecognition({
     clearError();
     isExplicitStopRef.current = false;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionClass =
       (window as unknown as { SpeechRecognition?: new () => ISpeechRecognition }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: new () => ISpeechRecognition }).webkitSpeechRecognition;

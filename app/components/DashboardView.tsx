@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Eye,
   EyeOff,
@@ -15,18 +15,15 @@ import {
   CheckCircle2,
   Search,
   Calendar as CalendarIcon,
-  Filter,
-  DollarSign,
   ArrowRight,
   Tag,
-  AlertCircle,
 } from "lucide-react";
 import GoalsCard from "./dashboard/goals-card";
 import MiniCalendar from "./MiniCalendar";
 import { useToday } from "@/hooks/useToday";
-import { isSameDay, getDateKey } from "@/lib/date-utils";
+import { isSameDay } from "@/lib/date-utils";
 import { AccountIcon } from "./AccountIcon";
-import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useCurrency, formatCurrency } from "@/lib/context/CurrencyContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
 import PredictiveAlert from "./PredictiveAlert";
@@ -40,7 +37,7 @@ interface DashboardViewProps {
   onOpenModal: () => void;
   onNavigate: (tab: string) => void;
   onQuickSubmit?: (e: React.FormEvent) => void;
-  onAddTransaction?: (tx: any) => Promise<void> | void;
+  onAddTransaction?: (tx: Partial<Transaction> | Record<string, unknown>) => Promise<void> | void;
   quickInputText?: string;
   setQuickInputText?: (text: string) => void;
   todayExpenses?: number;
@@ -75,7 +72,7 @@ export default function DashboardView({
   accounts,
   transactions,
   goals = [],
-  isLoading = false,
+  isLoading: _isLoading = false,
   onOpenModal,
   onNavigate,
   onAddTransaction,
@@ -85,40 +82,29 @@ export default function DashboardView({
   userId = null,
   onTransactionAdded,
 }: DashboardViewProps) {
-  const { t, isEn, language, currency: globalCurrency } = useLanguage();
+  void _isLoading;
+  const { t, currency: globalCurrency } = useLanguage();
   const { currency: contextCurrency, setCurrency: setContextCurrency } = useCurrency();
   const activeCurrency = (contextCurrency || currency || globalCurrency || "XOF") as "XOF" | "EUR" | "USD";
-  const locale = language === "en" ? "en-US" : "fr-FR";
   const now = useToday();
 
   // ── 1. État Mode Discret (Eye / EyeOff) ────────────────────────────────────
   const [hideAmounts, setHideAmounts] = useState<boolean>(false);
 
-  // ── 2. État optimiste local pour mise à jour synchrone instantanée ──────────
-  const [localTransactions, setLocalTransactions] = useState<Transaction[]>(transactions);
-  const [localAccounts, setLocalAccounts] = useState<Account[]>(accounts);
-
-  useEffect(() => {
-    setLocalTransactions(transactions);
-  }, [transactions]);
-
-  useEffect(() => {
-    setLocalAccounts(accounts);
-  }, [accounts]);
+  // ── 2. Références directes pour éviter la désynchronisation et les cascades de rendu ──
+  const localTransactions = transactions;
+  const localAccounts = accounts;
 
   // ── 3. États pour le formulaire de saisie rapide ───────────────────────────
   const [quickAmount, setQuickAmount] = useState<string>("");
   const [quickCategory, setQuickCategory] = useState<string>("Nourriture");
-  const [quickAccount, setQuickAccount] = useState<string>(() => accounts[0]?.name || "Espèces");
+  const [quickAccount, setQuickAccount] = useState<string>("");
+  const activeQuickAccount = accounts.some((a) => a.name === quickAccount)
+    ? quickAccount
+    : accounts[0]?.name || "Espèces";
   const [quickNote, setQuickNote] = useState<string>("");
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
   const [isSubmittingQuick, setIsSubmittingQuick] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (accounts.length > 0 && !accounts.some((a) => a.name === quickAccount)) {
-      setQuickAccount(accounts[0].name);
-    }
-  }, [accounts, quickAccount]);
 
   // ── 4. Filtres de transactions récentes ────────────────────────────────────
   const [txTypeFilter, setTxTypeFilter] = useState<"all" | "expense" | "income">("all");
@@ -235,34 +221,11 @@ export default function DashboardView({
       return;
     }
 
-    const targetAccountName = quickAccount || localAccounts[0].name;
+    const targetAccountName = activeQuickAccount;
     const targetCategory = quickCategory || "Nourriture";
     const noteText = quickNote.trim();
 
     setIsSubmittingQuick(true);
-
-    const newTx: Transaction = {
-      id: `temp-${Date.now()}`,
-      title: noteText || targetCategory,
-      category: targetCategory,
-      amount: -Math.abs(amountNum),
-      type: "expense",
-      date: "À l'instant",
-      account: targetAccountName,
-      transaction_date: now.toISOString(),
-      created_at: now.toISOString(),
-      icon: CATEGORY_ICONS[targetCategory] || "⚡",
-    };
-
-    // 1. Décrémenter immédiatement le solde du compte et mettre à jour l'historique local
-    setLocalAccounts((prev) =>
-      prev.map((acc) =>
-        acc.name === targetAccountName
-          ? { ...acc, balance: (Number(acc.balance) || 0) - amountNum }
-          : acc
-      )
-    );
-    setLocalTransactions((prev) => [newTx, ...prev]);
 
     // 2. Persister via le callback parent
     try {
@@ -334,7 +297,7 @@ export default function DashboardView({
       // Filtre Recherche
       if (txSearch.trim()) {
         const q = txSearch.toLowerCase();
-        const matchTitle = (tx.title || (tx as any).label || "").toLowerCase().includes(q);
+        const matchTitle = (tx.title || (tx as { label?: string }).label || "").toLowerCase().includes(q);
         const matchCat = (tx.category || "").toLowerCase().includes(q);
         const matchAcc = (tx.account || "").toLowerCase().includes(q);
         if (!matchTitle && !matchCat && !matchAcc) return false;
@@ -462,7 +425,7 @@ export default function DashboardView({
           {/* Barre de progression budget consommé aujourd'hui */}
           <div className="mt-4 pt-3 border-t border-[#27272A]/80">
             <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5">
-              <span className="text-[#A1A1AA]">Consommé aujourd'hui</span>
+              <span className="text-[#A1A1AA]">Consommé aujourd&apos;hui</span>
               <span className={todayBudgetPercent > 90 ? "text-[#EF4444] font-bold" : "text-[#FAFAFA]"}>
                 {todayBudgetPercent}% ({formatAmount(todayExpenseTotal)})
               </span>
@@ -525,7 +488,7 @@ export default function DashboardView({
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-1.5">
                 <TrendingDown className="w-3.5 h-3.5 text-[#EF4444]" />
-                Dépenses Aujourd'hui
+                Dépenses Aujourd&apos;hui
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#EF4444]/10 text-[#EF4444]">
                 Journalier
@@ -539,7 +502,7 @@ export default function DashboardView({
             </div>
 
             <p className="text-[11px] text-[#71717A] mt-1">
-              Total débité aujourd'hui
+              Total débité aujourd&apos;hui
             </p>
           </div>
 
@@ -666,7 +629,7 @@ export default function DashboardView({
           {/* 3. Sélecteur Compte - 3 cols */}
           <div className="lg:col-span-3">
             <select
-              value={quickAccount}
+              value={activeQuickAccount}
               onChange={(e) => setQuickAccount(e.target.value)}
               className="input-field text-xs sm:text-sm w-full bg-[#09090B] border-[#27272A] font-semibold text-[#FAFAFA] cursor-pointer rounded-xl py-2.5"
             >
@@ -855,7 +818,7 @@ export default function DashboardView({
                 {filteredTransactions.slice(0, 8).map((tx) => {
                   const isExpense = tx.type === "expense" || (tx.amount !== undefined && tx.amount < 0);
                   const absAmount = Math.abs(tx.amount);
-                  const title = tx.title || (tx as any).label || tx.category || "Dépense";
+                  const title = tx.title || (tx as { label?: string }).label || tx.category || "Dépense";
                   const dateStr = tx.date || (tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString("fr-FR") : "Aujourd'hui");
 
                   return (
@@ -907,7 +870,7 @@ export default function DashboardView({
                 onClick={() => onNavigate("historique")}
                 className="text-xs text-[#EF4444] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
-                Voir tout l'historique <ChevronRight className="w-3.5 h-3.5" />
+                Voir tout l&apos;historique <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -934,7 +897,7 @@ export default function DashboardView({
             </div>
 
             <p className="text-[11px] text-[#71717A] mb-3">
-              Cliquez sur un compte pour filtrer l'historique instantanément :
+              Cliquez sur un compte pour filtrer l&apos;historique instantanément :
             </p>
 
             {localAccounts.length === 0 ? (
@@ -1022,7 +985,7 @@ export default function DashboardView({
             <div className="mt-3 pt-3 border-t border-[#27272A] flex items-center justify-between text-[10px] text-[#71717A]">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded bg-[#EF4444]" />
-                <span>Aujourd'hui</span>
+                <span>Aujourd&apos;hui</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded bg-white/20 border border-white/40" />

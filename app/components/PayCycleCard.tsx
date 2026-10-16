@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
-import { useLanguage, getCurrencyMeta, formatCurrencyValue, Currency } from "@/lib/i18n/LanguageContext";
+import { useLanguage, formatCurrencyValue, Currency } from "@/lib/i18n/LanguageContext";
 import { useToday } from "@/hooks/useToday";
 import { getTodayInAbidjan } from "@/lib/date-utils";
 
@@ -26,10 +26,6 @@ interface PayCycleCardProps {
   currency?: string;
   accountsCount?: number;
   todayTransactionsCount?: number;
-}
-
-function fmt(n: number, locale: string) {
-  return Math.round(n).toLocaleString(locale);
 }
 
 export function computePayCycle(
@@ -83,11 +79,10 @@ export default function PayCycleCard({
   accountsCount = 0,
   todayTransactionsCount = 0,
 }: PayCycleCardProps) {
-  const { language, t, isEn, currency: currentCurrency } = useLanguage();
+  const { t, language, isEn, currency: currentCurrency } = useLanguage();
   const today = useToday();
   const locale = language === "en" ? "en-US" : "fr-FR";
-  const activeCurrency = (currency || currentCurrency) as any;
-  const currencySymbol = getCurrencyMeta(activeCurrency).symbol;
+  const activeCurrency = (currency || currentCurrency) as Currency;
   const { daysRemaining, dailyBudget, isBudgetCritical, safePayday, todayNum, isConfigured } = computePayCycle(
     paydayWithMonth,
     totalBalance,
@@ -247,7 +242,7 @@ export default function PayCycleCard({
         <div className="card animate-fade-in-up-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] text-[#A1A1AA] font-bold uppercase tracking-wider">
-              Dépenses aujourd'hui
+              Dépenses aujourd&apos;hui
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center text-[#EF4444]">
               <TrendingDown className="w-4 h-4" />

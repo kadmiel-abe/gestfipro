@@ -7,13 +7,13 @@ export interface Profile {
   updated_at?: string;
 }
 
-export type AccountType = "cash" | "wave" | "orange_money" | "bank" | "Espèces" | "Mobile Money" | "Banque";
+export type AccountType = "cash" | "wave" | "orange_money" | "bank" | "Espèces" | "Mobile Money" | "Banque" | string;
 
 export interface Account {
-  id: string;
+  id: string | number;
   user_id?: string;
   name: string;
-  type: AccountType;
+  type: string;
   balance: number;
   created_at?: string;
   colorClass?: string;
@@ -21,14 +21,15 @@ export interface Account {
 }
 
 export interface Transaction {
-  id: string;
+  id: string | number;
   user_id?: string;
   account_id?: string | null;
-  title: string;
+  title?: string;
+  label?: string;
   category: string;
   amount: number;
   type: "expense" | "income";
-  transaction_date: string;
+  transaction_date?: string;
   note?: string | null;
   created_at?: string;
   account?: string; // Nom du compte joint
@@ -37,7 +38,7 @@ export interface Transaction {
 }
 
 export interface Goal {
-  id: string;
+  id: string | number;
   user_id?: string;
   title: string;
   target_amount: number;

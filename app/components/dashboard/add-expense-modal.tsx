@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   X,
   Wallet,
@@ -47,16 +47,20 @@ interface AddExpenseModalProps {
   }) => void;
 }
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  return Math.round(n).toLocaleString("fr-FR");
-}
-
 // ─── Composant AddExpenseModal ───────────────────────────────────────────────
 
-export default function AddExpenseModal({
-  isOpen,
+export default function AddExpenseModal(props: AddExpenseModalProps) {
+  if (!props.isOpen) return null;
+  return <AddExpenseModalContent {...props} />;
+}
+
+interface CategoryItem {
+  key: string;
+  label: string;
+  emoji: string;
+}
+
+function AddExpenseModalContent({
   onClose,
   accounts,
   userId,
@@ -67,17 +71,20 @@ export default function AddExpenseModal({
   const currencySymbol = getCurrencyMeta(currency).symbol;
   const currencyLabel = isEn ? `Amount (${currencySymbol})` : `Montant (${currencySymbol})`;
 
-  const categoriesList = [
-    { key: "food", label: t.dashboard.transactionModal.categories.food, emoji: "🍽️" },
-    { key: "transport", label: t.dashboard.transactionModal.categories.transport, emoji: "🚕" },
-    { key: "housing", label: t.dashboard.transactionModal.categories.housing, emoji: "🏠" },
-    { key: "utilities", label: t.dashboard.transactionModal.categories.utilities, emoji: "📄" },
-    { key: "leisure", label: t.dashboard.transactionModal.categories.leisure, emoji: "🎮" },
-    { key: "health", label: t.dashboard.transactionModal.categories.health, emoji: "💊" },
-    { key: "education", label: t.dashboard.transactionModal.categories.education, emoji: "📚" },
-    { key: "shopping", label: t.dashboard.transactionModal.categories.shopping, emoji: "👕" },
-    { key: "other", label: t.dashboard.transactionModal.categories.other, emoji: "📦" },
-  ];
+  const categoriesList: CategoryItem[] = useMemo(
+    () => [
+      { key: "food", label: t.dashboard.transactionModal.categories.food, emoji: "🍽️" },
+      { key: "transport", label: t.dashboard.transactionModal.categories.transport, emoji: "🚕" },
+      { key: "housing", label: t.dashboard.transactionModal.categories.housing, emoji: "🏠" },
+      { key: "utilities", label: t.dashboard.transactionModal.categories.utilities, emoji: "📄" },
+      { key: "leisure", label: t.dashboard.transactionModal.categories.leisure, emoji: "🎮" },
+      { key: "health", label: t.dashboard.transactionModal.categories.health, emoji: "💊" },
+      { key: "education", label: t.dashboard.transactionModal.categories.education, emoji: "📚" },
+      { key: "shopping", label: t.dashboard.transactionModal.categories.shopping, emoji: "👕" },
+      { key: "other", label: t.dashboard.transactionModal.categories.other, emoji: "📦" },
+    ],
+    [t]
+  );
 
   // ── Form state ──
   const [type, setType] = useState<"expense" | "income">("expense");
@@ -85,7 +92,7 @@ export default function AddExpenseModal({
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(categoriesList[0].label);
   const [customCategory, setCustomCategory] = useState("");
-  const [accountId, setAccountId] = useState<string>("");
+  const [accountId, setAccountId] = useState<string>(() => (accounts.length > 0 ? String(accounts[0].id) : ""));
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => formatLocalDateKey(getTodayInAbidjan()));
 
@@ -100,34 +107,7 @@ export default function AddExpenseModal({
     category === "Other" ||
     category === "Divers";
 
-  // Initialiser le compte sélectionné quand les comptes changent
-  useEffect(() => {
-    if (accounts.length > 0 && !accountId) {
-      setAccountId(String(accounts[0].id));
-    }
-  }, [accounts, accountId]);
-
-  // Reset le formulaire quand la modal s'ouvre
-  useEffect(() => {
-    if (isOpen) {
-      setType("expense");
-      setTitle("");
-      setAmount("");
-      setCategory(categoriesList[0].label);
-      setCustomCategory("");
-      setNote("");
-      setDate(formatLocalDateKey(getTodayInAbidjan()));
-      setError(null);
-      setSuccess(false);
-      if (accounts.length > 0) {
-        setAccountId(String(accounts[0].id));
-      }
-    }
-  }, [isOpen, accounts]);
-
-  if (!isOpen) return null;
-
-  const selectedAccount = accounts.find((a) => String(a.id) === accountId);
+  const selectedAccount = accounts.find((a) => String(a.id) === accountId) || accounts[0];
 
   // ── Soumission avec insertion Supabase ──
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,7 +142,7 @@ export default function AddExpenseModal({
 
       // 1. Insérer la transaction dans Supabase
       if (userId) {
-        const insertPayload: Record<string, any> = {
+        const insertPayload: Record<string, unknown> = {
           user_id: userId,
           account_id: isUuid ? accountId : null,
           title: title.trim(),
@@ -180,7 +160,7 @@ export default function AddExpenseModal({
           .single();
 
         // Si la colonne category ou note manque dans la table distante (PGRST204)
-        if (txError && (txError as any).code === "PGRST204") {
+        if (txError && (txError as { code?: string }).code === "PGRST204") {
           const fallbackPayload = {
             user_id: userId,
             account_id: isUuid ? accountId : null,
@@ -265,8 +245,9 @@ export default function AddExpenseModal({
         setSuccess(false);
         onClose();
       }, 800);
-    } catch (err: any) {
-      setError(err?.message || (isEn ? "An unexpected error occurred." : "Une erreur inattendue est survenue."));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || (isEn ? "An unexpected error occurred." : "Une erreur inattendue est survenue."));
     } finally {
       setLoading(false);
     }

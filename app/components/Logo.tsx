@@ -146,7 +146,6 @@ export function SidebarLogoIcon({
 // ── Default export (composant générique) ─────────────────────────────────────
 interface LogoProps {
   variant?: "full" | "icon" | "auto";
-  fullHeight?: number;
   iconSize?: number;
   clickable?: boolean;
   onClick?: () => void;
@@ -155,7 +154,6 @@ interface LogoProps {
 
 export default function Logo({
   variant = "full",
-  fullHeight = 72,
   iconSize = 36,
   clickable = true,
   onClick,

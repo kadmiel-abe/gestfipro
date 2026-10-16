@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, DollarSign, Calendar, Tag, CreditCard, FileText } from "lucide-react";
+import { X } from "lucide-react";
 import { formatCurrencyValue, getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
 import { formatLocalDateKey, getTodayInAbidjan } from "@/lib/date-utils";
 

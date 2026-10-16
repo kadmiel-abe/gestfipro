@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import type { Session } from '@supabase/supabase-js';
 import { CheckCircle2, XCircle, Loader2, LogOut } from 'lucide-react';
 
 export default function TestAuthPage() {
-  const supabase = createClient();
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
-  const [sessionInfo, setSessionInfo] = useState<any>(null);
-  const [profileInfo, setProfileInfo] = useState<any>(null);
+  const [sessionInfo, setSessionInfo] = useState<Session | null>(null);
+  const [profileInfo, setProfileInfo] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,21 +31,21 @@ export default function TestAuthPage() {
             .single();
 
           if (profileError) throw profileError;
-          setProfileInfo(profile);
+          setProfileInfo(profile as Record<string, unknown>);
         }
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
       } finally {
         setLoading(false);
       }
     }
 
     verifyAuth();
-  }, []);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   if (loading) {

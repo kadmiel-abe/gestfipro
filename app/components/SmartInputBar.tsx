@@ -13,6 +13,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+import { ISpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ParsedTransaction {
@@ -87,10 +88,9 @@ export default function SmartInputBar({
     if (typeof window === "undefined") return;
 
     // Support standard ou préfixé webkit (Chrome, Edge, Safari)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: new () => ISpeechRecognition }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => ISpeechRecognition }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       showToast(

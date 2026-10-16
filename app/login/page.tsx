@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 
 interface LoginPageProps {
   initialSignUp?: boolean;
@@ -28,10 +29,21 @@ interface LoginPageProps {
 
 export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Mode connexion ou inscription directe
-  const [isSignUp, setIsSignUp] = useState(initialSignUp);
+  const [isSignUp, setIsSignUp] = useState<boolean>(() => {
+    if (initialSignUp) return true;
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return (
+      window.location.pathname.includes("signup") ||
+      params.get("mode") === "signup" ||
+      params.get("signup") === "true" ||
+      params.get("action") === "signup" ||
+      params.get("tab") === "signup"
+    );
+  });
 
   // Form states
   const [name, setName] = useState("");
@@ -40,7 +52,21 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const errParam = params.get("error");
+    const detailsParam = params.get("details") || params.get("error_description");
+    if (errParam === "oauth_failed") {
+      return detailsParam
+        ? `La connexion avec Google a échoué (${detailsParam}). Veuillez réessayer.`
+        : "La connexion avec Google a échoué. Veuillez réessayer ou utiliser votre adresse email.";
+    }
+    if (errParam) {
+      return detailsParam ? `${errParam}: ${detailsParam}` : `Erreur : ${errParam}`;
+    }
+    return null;
+  });
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal Mot de passe oublié
@@ -49,56 +75,34 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetStatus, setResetStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Vérification de session active et lecture des paramètres d'URL
+  // Vérification de session active et écoute d'événements
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const redirectedFrom = params.get("redirectedFrom");
-      const targetDest = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
+    if (typeof window === "undefined") return;
 
-      const errParam = params.get("error");
-      const detailsParam = params.get("details") || params.get("error_description");
+    const params = new URLSearchParams(window.location.search);
+    const redirectedFrom = params.get("redirectedFrom");
+    const targetDest = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
 
-      if (errParam === "oauth_failed") {
-        setError(
-          detailsParam
-            ? `La connexion avec Google a échoué (${detailsParam}). Veuillez réessayer.`
-            : "La connexion avec Google a échoué. Veuillez réessayer ou utiliser votre adresse email."
-        );
-      } else if (errParam) {
-        setError(detailsParam ? `${errParam}: ${detailsParam}` : `Erreur : ${errParam}`);
+    // 1. Vérifier la session existante immédiatement
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+      if (data?.session?.user) {
+        router.push(targetDest);
       }
+    });
 
-      if (
-        initialSignUp ||
-        window.location.pathname.includes("signup") ||
-        params.get("mode") === "signup" ||
-        params.get("signup") === "true" ||
-        params.get("action") === "signup" ||
-        params.get("tab") === "signup"
-      ) {
-        setIsSignUp(true);
+    // 2. Écouter tout changement d'état d'authentification (ex: retour d'OAuth)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+        router.push(targetDest);
       }
+    });
 
-      // 1. Vérifier la session existante immédiatement
-      supabase.auth.getSession().then(({ data }: { data: { session: any } }) => {
-        if (data?.session?.user) {
-          window.location.href = targetDest;
-        }
-      });
-
-      // 2. Écouter tout changement d'état d'authentification (ex: retour d'OAuth)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
-        if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
-          window.location.href = targetDest;
-        }
-      });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [supabase, initialSignUp]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, router]);
 
   // Connexion Google OAuth direct
   const handleGoogleLogin = async () => {
@@ -111,7 +115,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
       const redirectedFrom = params?.get("redirectedFrom");
       const targetNext = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const redirectUrl = `${origin}/auth/callback`;
+      const redirectUrl = `${origin}/auth/callback?next=${encodeURIComponent(targetNext)}`;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -129,9 +133,10 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
         setError(oauthError.message || "Erreur de redirection Google.");
         setGoogleLoading(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Google login exception:", err);
-      setError(err?.message || "Une erreur est survenue lors de la connexion Google.");
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || "Une erreur est survenue lors de la connexion Google.");
       setGoogleLoading(false);
     }
   };
@@ -200,7 +205,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
             if (retryData?.user) {
               setSuccessMsg("Connexion réussie ! Redirection vers votre tableau de bord...");
               setTimeout(() => {
-                window.location.href = "/dashboard";
+                router.push("/dashboard");
               }, 400);
               return;
             }
@@ -228,7 +233,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
             if (retryData?.user) {
               setSuccessMsg("Connexion réussie ! Redirection en cours...");
               setTimeout(() => {
-                window.location.href = "/dashboard";
+                router.push("/dashboard");
               }, 400);
               return;
             }
@@ -250,7 +255,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
           if (signUpData.session) {
             setSuccessMsg("Compte créé avec succès ! Accès direct à votre tableau de bord...");
             setTimeout(() => {
-              window.location.href = "/dashboard";
+              router.push("/dashboard");
             }, 400);
             return;
           }
@@ -286,16 +291,17 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
         if (signInData?.user) {
           setSuccessMsg("Connexion réussie ! Redirection vers votre tableau de bord...");
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            router.push("/dashboard");
           }, 300);
           return;
         }
 
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Auth submit error:", err);
-      setError(err?.message || "Une erreur inattendue est survenue.");
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || "Une erreur inattendue est survenue.");
       setLoading(false);
     }
   };
@@ -332,10 +338,11 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
           message: "Un lien de réinitialisation sécurisé a été envoyé à votre adresse email.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
       setResetStatus({
         type: "error",
-        message: err?.message || "Erreur lors de la demande de réinitialisation.",
+        message: msg || "Erreur lors de la demande de réinitialisation.",
       });
     } finally {
       setResetLoading(false);

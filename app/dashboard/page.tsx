@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Wallet,
@@ -14,14 +14,8 @@ import {
   MicOff,
   Search,
   Bell,
-  ShieldAlert,
   ChevronRight,
-  TrendingDown,
-  TrendingUp,
-  Zap,
   Clock,
-  CircleDollarSign,
-  BadgeCheck,
   AlertTriangle,
   Trash2,
   CheckCircle2,
@@ -29,7 +23,6 @@ import {
   ChevronLeft,
   PiggyBank,
   Menu,
-  Briefcase,
   HelpCircle,
   BookOpen,
   LogOut,
@@ -40,18 +33,16 @@ import {
   FileDown,
   Repeat,
 } from "lucide-react";
-import MiniCalendar from "../components/MiniCalendar";
 import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
 import { AccountIcon, getAccountColor } from "../components/AccountIcon";
 import DashboardView from "../components/DashboardView";
-import PayCycleCard from "../components/PayCycleCard";
 import RecurringExpensesManager from "../components/RecurringExpensesManager";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
-import { Profile } from "@/lib/types";
+import type { User as SupabaseUser, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
-import { getCurrencyMeta, useLanguage, formatCurrencyValue, convertFromBase, convertToBase } from "@/lib/i18n/LanguageContext";
+import { getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
 import { useCurrency, formatCurrency } from "@/lib/context/CurrencyContext";
 import { useToday } from "@/hooks/useToday";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -152,22 +143,9 @@ interface Objective {
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
-function fmt(n: number) {
-  const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
-  return n.toLocaleString(locale);
-}
-
 function formatMoney(n: number, currency: Currency = "XOF") {
-  return formatCurrency(n, currency as any, true);
-}
-
-function formatDateFr(d: Date): string {
-  const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const months = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const targetCurr = currency === "EUR" ? "EUR" : currency === "USD" ? "USD" : "XOF";
+  return formatCurrency(n, targetCurr, true);
 }
 
 import AddExpenseModal from "../components/dashboard/add-expense-modal";
@@ -178,25 +156,36 @@ import AddExpenseModal from "../components/dashboard/add-expense-modal";
 const supabase = createClient();
 
 export default function GestFiProDashboard() {
+  const router = useRouter();
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
   const { currency: globalCurrency, setCurrency: setGlobalCurrency } = useCurrency();
   const now = useToday();
   const currencySymbol = getCurrencyMeta(currency).symbol;
-  const [activeTab, setActiveTab] = useState<TabKey>("accueil");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>((globalCurrency as Currency) || currency);
-  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window === "undefined") return "accueil";
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab") as TabKey | null;
+    const validTabs: TabKey[] = ["accueil", "comptes", "historique", "statistiques", "objectifs", "reglages", "guide"];
+    return tabParam && validTabs.includes(tabParam) ? tabParam : "accueil";
+  });
+  const selectedCurrency = ((globalCurrency as Currency) || currency || "XOF") as Currency;
+  const [showModal, setShowModal] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("action") === "new_expense" || params.get("modal") === "expense";
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
-  const [notifications, setNotifications] = useState<{ icon: string; title: string; desc: string; detail: string; time: string; color: string }[]>([]);
+  const [notifications] = useState<{ icon: string; title: string; desc: string; detail: string; time: string; color: string }[]>([]);
   const [activeNotif, setActiveNotif] = useState<null | { icon: string; title: string; desc: string; detail: string; time: string; color: string }>(null);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
   const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "expense" | "income">("all");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataLoadError, setDataLoadError] = useState<string | null>(null);
 
@@ -299,22 +288,14 @@ export default function GestFiProDashboard() {
   }, [userName, firstName]);
 
   // ─── Data Loading from Supabase ───────────────────────────────────────────
-  // ─── Synchronisation Multidevise globale ──────────────────────────────────
-  useEffect(() => {
-    if (globalCurrency) {
-      setSelectedCurrency(globalCurrency as Currency);
-    } else if (currency) {
-      setSelectedCurrency(currency);
-    }
-  }, [globalCurrency, currency]);
-
   const handleCurrencyChange = (nextCurrency: Currency) => {
-    setGlobalCurrency(nextCurrency as any);
+    const target = nextCurrency === "EUR" ? "EUR" : nextCurrency === "USD" ? "USD" : "XOF";
+    setGlobalCurrency(target);
     setCurrency(nextCurrency);
-    setSelectedCurrency(nextCurrency);
   };
 
   const loadData = useCallback(async () => {
+    await Promise.resolve();
     setIsLoadingData(true);
     setDataLoadError(null);
     try {
@@ -339,7 +320,7 @@ export default function GestFiProDashboard() {
           const resolvedName = prof.full_name?.trim() || oAuthFullName || "";
           setUserName(resolvedName);
           setMonthlySalary(Number(prof.net_salary) || 0);
-          setPaydayDate(prof.payday_with_month || (prof as any).pay_day || 0);
+          setPaydayDate(prof.payday_with_month || (prof as { pay_day?: number }).pay_day || 0);
 
           // Synchroniser si le nom était vide en base mais disponible via OAuth
           if (!prof.full_name && oAuthFullName) {
@@ -377,11 +358,11 @@ export default function GestFiProDashboard() {
           setAccounts([]);
         }
 
-        const accountRows = accs ?? [];
-        const accountNames = new Map(accountRows.map((a: any) => [a.id, a.name]));
+        const accountRows = (accs ?? []) as { id: string | number; name: string; type: string; balance: number }[];
+        const accountNames = new Map(accountRows.map((a) => [a.id, a.name]));
 
         if (!accountsError && accountRows.length > 0) {
-          setAccounts(accountRows.map((a: any) => ({
+          setAccounts(accountRows.map((a) => ({
             id: a.id,
             name: a.name,
             type: a.type,
@@ -405,7 +386,7 @@ export default function GestFiProDashboard() {
         }
 
         if (!transactionsError && txs) {
-          setTransactions(txs.map((t: any) => ({
+          setTransactions((txs as { id: string | number; title?: string; note?: string; category?: string; amount: number; type: "income" | "expense"; transaction_date?: string; created_at?: string; account_id?: string | number }[]).map((t) => ({
             id: t.id,
             label: t.title || t.note || "Opération",
             category: t.category || "Divers",
@@ -420,7 +401,7 @@ export default function GestFiProDashboard() {
             })(),
             transaction_date: t.transaction_date,
             created_at: t.created_at,
-            account: accountNames.get(t.account_id) || t.note || "Compte",
+            account: accountNames.get(t.account_id ?? "") || t.note || "Compte",
             icon: t.type === "income" ? "⬇" : "⬆",
           })));
         } else {
@@ -434,7 +415,7 @@ export default function GestFiProDashboard() {
           setObjectives([]);
         }
         if (!goalsError && gls && gls.length > 0) {
-          setObjectives(gls.map((g: any) => ({
+          setObjectives((gls as { id: string | number; title: string; target_amount: number; current_amount: number; target_date?: string }[]).map((g) => ({
             id: g.id,
             title: g.title,
             targetAmount: Number(g.target_amount),
@@ -454,21 +435,21 @@ export default function GestFiProDashboard() {
             if (p.userName) setUserName(p.userName);
             if (p.monthlySalary !== undefined) setMonthlySalary(Number(p.monthlySalary));
             if (p.paydayDate !== undefined) setPaydayDate(Number(p.paydayDate));
-          } catch (e) {}
+          } catch {}
         }
         const savedAccs = localStorage.getItem("gestfipro_accounts");
         if (savedAccs) {
           try {
             const a = JSON.parse(savedAccs);
             if (Array.isArray(a) && a.length > 0) setAccounts(a);
-          } catch (e) {}
+          } catch {}
         }
         const savedTxs = localStorage.getItem("gestfipro_transactions");
         if (savedTxs) {
           try {
             const t = JSON.parse(savedTxs);
             if (Array.isArray(t)) setTransactions(t);
-          } catch (e) {}
+          } catch {}
         }
       }
     } catch (err) {
@@ -482,27 +463,18 @@ export default function GestFiProDashboard() {
     } finally {
       setIsLoadingData(false);
     }
-  // supabase is a stable singleton — no need to include it as a dependency
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    loadData();
-
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab") as TabKey | null;
-      const validTabs: TabKey[] = ["accueil", "comptes", "historique", "statistiques", "objectifs", "reglages", "guide"];
-      if (tabParam && validTabs.includes(tabParam)) {
-        setActiveTab(tabParam);
+    let ignore = false;
+    const timer = setTimeout(() => {
+      if (!ignore) {
+        loadData();
       }
-      if (params.get("action") === "new_expense" || params.get("modal") === "expense") {
-        setShowModal(true);
-      }
-    }
+    }, 0);
 
     // Écouter les changements d'état d'authentification Supabase (session hydratée, token rafraîchi, login)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         setCurrentUser(session.user);
         const meta = session.user.user_metadata;
@@ -519,15 +491,14 @@ export default function GestFiProDashboard() {
     });
 
     return () => {
+      ignore = true;
+      clearTimeout(timer);
       subscription.unsubscribe();
     };
-  // loadData is stable (deps: []), supabase is a singleton — run once on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadData]);
 
   // ─── Computed values ──────────────────────────────────────────────────────
   const todayNum = now.getDate();
-  const dateStr = formatDateFr(now);
 
   const totalBalance = accounts.reduce((acc, a) => acc + (Number(a.balance) || 0), 0);
 
@@ -555,41 +526,52 @@ export default function GestFiProDashboard() {
     .filter((t) => (t.type === "expense" || t.amount < 0) && isTodayTx(t))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
-  const isBudgetCritical = isPaydayConfigured && dailyBudget < 10000 && effectiveBalance > 0;
-  const rhythmAlert = isPaydayConfigured && dailyBudget > 0 && todayExpenses > dailyBudget;
-
   // ─── Handlers ─────────────────────────────────────────────────────────────
-  const handleAddTransaction = async (tx: Omit<Transaction, "id">) => {
+  const handleAddTransaction = async (tx: Partial<Transaction> | Record<string, unknown>) => {
+    const label = (tx as { label?: string; title?: string }).label || (tx as { label?: string; title?: string }).title || "Opération";
+    const category = (tx as { category?: string }).category || "Divers";
+    const amount = Number((tx as { amount?: number }).amount) || 0;
+    const type = ((tx as { type?: "expense" | "income" }).type) || (amount < 0 ? "expense" : "income");
+    const account = (tx as { account?: string }).account || accounts[0]?.name || "Espèces";
     const tempId = Date.now();
-    const newTx = { ...tx, id: tempId };
+    const newTx: Transaction = {
+      id: tempId,
+      label,
+      category,
+      amount,
+      type,
+      date: (tx as { date?: string }).date || "À l'instant",
+      account,
+      icon: type === "income" ? "⬇" : "⬆",
+    };
 
     // Mise à jour immédiate de l'interface
     setTransactions((prev) => [newTx, ...prev]);
 
-    const targetAccount = accounts.find((a) => a.name === tx.account) || accounts[0];
-    const newBalance = (targetAccount?.balance || 0) + tx.amount;
+    const targetAccount = accounts.find((a) => a.name === account) || accounts[0];
+    const newBalance = (targetAccount?.balance || 0) + amount;
 
     setAccounts((prev) =>
-      prev.map((a) => (a.name === tx.account ? { ...a, balance: a.balance + tx.amount } : a))
+      prev.map((a) => (a.name === account ? { ...a, balance: a.balance + amount } : a))
     );
 
     // Sauvegarde en base Supabase
     if (currentUser) {
       try {
         const isUuid = targetAccount && typeof targetAccount.id === "string" && targetAccount.id.length > 10;
-        const insertPayload: Record<string, any> = {
+        const insertPayload: Record<string, unknown> = {
           user_id: currentUser.id,
           account_id: isUuid ? targetAccount.id : null,
-          title: tx.label,
-          category: tx.category || "Divers",
-          amount: tx.amount,
-          type: tx.type,
+          title: label,
+          category: category,
+          amount: amount,
+          type: type,
           transaction_date: getTodayInAbidjan().toISOString(),
-          note: tx.account,
+          note: account,
         };
 
         let { error: transactionError } = await supabase.from("transactions").insert(insertPayload);
-        if (transactionError && (transactionError as any).code === "PGRST204") {
+        if (transactionError && (transactionError as { code?: string }).code === "PGRST204") {
           const fallbackPayload = {
             user_id: currentUser.id,
             account_id: isUuid ? targetAccount.id : null,
@@ -620,7 +602,7 @@ export default function GestFiProDashboard() {
     } else {
       // Persistance locale
       const updatedTxs = [newTx, ...transactions];
-      const updatedAccs = accounts.map((a) => (a.name === tx.account ? { ...a, balance: a.balance + tx.amount } : a));
+      const updatedAccs = accounts.map((a) => (a.name === account ? { ...a, balance: a.balance + amount } : a));
       localStorage.setItem("gestfipro_transactions", JSON.stringify(updatedTxs));
       localStorage.setItem("gestfipro_accounts", JSON.stringify(updatedAccs));
     }
@@ -642,9 +624,9 @@ export default function GestFiProDashboard() {
 
     // Analyse sommaire du texte saisi : ex "Déjeuner 3000"
     let parsedAmount = 5000;
-    let parsedCategory = "Nourriture";
+    const parsedCategory = "Nourriture";
     let parsedAccount = accounts[0].name;
-    let parsedLabel = quickInputText;
+    const parsedLabel = quickInputText;
 
     const numMatch = quickInputText.match(/\b\d+\b/);
     if (numMatch) {
@@ -783,9 +765,10 @@ export default function GestFiProDashboard() {
       if (profileError) throw profileError;
 
       setCurrentUser(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur sauvegarde profil Supabase :", err);
-      const detail = [err?.message, err?.code ? `Code: ${err.code}` : "", err?.details, err?.hint]
+      const errObj = err as { message?: string; code?: string; details?: string; hint?: string };
+      const detail = [errObj?.message, errObj?.code ? `Code: ${errObj.code}` : "", errObj?.details, errObj?.hint]
         .filter(Boolean)
         .join(" - ");
       setSettingsError(detail || "Impossible d'enregistrer les paramètres.");
@@ -846,9 +829,9 @@ export default function GestFiProDashboard() {
     }
 
     const newAcc: Account = {
-      id: Date.now() as any,
+      id: Date.now(),
       name: name.trim(),
-      type: detectedType as any,
+      type: detectedType,
       balance: initialBal,
       colorClass: getAccountColor(name.trim()),
       icon: "💳",
@@ -975,7 +958,7 @@ export default function GestFiProDashboard() {
     }
 
     const newObj: Objective = {
-      id: Date.now() as any,
+      id: Date.now(),
       title: title.trim(),
       targetAmount: target,
       currentAmount: 0,
@@ -987,7 +970,7 @@ export default function GestFiProDashboard() {
     localStorage.setItem("gestfipro_objectifs", JSON.stringify(updated));
   };
 
-  const handleFeedGoal = async (goalId: any, amount: number) => {
+  const handleFeedGoal = async (goalId: string | number, amount: number) => {
     const amt = Number(amount);
     if (!amt || amt <= 0) return;
 
@@ -1060,18 +1043,6 @@ export default function GestFiProDashboard() {
   const toolItems: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "guide", label: t.dashboard.tabs.guide, icon: <HelpCircle size={15} /> },
   ];
-
-  // ─── Shared styles ────────────────────────────────────────────────────────
-  const s = {
-    flex: { display: "flex" } as React.CSSProperties,
-    flexCol: { display: "flex", flexDirection: "column" as const },
-    gap4: { gap: 4 } as React.CSSProperties,
-    gap8: { gap: 8 } as React.CSSProperties,
-    gap12: { gap: 12 } as React.CSSProperties,
-    gap16: { gap: 16 } as React.CSSProperties,
-    gap20: { gap: 20 } as React.CSSProperties,
-    gap24: { gap: 24 } as React.CSSProperties,
-  };
 
   return (
     <div
@@ -1445,7 +1416,7 @@ export default function GestFiProDashboard() {
                     <button
                       onClick={async () => {
                         await supabase.auth.signOut();
-                        window.location.href = "/login";
+                        router.push("/login");
                       }}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 2, display: "flex", transition: "color 0.15s" }}
                       title={t.dashboard.logout}
@@ -1471,7 +1442,7 @@ export default function GestFiProDashboard() {
                     <button
                       onClick={async () => {
                         await supabase.auth.signOut();
-                        window.location.href = "/login";
+                        router.push("/login");
                       }}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4, display: "flex", transition: "color 0.15s" }}
                       title={t.dashboard.logout}
@@ -1739,8 +1710,8 @@ export default function GestFiProDashboard() {
                 payday_with_month: paydayDate,
               }}
               currency={selectedCurrency}
-              accounts={accounts as any}
-              transactions={transactions as any}
+              accounts={accounts}
+              transactions={transactions}
               goals={objectives.map((o) => ({
                 id: String(o.id),
                 title: o.title,
@@ -2069,7 +2040,7 @@ export default function GestFiProDashboard() {
                       <button
                         key={tab.key}
                         type="button"
-                        onClick={() => setHistoryTypeFilter(tab.key as any)}
+                        onClick={() => setHistoryTypeFilter(tab.key as "all" | "expense" | "income")}
                         style={{
                           padding: "4px 10px",
                           borderRadius: 6,
@@ -2770,7 +2741,7 @@ export default function GestFiProDashboard() {
                   </div>
                 </div>
                 <p style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7 }}>
-                  {((t.dashboard as any)?.guidePage?.description) || (isEn ? "Follow these 4 steps to configure your dashboard and track your finances in real time." : "Suivez ces 4 étapes pour configurer votre tableau de bord et commencer à suivre vos finances en temps réel.")}
+                  {((t.dashboard as { guidePage?: { description?: string } })?.guidePage?.description) || (isEn ? "Follow these 4 steps to configure your dashboard and track your finances in real time." : "Suivez ces 4 étapes pour configurer votre tableau de bord et commencer à suivre vos finances en temps réel.")}
                 </p>
               </div>
 
@@ -3166,7 +3137,7 @@ export default function GestFiProDashboard() {
       <AddExpenseModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        accounts={accounts as any}
+        accounts={accounts}
         userId={currentUser?.id || null}
         onTransactionAdded={() => {
           setShowModal(false);

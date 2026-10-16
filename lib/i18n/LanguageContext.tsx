@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { Language, Translations } from "./types";
 import { fr } from "./dictionaries/fr";
 import { en } from "./dictionaries/en";
@@ -125,45 +125,40 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("fr");
-  const [currency, setCurrencyState] = useState<Currency>("XOF");
-
-  useEffect(() => {
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === "undefined") return "fr";
     try {
       const storedLang = localStorage.getItem("gestfipro_lang") as Language | null;
-      if (storedLang === "fr" || storedLang === "en") {
-        setLanguageState(storedLang);
-        document.documentElement.lang = storedLang;
-        document.documentElement.setAttribute("data-lang", storedLang);
-      } else {
-        const match = document.cookie.match(/gestfipro_lang=([a-z]{2})/);
-        if (match && (match[1] === "fr" || match[1] === "en")) {
-          const cLang = match[1] as Language;
-          setLanguageState(cLang);
-          document.documentElement.lang = cLang;
-          document.documentElement.setAttribute("data-lang", cLang);
-        } else {
-          const navLang = navigator.language?.slice(0, 2);
-          const nextLang = navLang === "en" ? "en" : "fr";
-          setLanguageState(nextLang);
-          document.documentElement.lang = nextLang;
-          document.documentElement.setAttribute("data-lang", nextLang);
-        }
+      if (storedLang === "fr" || storedLang === "en") return storedLang;
+      const match = document.cookie.match(/gestfipro_lang=([a-z]{2})/);
+      if (match && (match[1] === "fr" || match[1] === "en")) {
+        return match[1] as Language;
       }
+      const navLang = navigator.language?.slice(0, 2);
+      return navLang === "en" ? "en" : "fr";
+    } catch {}
+    return "fr";
+  });
 
+  const [currency, setCurrencyState] = useState<Currency>(() => {
+    if (typeof window === "undefined") return "XOF";
+    try {
       const storedCurrency = localStorage.getItem("gestfipro_currency") as Currency | null;
-      if (storedCurrency && (storedCurrency === "XOF" || storedCurrency === "XAF" || storedCurrency === "NGN" || storedCurrency === "KES" || storedCurrency === "ZAR" || storedCurrency === "USD" || storedCurrency === "EUR")) {
-        setCurrencyState(storedCurrency);
+      if (
+        storedCurrency &&
+        (storedCurrency === "XOF" ||
+          storedCurrency === "XAF" ||
+          storedCurrency === "NGN" ||
+          storedCurrency === "KES" ||
+          storedCurrency === "ZAR" ||
+          storedCurrency === "USD" ||
+          storedCurrency === "EUR")
+      ) {
+        return storedCurrency;
       }
-    } catch {
-      setLanguageState("fr");
-      setCurrencyState("XOF");
-      if (typeof document !== "undefined") {
-        document.documentElement.lang = "fr";
-        document.documentElement.setAttribute("data-lang", "fr");
-      }
-    }
-  }, []);
+    } catch {}
+    return "XOF";
+  });
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -182,23 +177,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [currency]);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     try {
       localStorage.setItem("gestfipro_lang", lang);
     } catch {}
-  };
+  }, []);
 
-  const setCurrency = (nextCurrency: Currency) => {
+  const setCurrency = useCallback((nextCurrency: Currency) => {
     setCurrencyState(nextCurrency);
     try {
       localStorage.setItem("gestfipro_currency", nextCurrency);
     } catch {}
-  };
+  }, []);
 
-  const toggleLanguage = () => {
-    setLanguage(language === "fr" ? "en" : "fr");
-  };
+  const toggleLanguage = useCallback(() => {
+    setLanguageState((prev) => (prev === "fr" ? "en" : "fr"));
+  }, []);
 
   const value = useMemo(() => {
     return {
@@ -219,7 +214,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       isFr: language === "fr",
       isEn: language === "en",
     };
-  }, [language, currency]);
+  }, [language, currency, setLanguage, setCurrency, toggleLanguage]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

@@ -16,7 +16,7 @@ import { formatLocalDateKey, getDateKey } from "@/lib/date-utils";
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: Array<{ value: number; name: string; color: string; payload?: any }>;
+  payload?: Array<{ value: number; name: string; color: string; payload?: Record<string, unknown> }>;
   label?: string;
   currency?: string;
 }
@@ -25,7 +25,7 @@ function CustomTooltip({ active, payload, label, currency = "XOF" }: CustomToolt
   if (active && payload && payload.length) {
     const isEn = typeof document !== "undefined" && document.documentElement.lang === "en";
     const locale = isEn ? "en-US" : "fr-FR";
-    const fullDate = payload[0]?.payload?.fullDate;
+    const fullDate = (payload[0]?.payload?.fullDate as string) || undefined;
 
     return (
       <div
@@ -45,7 +45,7 @@ function CustomTooltip({ active, payload, label, currency = "XOF" }: CustomToolt
           <p key={p.name} style={{ color: p.color, fontWeight: 700, marginBottom: 2 }}>
             {p.name === "solde"
               ? isEn
-                ? "Solde"
+                ? "Balance"
                 : "Solde"
               : isEn
               ? "Expenses"
@@ -59,9 +59,10 @@ function CustomTooltip({ active, payload, label, currency = "XOF" }: CustomToolt
   return null;
 }
 
+import type { Transaction } from "@/lib/types";
+
 interface CashflowChartProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transactions?: any[];
+  transactions?: Array<Record<string, unknown> | Partial<Transaction> | Transaction>;
   totalBalance?: number;
   currency?: string;
 }
@@ -81,7 +82,9 @@ export default function CashflowChart({
     const dailyMap: Record<string, { expenses: number; incomes: number }> = {};
 
     (transactions || []).forEach((t) => {
-      const key = getDateKey(t.transaction_date || t.created_at);
+      const txObj = t as { transaction_date?: string | Date; created_at?: string | Date; amount?: number; type?: string };
+      const dateVal = txObj.transaction_date || txObj.created_at;
+      const key = getDateKey(dateVal);
       if (key) {
         if (!dailyMap[key]) dailyMap[key] = { expenses: 0, incomes: 0 };
         const amt = Math.abs(Number(t.amount) || 0);

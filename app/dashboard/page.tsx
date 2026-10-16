@@ -1372,6 +1372,10 @@ export default function GestFiProDashboard() {
                 <SidebarProfile
                   initialFullName={userName || firstName || "Utilisateur"}
                   initialEmail={currentUser?.email || "utilisateur@gestfipro.com"}
+                  initialAvatarUrl={
+                    (currentUser?.user_metadata?.avatar_url as string | undefined) ||
+                    (currentUser?.user_metadata?.picture as string | undefined)
+                  }
                   subtitle={t.dashboard.personalAccount}
                   collapsed={sidebarCollapsed}
                   onProfileUpdate={(updated) => {

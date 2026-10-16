@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useId } from "react";
-import Image from "next/image";
-import { Camera, KeyRound, Check, Loader2 } from "lucide-react";
+import { Camera, KeyRound, Check, Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 export interface SidebarProfileProps {
   initialFullName?: string;
   initialEmail?: string;
+  initialAvatarUrl?: string;
   subtitle?: string;
   collapsed?: boolean;
   onProfileUpdate?: (updated: { fullName: string; email: string; avatarUrl?: string }) => void;
@@ -27,12 +27,16 @@ export interface SidebarProfileProps {
 export default function SidebarProfile({
   initialFullName = "Utilisateur",
   initialEmail = "utilisateur@gestfipro.com",
+  initialAvatarUrl,
   subtitle = "Compte personnel",
   collapsed = false,
   onProfileUpdate,
   className = "",
 }: SidebarProfileProps) {
   const [open, setOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Initialisation paresseuse pour éviter les problèmes d'hydratation et cascade de rendus
   const [fullName, setFullName] = useState<string>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -42,7 +46,7 @@ export default function SidebarProfile({
           if (parsed.full_name) return parsed.full_name;
         }
       } catch {
-        // Ignorer les erreurs localStorage
+        // Ignorer les erreurs d'accès au localStorage
       }
     }
     return initialFullName;
@@ -57,7 +61,7 @@ export default function SidebarProfile({
           if (parsed.email) return parsed.email;
         }
       } catch {
-        // Ignorer les erreurs localStorage
+        // Ignorer les erreurs d'accès au localStorage
       }
     }
     return initialEmail;
@@ -69,13 +73,16 @@ export default function SidebarProfile({
         const saved = localStorage.getItem("gestfipro_profile");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.avatar_url) return parsed.avatar_url;
+          // Si un URL blob temporaire résiduel existe (expiré), on l'ignore
+          if (parsed.avatar_url && !parsed.avatar_url.startsWith("blob:")) {
+            return parsed.avatar_url;
+          }
         }
       } catch {
-        // Ignorer les erreurs localStorage
+        // Ignorer les erreurs d'accès au localStorage
       }
     }
-    return null;
+    return initialAvatarUrl || null;
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -100,12 +107,36 @@ export default function SidebarProfile({
     return target.slice(0, 2).toUpperCase() || "GF";
   }, [fullName, initialFullName]);
 
-  // Gestion du changement de photo
+  // Gestion de la photo de profil avec persistance Base64 pérenne
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatarUrl(url);
+      // Limiter la taille à 2 Mo pour assurer une performance maximale
+      if (file.size > 2 * 1024 * 1024) {
+        alert("La photo sélectionnée dépasse 2 Mo. Veuillez choisir une image plus légère.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          setAvatarUrl(reader.result);
+          setImageError(false);
+        }
+      };
+      reader.onerror = () => {
+        setImageError(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Retirer la photo de profil et revenir aux initiales
+  const handleRemovePhoto = () => {
+    setAvatarUrl(null);
+    setImageError(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -116,28 +147,26 @@ export default function SidebarProfile({
     setSaveSuccess(false);
 
     try {
-      // 1. Sauvegarde dans le localStorage pour persistance immédiate
+      // 1. Persistance locale immédiate dans localStorage
       const profileToSave = {
         full_name: fullName.trim(),
         email: email.trim(),
-        avatar_url: avatarUrl,
+        avatar_url: imageError ? null : avatarUrl,
         updated_at: new Date().toISOString(),
       };
       localStorage.setItem("gestfipro_profile", JSON.stringify(profileToSave));
 
-      // 2. Sauvegarde Supabase (si session active)
+      // 2. Synchronisation Supabase si session existante
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (user) {
-        await supabase
-          .from("profiles")
-          .upsert({
-            id: user.id,
-            full_name: fullName.trim(),
-            updated_at: new Date().toISOString(),
-          });
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          full_name: fullName.trim(),
+          updated_at: new Date().toISOString(),
+        });
 
         if (newPassword.trim() && showPasswordSection) {
           const { error: pwdErr } = await supabase.auth.updateUser({
@@ -155,7 +184,7 @@ export default function SidebarProfile({
       onProfileUpdate?.({
         fullName: fullName.trim(),
         email: email.trim(),
-        avatarUrl: avatarUrl || undefined,
+        avatarUrl: (!imageError && avatarUrl) || undefined,
       });
 
       setSaveSuccess(true);
@@ -172,7 +201,7 @@ export default function SidebarProfile({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* ── Trigger : Zone cliquable avec hover:bg-white/5 ── */}
+      {/* ── Trigger : Zone cliquable englobant Avatar, Nom et Sous-titre ── */}
       <DialogTrigger asChild>
         <button
           type="button"
@@ -181,23 +210,22 @@ export default function SidebarProfile({
             collapsed ? "justify-center" : "justify-start"
           } ${className}`}
         >
-          {/* Avatar avec initiales ou image */}
+          {/* Avatar avec initiales ou image sécurisée */}
           <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-[#EF4444] to-[#DC2626] flex items-center justify-center font-extrabold text-xs text-white shrink-0 shadow-md shadow-[#EF4444]/25 ring-1 ring-[#27272A] overflow-hidden group-hover:scale-105 transition-transform">
-            {avatarUrl ? (
-              <Image
+            {avatarUrl && !imageError ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
                 src={avatarUrl}
                 alt={fullName}
-                fill
-                sizes="36px"
-                className="object-cover"
-                unoptimized
+                className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
               />
             ) : (
               <span>{initials}</span>
             )}
           </div>
 
-          {/* Informations utilisateur (masquées si barre latérale rétractée) */}
+          {/* Nom et sous-titre */}
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden">
               <p className="text-xs font-bold text-[#FAFAFA] truncate group-hover:text-white transition-colors">
@@ -211,7 +239,7 @@ export default function SidebarProfile({
         </button>
       </DialogTrigger>
 
-      {/* ── DialogContent : Modale Dark Mode Strict ── */}
+      {/* ── Modale : Strict Dark Mode ── */}
       <DialogContent className="bg-[#18181B] border border-[#27272A] text-[#FAFAFA] max-w-md p-6 sm:rounded-2xl shadow-2xl">
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-lg font-bold text-[#FAFAFA]">
@@ -223,17 +251,16 @@ export default function SidebarProfile({
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-5 mt-2">
-          {/* 1. Section Photo : Avatar grand format + bouton changer photo */}
-          <div className="flex items-center gap-4 p-3 rounded-xl bg-[#09090B] border border-[#27272A]">
+          {/* 1. Section Photo : Avatar grand format + boutons */}
+          <div className="flex items-center gap-4 p-3.5 rounded-xl bg-[#09090B] border border-[#27272A]">
             <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#EF4444] to-[#DC2626] flex items-center justify-center text-lg font-black text-white shrink-0 shadow-lg shadow-[#EF4444]/25 ring-2 ring-[#27272A] overflow-hidden">
-              {avatarUrl ? (
-                <Image
+              {avatarUrl && !imageError ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
                   src={avatarUrl}
                   alt={fullName}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                  unoptimized
+                  className="w-full h-full object-cover"
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <span>{initials}</span>
@@ -243,7 +270,7 @@ export default function SidebarProfile({
             <div className="flex-1 min-w-0 space-y-1">
               <p className="text-xs font-bold text-[#FAFAFA]">Photo de profil</p>
               <p className="text-[11px] text-[#A1A1AA]">
-                Formats supportés : JPG, PNG ou WebP.
+                JPG, PNG ou WebP (max 2 Mo).
               </p>
 
               <input
@@ -254,14 +281,28 @@ export default function SidebarProfile({
                 className="hidden"
               />
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-transparent hover:bg-white/5 text-xs font-semibold text-[#FAFAFA] transition-colors cursor-pointer mt-1"
-              >
-                <Camera className="w-3.5 h-3.5 text-[#A1A1AA]" />
-                <span>Changer la photo</span>
-              </button>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#27272A] bg-transparent hover:bg-white/5 text-xs font-semibold text-[#FAFAFA] transition-colors cursor-pointer"
+                >
+                  <Camera className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                  <span>Changer la photo</span>
+                </button>
+
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#27272A] bg-transparent hover:bg-red-500/10 text-xs font-medium text-[#A1A1AA] hover:text-red-400 transition-colors cursor-pointer"
+                    title="Supprimer la photo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Retirer</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -281,7 +322,7 @@ export default function SidebarProfile({
             />
           </div>
 
-          {/* 3. Adresse Email */}
+          {/* 3. Adresse email */}
           <div className="space-y-1.5">
             <Label htmlFor={emailInputId} className="text-xs font-semibold text-[#A1A1AA]">
               Adresse email
@@ -297,7 +338,7 @@ export default function SidebarProfile({
             />
           </div>
 
-          {/* 4. Bouton Modifier le mot de passe (optionnel UI) */}
+          {/* 4. Bouton Modifier le mot de passe (UI optionnelle avec expansion) */}
           <div className="space-y-2 pt-1">
             <button
               type="button"
@@ -335,7 +376,7 @@ export default function SidebarProfile({
             )}
           </div>
 
-          {/* Message de succès */}
+          {/* Notification de succès */}
           {saveSuccess && (
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2 animate-in fade-in duration-150">
               <Check className="w-4 h-4 text-emerald-400" />
@@ -343,7 +384,7 @@ export default function SidebarProfile({
             </div>
           )}
 
-          {/* 5. Bouton principal de validation (Accent #EF4444) */}
+          {/* 5. Bouton principal d'enregistrement (Accent #EF4444) */}
           <div className="pt-2">
             <button
               type="submit"

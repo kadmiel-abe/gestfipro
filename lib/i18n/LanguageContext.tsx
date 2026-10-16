@@ -8,8 +8,8 @@ import { en } from "./dictionaries/en";
 export type Currency = "XOF" | "XAF" | "NGN" | "KES" | "ZAR" | "USD" | "EUR";
 
 export const CURRENCY_OPTIONS: Record<Currency, { label: string; shortLabel: string; symbol: string; digits: number }> = {
-  XOF: { label: "XOF (CFA Ouest)", shortLabel: "XOF", symbol: "XOF", digits: 0 },
-  XAF: { label: "XAF (CFA Centre)", shortLabel: "XAF", symbol: "XAF", digits: 0 },
+  XOF: { label: "XOF (FCFA Ouest)", shortLabel: "FCFA", symbol: "FCFA", digits: 0 },
+  XAF: { label: "XAF (FCFA Centre)", shortLabel: "FCFA", symbol: "FCFA", digits: 0 },
   NGN: { label: "NGN (₦ Nigeria)", shortLabel: "NGN", symbol: "₦", digits: 0 },
   KES: { label: "KES (KSh Kenya)", shortLabel: "KES", symbol: "KSh", digits: 0 },
   ZAR: { label: "ZAR (R Afrique du Sud)", shortLabel: "ZAR", symbol: "R", digits: 2 },
@@ -71,22 +71,22 @@ export function formatCurrencyValue(
   locale: string = "fr-FR",
   shouldConvert: boolean = true
 ) {
-  const meta = getCurrencyMeta(currency);
   const converted = shouldConvert ? convertFromBase(value, currency) : value;
 
   if (currency === "XOF" || currency === "XAF") {
-    return `${Math.round(converted).toLocaleString(locale)} ${meta.symbol}`;
+    return `${Math.round(converted).toLocaleString(locale)} FCFA`;
   }
 
-  const formatted = new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: meta.digits,
-    maximumFractionDigits: meta.digits,
-  }).format(converted);
+  if (currency === "EUR") {
+    return `${converted.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  }
 
-  return formatted;
+  if (currency === "USD") {
+    return `${converted.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`;
+  }
+
+  const meta = getCurrencyMeta(currency);
+  return `${Math.round(converted).toLocaleString(locale)} ${meta.symbol}`;
 }
 
 interface LanguageContextType {

@@ -27,6 +27,7 @@ import { useToday } from "@/hooks/useToday";
 import { isSameDay, getDateKey } from "@/lib/date-utils";
 import { AccountIcon } from "./AccountIcon";
 import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
+import { useCurrency, formatCurrency } from "@/lib/context/CurrencyContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
 import PredictiveAlert from "./PredictiveAlert";
 
@@ -85,7 +86,8 @@ export default function DashboardView({
   onTransactionAdded,
 }: DashboardViewProps) {
   const { t, isEn, language, currency: globalCurrency } = useLanguage();
-  const displayCurrency = currency || globalCurrency || "XOF";
+  const { currency: contextCurrency, setCurrency: setContextCurrency } = useCurrency();
+  const activeCurrency = (contextCurrency || currency || globalCurrency || "XOF") as "XOF" | "EUR" | "USD";
   const locale = language === "en" ? "en-US" : "fr-FR";
   const now = useToday();
 
@@ -189,10 +191,10 @@ export default function DashboardView({
     return { monthlyIncome: inc, monthlyExpense: exp };
   }, [localTransactions, now]);
 
-  // Formatage sécurisé avec mode discret
+  // Formatage sécurisé avec mode discret et conversion dynamique
   const formatAmount = (val: number, isPositive = false) => {
     if (hideAmounts) return "••••••";
-    const formatted = formatCurrencyValue(Math.abs(val), displayCurrency as any, locale, true);
+    const formatted = formatCurrency(Math.abs(val), activeCurrency, true);
     if (isPositive) return `+${formatted}`;
     return formatted;
   };
@@ -278,7 +280,7 @@ export default function DashboardView({
       }
       setQuickAmount("");
       setQuickNote("");
-      setQuickSuccess(`Dépense de ${formatCurrencyValue(amountNum, displayCurrency as any, locale, true)} enregistrée !`);
+      setQuickSuccess(`Dépense de ${formatCurrency(amountNum, activeCurrency, true)} enregistrée !`);
       setTimeout(() => setQuickSuccess(null), 3000);
       onTransactionAdded?.();
     } catch (err) {
@@ -365,6 +367,21 @@ export default function DashboardView({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 self-start md:self-auto flex-wrap">
+          {/* Sélecteur Multidevise Global (XOF, EUR, USD) */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] transition-all text-xs font-bold text-[#FAFAFA] shadow-sm">
+            <span className="text-xs text-[#EF4444]">💱</span>
+            <select
+              value={activeCurrency}
+              onChange={(e) => setContextCurrency(e.target.value as "XOF" | "EUR" | "USD")}
+              className="bg-transparent text-[#FAFAFA] font-bold cursor-pointer outline-none text-xs"
+              aria-label="Sélectionner la devise"
+            >
+              <option value="XOF" className="bg-[#18181B] text-[#FAFAFA]">XOF (FCFA)</option>
+              <option value="EUR" className="bg-[#18181B] text-[#FAFAFA]">EUR (€)</option>
+              <option value="USD" className="bg-[#18181B] text-[#FAFAFA]">USD ($)</option>
+            </select>
+          </div>
+
           {/* Bouton Masquer / Afficher les montants sensibles */}
           <button
             type="button"
@@ -406,7 +423,7 @@ export default function DashboardView({
         joursRestants={daysRemaining}
         depensesMois={monthlyExpense}
         joursEcoules={daysInMonth - daysRemaining}
-        currency={displayCurrency === "XOF" || displayCurrency === "XAF" ? "FCFA" : displayCurrency}
+        currency={activeCurrency === "XOF" ? "FCFA" : activeCurrency === "EUR" ? "€" : "$"}
       />
 
       {/* ══════════════════════════════════════════════════════════════════════════
@@ -432,7 +449,7 @@ export default function DashboardView({
               </span>
               {!hideAmounts && (
                 <span className="text-xs font-bold text-[#A1A1AA]">
-                  {displayCurrency === "XOF" || displayCurrency === "XAF" ? "FCFA / j" : "/ j"}
+                  {activeCurrency === "XOF" ? "FCFA / j" : activeCurrency === "EUR" ? "€ / j" : "$ / j"}
                 </span>
               )}
             </div>
@@ -619,13 +636,13 @@ export default function DashboardView({
               min="1"
               step="any"
               required
-              placeholder="Montant (FCFA)..."
+              placeholder={`Montant (${activeCurrency === "XOF" ? "FCFA" : activeCurrency === "EUR" ? "€" : "$"})…`}
               value={quickAmount}
               onChange={(e) => setQuickAmount(e.target.value)}
               className="input-field text-xs sm:text-sm w-full font-bold tabular-nums pl-8 bg-[#09090B] border-[#27272A] focus:border-[#EF4444] rounded-xl py-2.5"
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#A1A1AA] font-bold">
-              {displayCurrency === "XOF" || displayCurrency === "XAF" ? "F" : "$"}
+              {activeCurrency === "XOF" ? "F" : activeCurrency === "EUR" ? "€" : "$"}
             </span>
           </div>
 

@@ -69,6 +69,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "./components/ThemeProvider";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { CurrencyProvider } from "@/lib/context/CurrencyContext";
 import ScrollToTop from "./components/ScrollToTop";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -104,10 +105,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col antialiased">
         <LanguageProvider>
-          <ThemeProvider>
-            {children}
-            <ScrollToTop />
-          </ThemeProvider>
+          <CurrencyProvider>
+            <ThemeProvider>
+              {children}
+              <ScrollToTop />
+            </ThemeProvider>
+          </CurrencyProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -49,6 +49,7 @@ import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
 import { getCurrencyMeta, useLanguage, formatCurrencyValue, convertFromBase, convertToBase } from "@/lib/i18n/LanguageContext";
+import { useCurrency, formatCurrency } from "@/lib/context/CurrencyContext";
 import { useToday } from "@/hooks/useToday";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { getDateKey, getTodayInAbidjan, isSameDay, parseLocalDateKey } from "@/lib/date-utils";
@@ -154,8 +155,7 @@ function fmt(n: number) {
 }
 
 function formatMoney(n: number, currency: Currency = "XOF") {
-  const locale = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en-US" : "fr-FR";
-  return formatCurrencyValue(n, currency, locale, true);
+  return formatCurrency(n, currency as any, true);
 }
 
 function formatDateFr(d: Date): string {
@@ -177,10 +177,11 @@ const supabase = createClient();
 export default function GestFiProDashboard() {
   const { theme, toggleTheme, setTheme } = useTheme();
   const { language, setLanguage, t, isEn, currency, setCurrency } = useLanguage();
+  const { currency: globalCurrency, setCurrency: setGlobalCurrency } = useCurrency();
   const now = useToday();
   const currencySymbol = getCurrencyMeta(currency).symbol;
   const [activeTab, setActiveTab] = useState<TabKey>("accueil");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>((globalCurrency as Currency) || currency);
   const [showModal, setShowModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -295,11 +296,17 @@ export default function GestFiProDashboard() {
   }, [userName, firstName]);
 
   // ─── Data Loading from Supabase ───────────────────────────────────────────
+  // ─── Synchronisation Multidevise globale ──────────────────────────────────
   useEffect(() => {
-    setSelectedCurrency(currency);
-  }, [currency]);
+    if (globalCurrency) {
+      setSelectedCurrency(globalCurrency as Currency);
+    } else if (currency) {
+      setSelectedCurrency(currency);
+    }
+  }, [globalCurrency, currency]);
 
   const handleCurrencyChange = (nextCurrency: Currency) => {
+    setGlobalCurrency(nextCurrency as any);
     setCurrency(nextCurrency);
     setSelectedCurrency(nextCurrency);
   };
@@ -1538,19 +1545,17 @@ export default function GestFiProDashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="hidden md:flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-1.5 py-1 text-xs shrink-0">
+            <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2 py-1 text-xs shrink-0">
               <span className="mr-1 text-[#EF4444] text-[10px] sm:text-xs">💱</span>
               <select
                 value={selectedCurrency}
                 onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
-                className="bg-transparent text-white font-bold cursor-pointer outline-none text-[10px] sm:text-xs max-w-[82px] sm:max-w-[120px]"
+                className="bg-transparent text-white font-bold cursor-pointer outline-none text-[10px] sm:text-xs max-w-[85px] sm:max-w-[120px]"
                 aria-label="Currency selector"
               >
-                {Object.entries(CURRENCY_OPTIONS).map(([code, config]) => (
-                  <option key={code} value={code} className="bg-[#18181B]">
-                    {code}
-                  </option>
-                ))}
+                <option value="XOF" className="bg-[#18181B]">XOF (FCFA)</option>
+                <option value="EUR" className="bg-[#18181B]">EUR (€)</option>
+                <option value="USD" className="bg-[#18181B]">USD ($)</option>
               </select>
             </div>
             <LanguageSelector align="right" />
@@ -1763,6 +1768,20 @@ export default function GestFiProDashboard() {
                   <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.accountsPage.subtitle}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  {/* Sélecteur de devise rapide sur la page Comptes */}
+                  <div className="flex items-center bg-[#18181B] border border-[#27272A] rounded-xl px-2.5 py-1.5 text-xs text-[#FAFAFA]">
+                    <span className="mr-1.5 text-[#EF4444] text-xs">💱</span>
+                    <select
+                      value={selectedCurrency}
+                      onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
+                      className="bg-transparent text-[#FAFAFA] font-bold cursor-pointer outline-none text-xs"
+                      aria-label="Devise des comptes"
+                    >
+                      <option value="XOF" className="bg-[#18181B]">XOF (FCFA)</option>
+                      <option value="EUR" className="bg-[#18181B]">EUR (€)</option>
+                      <option value="USD" className="bg-[#18181B]">USD ($)</option>
+                    </select>
+                  </div>
                   {accounts.length > 0 && (
                     <>
                       {new Set(accounts.map((a) => a.name.trim().toLowerCase())).size !== accounts.length && (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
@@ -11,6 +11,7 @@ import {
   Plus,
   Send,
   Mic,
+  MicOff,
   Search,
   Bell,
   ShieldAlert,
@@ -47,6 +48,7 @@ import { useTheme } from "../components/ThemeProvider";
 import LanguageSelector from "../components/LanguageSelector";
 import { getCurrencyMeta, useLanguage, formatCurrencyValue, convertFromBase, convertToBase } from "@/lib/i18n/LanguageContext";
 import { useToday } from "@/hooks/useToday";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { getDateKey, getTodayInAbidjan, isSameDay, parseLocalDateKey } from "@/lib/date-utils";
 
 // Dynamic imports for chart components (client-only)
@@ -185,6 +187,61 @@ export default function GestFiProDashboard() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
 
   const [quickInputText, setQuickInputText] = useState("");
+  const quickInputRef = useRef<HTMLInputElement>(null);
+  const baseVoiceTextRef = useRef<string>("");
+  const [voiceToast, setVoiceToast] = useState<{ message: string; type: "info" | "error" } | null>(null);
+  const voiceToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showVoiceToast = useCallback((message: string, type: "info" | "error" = "info") => {
+    if (voiceToastTimeoutRef.current) clearTimeout(voiceToastTimeoutRef.current);
+    setVoiceToast({ message, type });
+    voiceToastTimeoutRef.current = setTimeout(() => {
+      setVoiceToast(null);
+    }, 5000);
+  }, []);
+
+  const {
+    isListening: isVoiceListening,
+    isSupported: isVoiceSupported,
+    startListening: startVoiceListening,
+    stopListening: stopVoiceListening,
+  } = useSpeechRecognition({
+    lang: isEn ? "en-US" : "fr-FR",
+    continuous: false,
+    interimResults: false,
+    onResult: (transcript) => {
+      if (!transcript) return;
+      const base = baseVoiceTextRef.current;
+      const updated = base ? `${base} ${transcript}` : transcript;
+      setQuickInputText(updated);
+      baseVoiceTextRef.current = updated;
+      setTimeout(() => {
+        quickInputRef.current?.focus();
+      }, 50);
+    },
+    onError: (errorMessage) => {
+      showVoiceToast(errorMessage, "error");
+    },
+  });
+
+  const handleVoiceToggle = () => {
+    if (!isVoiceSupported) {
+      showVoiceToast(
+        isEn
+          ? "Voice recognition is not supported in this browser. Please try Chrome, Edge, or Safari."
+          : "La reconnaissance vocale n'est pas supportée par ce navigateur (essayez Chrome, Edge ou Safari).",
+        "error"
+      );
+      return;
+    }
+
+    if (isVoiceListening) {
+      stopVoiceListening();
+    } else {
+      baseVoiceTextRef.current = quickInputText.trim();
+      startVoiceListening();
+    }
+  };
 
   // Extraire le prénom dynamiquement pour l'affichage
   const firstName = React.useMemo(() => {
@@ -537,6 +594,10 @@ export default function GestFiProDashboard() {
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isVoiceListening) {
+      stopVoiceListening();
+    }
+    baseVoiceTextRef.current = "";
     if (!quickInputText.trim()) return;
 
     if (accounts.length === 0) {
@@ -2673,18 +2734,65 @@ export default function GestFiProDashboard() {
             zIndex: 30,
           }}
         >
+          {voiceToast && (
+            <div
+              style={{
+                marginBottom: 8,
+                padding: "8px 14px",
+                borderRadius: 12,
+                background: voiceToast.type === "error" ? "rgba(239, 68, 68, 0.15)" : "rgba(39, 39, 42, 0.95)",
+                border: voiceToast.type === "error" ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid #3F3F46",
+                backdropFilter: "blur(12px)",
+                color: voiceToast.type === "error" ? "#FCA5A5" : "#FAFAFA",
+                fontSize: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {voiceToast.type === "error" ? (
+                  <AlertTriangle size={14} style={{ color: "#EF4444", flexShrink: 0 }} />
+                ) : (
+                  <Mic size={14} style={{ color: "#EF4444", flexShrink: 0 }} />
+                )}
+                <span>{voiceToast.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVoiceToast(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#A1A1AA",
+                  cursor: "pointer",
+                  padding: 2,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                aria-label="Fermer"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
           <form
             onSubmit={handleQuickSubmit}
             style={{
               background: "#18181B",
-              border: "1px solid #27272A",
+              border: isVoiceListening ? "1px solid #EF4444" : "1px solid #27272A",
               borderRadius: 99,
               padding: "6px 6px 6px 16px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              boxShadow: isVoiceListening
+                ? "0 0 0 3px rgba(239, 68, 68, 0.25), 0 8px 32px rgba(0,0,0,0.6)"
+                : "0 8px 32px rgba(0,0,0,0.6)",
               backdropFilter: "blur(16px)",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
@@ -2708,10 +2816,15 @@ export default function GestFiProDashboard() {
                 <Plus size={13} />
               </button>
               <input
+                ref={quickInputRef}
                 type="text"
                 value={quickInputText}
                 onChange={(e) => setQuickInputText(e.target.value)}
-                placeholder={t.dashboard?.home?.quickAddPlaceholder || (isEn ? "Quick entry: taxi 5000, groceries 3000..." : "Saisie rapide : taxi 5000, riz 3000...")}
+                placeholder={
+                  isVoiceListening
+                    ? (isEn ? "🎙️ Listening... Speak now (e.g. Taxi 5000)" : "🎙️ Écoute en cours... Parlez maintenant (ex : Taxi 5000)")
+                    : (t.dashboard?.home?.quickAddPlaceholder || (isEn ? "Quick entry: taxi 5000, groceries 3000..." : "Saisie rapide : taxi 5000, riz 3000..."))
+                }
                 style={{
                   background: "transparent",
                   border: "none",
@@ -2726,11 +2839,51 @@ export default function GestFiProDashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button
                 type="button"
-                title={isEn ? "Voice input (coming soon)" : "Saisie vocale (bientôt disponible)"}
-                onClick={() => alert(isEn ? "🎙️ Voice input will be available in an upcoming version of GestFiPro." : "🎙️ La saisie vocale sera disponible dans une prochaine version de GestFiPro.")}
-                style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 6, display: "flex", alignItems: "center" }}
+                id="voice-input-button"
+                title={
+                  isVoiceListening
+                    ? (isEn ? "Listening... Click to stop" : "Écoute en cours... Cliquez pour arrêter")
+                    : (isEn ? "Voice input (Click to speak)" : "Saisie vocale (Cliquez pour parler)")
+                }
+                aria-label={
+                  isVoiceListening
+                    ? (isEn ? "Stop voice listening" : "Arrêter l'écoute vocale")
+                    : (isEn ? "Start voice listening" : "Démarrer l'écoute vocale")
+                }
+                onClick={handleVoiceToggle}
+                style={{
+                  background: isVoiceListening ? "rgba(239, 68, 68, 0.2)" : "transparent",
+                  border: isVoiceListening ? "1px solid rgba(239, 68, 68, 0.5)" : "none",
+                  borderRadius: "50%",
+                  color: isVoiceListening ? "#EF4444" : "#A1A1AA",
+                  cursor: "pointer",
+                  padding: 6,
+                  width: 30,
+                  height: 30,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                }}
               >
-                <Mic size={14} />
+                {isVoiceListening ? (
+                  <>
+                    <span
+                      style={{
+                        position: "absolute",
+                        inset: -2,
+                        borderRadius: "50%",
+                        border: "1px solid #EF4444",
+                        animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+                        opacity: 0.75,
+                      }}
+                    />
+                    <MicOff size={14} style={{ position: "relative", zIndex: 1 }} />
+                  </>
+                ) : (
+                  <Mic size={14} />
+                )}
               </button>
               <button
                 type="submit"

@@ -38,6 +38,7 @@ import {
   Loader2,
   FileText,
   FileDown,
+  Repeat,
 } from "lucide-react";
 import MiniCalendar from "../components/MiniCalendar";
 import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
@@ -45,6 +46,7 @@ import { AccountIcon, getAccountColor } from "../components/AccountIcon";
 import DashboardView from "../components/DashboardView";
 import PayCycleCard from "../components/PayCycleCard";
 import RecurringExpensesManager from "../components/RecurringExpensesManager";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { useTheme } from "../components/ThemeProvider";
@@ -2020,7 +2022,22 @@ export default function GestFiProDashboard() {
                 <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.historyPage.subtitle}</p>
               </div>
 
-              <div className="card" style={{ padding: "20px 24px" }}>
+              {/* ── Tabs Shadcn UI : Transactions vs Récurrences ── */}
+              <Tabs defaultValue="transactions" className="w-full">
+                <TabsList className="bg-[#18181B] border border-[#27272A] p-1 mb-5">
+                  <TabsTrigger value="transactions" className="gap-2">
+                    <Clock size={14} className="text-[#EF4444]" />
+                    <span>Transactions</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="recurrences" className="gap-2">
+                    <Repeat size={14} className="text-[#EF4444]" />
+                    <span>Récurrences</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* 1. Onglet Transactions */}
+                <TabsContent value="transactions">
+                  <div className="card" style={{ padding: "20px 24px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#09090B", border: "1px solid #27272A", borderRadius: 10, padding: "10px 14px", marginBottom: 12 }}>
                   <Search size={14} color="#52525B" />
                   <input
@@ -2191,8 +2208,15 @@ export default function GestFiProDashboard() {
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            </TabsContent>
+
+            {/* 2. Onglet Récurrences */}
+            <TabsContent value="recurrences">
+              <RecurringExpensesManager />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
 
           {/* ════════════ TAB: STATISTIQUES ════════════ */}
           {activeTab === "statistiques" && (

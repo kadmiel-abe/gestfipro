@@ -45,36 +45,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   Autre: "#71717A",
 };
 
-// ─── Mock Data initial pour la démo ──────────────────────────────────────────
-const INITIAL_MOCK_EXPENSES: RecurringExpense[] = [
-  {
-    id: "rec-1",
-    name: "Loyer Appartement",
-    amount: 150000,
-    category: "Logement",
-    dayOfMonth: 5,
-  },
-  {
-    id: "rec-2",
-    name: "Abonnement Internet Fibre",
-    amount: 25000,
-    category: "Factures",
-    dayOfMonth: 10,
-  },
-  {
-    id: "rec-3",
-    name: "Netflix Standard",
-    amount: 6500,
-    category: "Abonnements",
-    dayOfMonth: 15,
-  },
-];
-
 export default function RecurringExpensesManager() {
   const { currency, formatCurrency } = useCurrency();
 
-  // État local des charges fixes
-  const [expenses, setExpenses] = useState<RecurringExpense[]>(INITIAL_MOCK_EXPENSES);
+  // État local des charges fixes — tableau vide par défaut (aucune donnée fictive)
+  const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
 
   // État de la modale Dialog
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -200,11 +175,15 @@ export default function RecurringExpensesManager() {
 
         {/* ── Liste des charges fixes ─────────────────────────────────────── */}
         {expenses.length === 0 ? (
-          <div className="text-center py-10 px-4 rounded-xl border border-dashed border-[#27272A] bg-[#09090B]/30">
-            <Repeat className="w-8 h-8 text-[#52525B] mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-semibold text-[#FAFAFA]">Aucune charge fixe enregistrée</p>
-            <p className="text-xs text-[#A1A1AA] mt-1">
-              Cliquez sur &quot;Ajouter une charge fixe&quot; pour suivre vos abonnements.
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6 rounded-xl border border-dashed border-[#27272A] bg-[#09090B]/30">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#27272A]/60 mb-4">
+              <Repeat className="w-7 h-7 text-[#52525B]" />
+            </div>
+            <p className="text-sm font-semibold text-[#FAFAFA]">
+              Aucune charge fixe enregistrée.
+            </p>
+            <p className="text-xs text-[#A1A1AA] mt-2 max-w-xs leading-relaxed">
+              Automatisez la saisie de votre loyer et de vos abonnements en les ajoutant ici.
             </p>
           </div>
         ) : (

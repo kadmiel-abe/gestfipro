@@ -28,6 +28,7 @@ import { isSameDay, getDateKey } from "@/lib/date-utils";
 import { AccountIcon } from "./AccountIcon";
 import { useLanguage, formatCurrencyValue } from "@/lib/i18n/LanguageContext";
 import { Profile, Account, Transaction, Goal } from "@/lib/types";
+import PredictiveAlert from "./PredictiveAlert";
 
 interface DashboardViewProps {
   profile: Profile | null;
@@ -396,6 +397,17 @@ export default function DashboardView({
           </button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════════
+          1b. ALERTE PRÉDICTIVE DE DÉPASSEMENT DE RYTHME
+      ══════════════════════════════════════════════════════════════════════════ */}
+      <PredictiveAlert
+        soldeDisponible={currentTotalBalance}
+        joursRestants={daysRemaining}
+        depensesMois={monthlyExpense}
+        joursEcoules={daysInMonth - daysRemaining}
+        currency={displayCurrency === "XOF" || displayCurrency === "XAF" ? "FCFA" : displayCurrency}
+      />
 
       {/* ══════════════════════════════════════════════════════════════════════════
           2. BENTO GRID SUPÉRIEURE (4 KPIS TEMPS RÉEL)

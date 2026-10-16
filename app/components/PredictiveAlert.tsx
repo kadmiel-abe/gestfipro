@@ -1,125 +1,111 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { AlertTriangle, TrendingDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
 
-interface PredictiveAlertProps {
-  currentBalance: number;
-  daysUntilPayday: number;
-  spentThisCycle: number;
-  daysPassedInCycle: number;
-  /** Devise d'affichage (optionnel, défaut: "FCFA") */
+export interface PredictiveAlertProps {
+  /** Solde financier actuellement disponible */
+  soldeDisponible?: number;
+  /** Nombre de jours restants jusqu'à la prochaine paie */
+  joursRestants?: number;
+  /** Total des dépenses cumulées sur la période/mois en cours */
+  depensesMois?: number;
+  /** Nombre de jours déjà écoulés dans le cycle en cours */
+  joursEcoules?: number;
+  /** Alias pour compatibilité */
+  currentBalance?: number;
+  daysUntilPayday?: number;
+  spentThisCycle?: number;
+  daysPassedInCycle?: number;
+  /** Devise d'affichage (défaut: "FCFA") */
   currency?: string;
 }
 
+/**
+ * Composant client PredictiveAlert - Moteur d'alertes prédictives GestFiPro.
+ * Compare la dépense moyenne réelle par jour au budget théorique quotidien disponible.
+ * Si le rythme de dépense met en péril le solde avant la paie, l'alerte s'affiche.
+ * Sinon, le composant retourne null (invisible).
+ */
 export default function PredictiveAlert({
+  soldeDisponible,
+  joursRestants,
+  depensesMois,
+  joursEcoules,
   currentBalance,
   daysUntilPayday,
   spentThisCycle,
   daysPassedInCycle,
   currency = "FCFA",
 }: PredictiveAlertProps) {
+  // Récupération des valeurs avec support des alias
+  const solde = soldeDisponible ?? currentBalance ?? 0;
+  const restants = joursRestants ?? daysUntilPayday ?? 0;
+  const depenses = depensesMois ?? spentThisCycle ?? 0;
+  const ecoules = joursEcoules ?? daysPassedInCycle ?? 0;
+
   const calculation = useMemo(() => {
-    // Garde-fous pour éviter division par zéro ou valeurs négatives
-    if (daysUntilPayday <= 0 || daysPassedInCycle <= 0 || currentBalance <= 0) {
-      return { isAtRisk: false, reductionNecessaire: 0, budgetTheoriqueParJour: 0, depenseMoyenneReelleParJour: 0 };
+    // Garde-fous mathématiques pour éviter division par zéro ou valeurs négatives
+    if (restants <= 0 || ecoules <= 0 || solde <= 0) {
+      return { isAtRisk: false, budgetTheoriqueParJour: 0, depenseMoyenneReelleParJour: 0 };
     }
 
-    // 1. Budget théorique par jour
-    const budgetTheoriqueParJour = currentBalance / daysUntilPayday;
+    // 1. Budget théorique par jour = soldeDisponible / joursRestants
+    const budgetTheoriqueParJour = solde / restants;
 
-    // 2. Dépense moyenne réelle par jour
-    const depenseMoyenneReelleParJour = spentThisCycle / daysPassedInCycle;
+    // 2. Dépense moyenne réelle par jour = depensesMois / joursEcoules
+    const depenseMoyenneReelleParJour = depenses / ecoules;
 
-    // 3. Condition : dépassement du budget théorique de plus de 10%
-    const isAtRisk = depenseMoyenneReelleParJour > budgetTheoriqueParJour * 1.1;
-
-    // Montant de réduction quotidienne nécessaire pour tenir jusqu'à la paie
-    const reductionNecessaire = Math.max(
-      0,
-      Math.round(depenseMoyenneReelleParJour - budgetTheoriqueParJour)
-    );
+    // 3. Condition de risque : dépassement du rythme théorique
+    const isAtRisk = depenseMoyenneReelleParJour > budgetTheoriqueParJour;
 
     return {
       isAtRisk,
-      reductionNecessaire,
-      budgetTheoriqueParJour,
-      depenseMoyenneReelleParJour,
+      budgetTheoriqueParJour: Math.round(budgetTheoriqueParJour),
+      depenseMoyenneReelleParJour: Math.round(depenseMoyenneReelleParJour),
     };
-  }, [currentBalance, daysUntilPayday, spentThisCycle, daysPassedInCycle]);
+  }, [solde, restants, depenses, ecoules]);
 
-  // Si pas de risque, le composant est strictement invisible (retourne null)
+  // Si pas de risque, le composant reste strictement invisible
   if (!calculation.isAtRisk) {
     return null;
   }
 
-  const reductionFormatted = calculation.reductionNecessaire.toLocaleString("fr-FR");
+  const moyenneFormattee = calculation.depenseMoyenneReelleParJour.toLocaleString("fr-FR");
+  const budgetFormatte = calculation.budgetTheoriqueParJour.toLocaleString("fr-FR");
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: -10, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -10, scale: 0.98 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="w-full"
-      >
-        {/* Card Shadcn / Dark Mode Premium */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#18181B] border border-[#27272A] p-4 sm:p-5 shadow-xl shadow-black/40">
-          {/* Lueur rouge d'accentuation en arrière-plan */}
-          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#EF4444]/10 blur-2xl" />
+    <div
+      role="alert"
+      className="w-full relative overflow-hidden rounded-2xl bg-[#18181B] border border-[#EF4444] p-4 sm:p-5 shadow-xl shadow-red-500/10 mb-6"
+    >
+      {/* Halo rouge discret d'accentuation en arrière-plan */}
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#EF4444]/10 blur-2xl" />
 
-          <div className="relative flex items-start gap-3 sm:gap-4">
-            {/* Icône AlertTriangle avec halo d'accentuation */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/20">
-              <AlertTriangle className="h-5 w-5 animate-pulse" />
-            </div>
-
-            {/* Contenu textuel */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#EF4444]">
-                  <TrendingDown className="h-3.5 w-3.5" />
-                  Rythme critique
-                </span>
-              </div>
-
-              {/* Texte exact demandé */}
-              <p className="text-sm sm:text-base font-medium text-[#FAFAFA] leading-relaxed">
-                <span className="font-bold text-[#FAFAFA]">Alerte de rythme :</span>{" "}
-                À ce rythme, votre solde sera épuisé avant la prochaine paie. Réduisez vos dépenses de{" "}
-                <span className="font-extrabold text-[#EF4444] underline decoration-[#EF4444]/40 underline-offset-4">
-                  {reductionFormatted} {currency}
-                </span>{" "}
-                par jour.
-              </p>
-
-              {/* Sous-texte / Détails de cadence */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#A1A1AA]">
-                <span>
-                  Budget visé :{" "}
-                  <strong className="text-[#FAFAFA] font-semibold">
-                    {Math.round(calculation.budgetTheoriqueParJour).toLocaleString("fr-FR")} {currency}/j
-                  </strong>
-                </span>
-                <span className="text-[#27272A]">•</span>
-                <span>
-                  Rythme actuel :{" "}
-                  <strong className="text-[#EF4444] font-semibold">
-                    {Math.round(calculation.depenseMoyenneReelleParJour).toLocaleString("fr-FR")} {currency}/j
-                  </strong>
-                </span>
-                <span className="text-[#27272A]">•</span>
-                <span>
-                  Jours restants :{" "}
-                  <strong className="text-[#FAFAFA] font-semibold">{daysUntilPayday} j</strong>
-                </span>
-              </div>
-            </div>
-          </div>
+      <div className="relative flex items-start gap-3.5 sm:gap-4">
+        {/* Icône AlertTriangle avec halo d'accentuation */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30">
+          <AlertTriangle className="h-5 w-5 animate-pulse text-[#EF4444]" />
         </div>
-      </motion.div>
-    </AnimatePresence>
+
+        {/* Contenu textuel conforme au design system */}
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm sm:text-base font-bold text-[#FAFAFA] tracking-tight">
+            Alerte de rythme de dépense
+          </h4>
+          <p className="mt-1 text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
+            À ce rythme, votre solde sera épuisé avant la prochaine paie. Votre moyenne est de{" "}
+            <span className="font-bold text-[#EF4444]">
+              {moyenneFormattee} {currency}/jour
+            </span>
+            , mais votre budget restant est de{" "}
+            <span className="font-bold text-[#FAFAFA]">
+              {budgetFormatte} {currency}/jour
+            </span>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

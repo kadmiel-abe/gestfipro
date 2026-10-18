@@ -75,7 +75,6 @@ export default function DashboardView({
   isLoading: _isLoading = false,
   onOpenModal,
   onNavigate,
-  onAddTransaction,
   todayExpenses: propTodayExpenses,
   totalBalance: propTotalBalance,
   currency = "XOF",
@@ -95,23 +94,12 @@ export default function DashboardView({
   const localTransactions = transactions;
   const localAccounts = accounts;
 
-  // ── 3. États pour le formulaire de saisie rapide ───────────────────────────
-  const [quickAmount, setQuickAmount] = useState<string>("");
-  const [quickCategory, setQuickCategory] = useState<string>("Nourriture");
-  const [quickAccount, setQuickAccount] = useState<string>("");
-  const activeQuickAccount = accounts.some((a) => a.name === quickAccount)
-    ? quickAccount
-    : accounts[0]?.name || "Espèces";
-  const [quickNote, setQuickNote] = useState<string>("");
-  const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
-  const [isSubmittingQuick, setIsSubmittingQuick] = useState<boolean>(false);
-
-  // ── 4. Filtres de transactions récentes ────────────────────────────────────
+  // ── 3. Filtres de transactions récentes ────────────────────────────────────
   const [txTypeFilter, setTxTypeFilter] = useState<"all" | "expense" | "income">("all");
   const [txSearch, setTxSearch] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string | null>(null);
 
-  // ── 5. Calculs des KPIs et Cycle de paie ───────────────────────────────────
+  // ── 4. Calculs des KPIs et Cycle de paie ───────────────────────────────────
   const netSalary = profile?.net_salary ?? 0;
   const paydayWithMonth = profile?.payday_with_month ?? 25;
   const safePayday = paydayWithMonth > 0 && paydayWithMonth <= 31 ? paydayWithMonth : 25;
@@ -209,51 +197,7 @@ export default function DashboardView({
     ? `${greetingPrefix} ${firstName} 👋`
     : `${greetingPrefix} 👋`;
 
-  // ── 6. Soumission Manuelle Rapide (Zéro friction, sans vocal/IA) ─────────────
-  const handleManualQuickSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountNum = parseFloat(quickAmount);
-    if (isNaN(amountNum) || amountNum <= 0) return;
-
-    if (localAccounts.length === 0) {
-      alert("Veuillez d'abord créer un compte financier dans l'onglet Comptes.");
-      onNavigate("comptes");
-      return;
-    }
-
-    const targetAccountName = activeQuickAccount;
-    const targetCategory = quickCategory || "Nourriture";
-    const noteText = quickNote.trim();
-
-    setIsSubmittingQuick(true);
-
-    // 2. Persister via le callback parent
-    try {
-      if (onAddTransaction) {
-        await onAddTransaction({
-          label: noteText || targetCategory,
-          category: targetCategory,
-          amount: -Math.abs(amountNum),
-          type: "expense",
-          date: "À l'instant",
-          account: targetAccountName,
-          icon: CATEGORY_ICONS[targetCategory] || "⚡",
-          note: noteText,
-        });
-      }
-      setQuickAmount("");
-      setQuickNote("");
-      setQuickSuccess(`Dépense de ${formatCurrency(amountNum, activeCurrency, true)} enregistrée !`);
-      setTimeout(() => setQuickSuccess(null), 3000);
-      onTransactionAdded?.();
-    } catch (err) {
-      console.error("Erreur ajout dépense rapide:", err);
-    } finally {
-      setIsSubmittingQuick(false);
-    }
-  };
-
-  // ── 7. Répartition des dépenses par catégorie (Mois en cours) ───────────────
+  // ── 5. Répartition des dépenses par catégorie (Mois en cours) ───────────────
   const categoryBreakdown = useMemo(() => {
     const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const map = new Map<string, number>();
@@ -283,7 +227,7 @@ export default function DashboardView({
     return { list, totalExp };
   }, [localTransactions, now]);
 
-  // ── 8. Transactions filtrées pour la colonne gauche ────────────────────────
+  // ── 6. Transactions filtrées pour la colonne gauche ────────────────────────
   const filteredTransactions = useMemo(() => {
     return localTransactions.filter((tx) => {
       // Filtre Type
@@ -564,111 +508,7 @@ export default function DashboardView({
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          3. BARRE DE SAISIE RAPIDE MANUELLE (AU CENTRE, ZÉRO FRICTION, SCOPE MVP)
-      ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
-        <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center text-[#EF4444]">
-              <Zap className="w-3.5 h-3.5" />
-            </div>
-            <h2 className="text-sm font-bold text-[#FAFAFA]">
-              Saisie Rapide de Dépense
-            </h2>
-            <span className="text-[11px] text-[#71717A] hidden sm:inline">
-              · Zéro friction, décrémentation immédiate
-            </span>
-          </div>
-
-          {quickSuccess && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#22c55e]/15 border border-[#22c55e]/30 text-[#22c55e] text-xs font-semibold animate-fade-in">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{quickSuccess}</span>
-            </div>
-          )}
-        </div>
-
-        <form
-          onSubmit={handleManualQuickSubmit}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 sm:gap-3 items-center"
-        >
-          {/* 1. Montant (FCFA) - 3 cols */}
-          <div className="lg:col-span-3 relative">
-            <input
-              type="number"
-              min="1"
-              step="any"
-              required
-              placeholder={`Montant (${activeCurrency === "XOF" ? "FCFA" : activeCurrency === "EUR" ? "€" : "$"})…`}
-              value={quickAmount}
-              onChange={(e) => setQuickAmount(e.target.value)}
-              className="input-field text-xs sm:text-sm w-full font-bold tabular-nums pl-8 bg-[#09090B] border-[#27272A] focus:border-[#EF4444] rounded-xl py-2.5"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#A1A1AA] font-bold">
-              {activeCurrency === "XOF" ? "F" : activeCurrency === "EUR" ? "€" : "$"}
-            </span>
-          </div>
-
-          {/* 2. Sélecteur Catégorie - 3 cols */}
-          <div className="lg:col-span-3">
-            <select
-              value={quickCategory}
-              onChange={(e) => setQuickCategory(e.target.value)}
-              className="input-field text-xs sm:text-sm w-full bg-[#09090B] border-[#27272A] font-semibold text-[#FAFAFA] cursor-pointer rounded-xl py-2.5"
-            >
-              <option value="Nourriture">🍔 Nourriture</option>
-              <option value="Transport">🚕 Transport</option>
-              <option value="Logement">🏠 Logement</option>
-              <option value="Loisirs">🎉 Loisirs</option>
-              <option value="Factures">⚡ Factures</option>
-              <option value="Santé">💊 Santé</option>
-              <option value="Autre">📦 Autre</option>
-            </select>
-          </div>
-
-          {/* 3. Sélecteur Compte - 3 cols */}
-          <div className="lg:col-span-3">
-            <select
-              value={activeQuickAccount}
-              onChange={(e) => setQuickAccount(e.target.value)}
-              className="input-field text-xs sm:text-sm w-full bg-[#09090B] border-[#27272A] font-semibold text-[#FAFAFA] cursor-pointer rounded-xl py-2.5"
-            >
-              {localAccounts.map((a) => (
-                <option key={a.id} value={a.name}>
-                  {a.name} ({formatAmount(a.balance)})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 4. Note optionnelle - 2 cols */}
-          <div className="lg:col-span-2">
-            <input
-              type="text"
-              placeholder="Note (ex: Déjeuner)..."
-              value={quickNote}
-              onChange={(e) => setQuickNote(e.target.value)}
-              className="input-field text-xs sm:text-sm w-full bg-[#09090B] border-[#27272A] focus:border-[#EF4444] rounded-xl py-2.5"
-            />
-          </div>
-
-          {/* 5. Bouton CTA Ajouter - 1 col */}
-          <div className="lg:col-span-1">
-            <button
-              type="submit"
-              disabled={isSubmittingQuick}
-              className="btn-primary w-full py-2.5 px-3 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#EF4444]/25 rounded-xl disabled:opacity-50"
-              title="Ajouter la dépense immédiatement"
-            >
-              <Plus className="w-4 h-4 shrink-0" />
-              <span className="lg:hidden">Ajouter</span>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════════
-          4. GRILLE PRINCIPALE (2 COLONNES SUR DESKTOP : 8 COLS / 4 COLS)
+          3. GRILLE PRINCIPALE (2 COLONNES SUR DESKTOP : 8 COLS / 4 COLS)
       ══════════════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* ─────────────────────────────────────────────────────────────────────
@@ -811,7 +651,7 @@ export default function DashboardView({
               <div className="py-10 text-center text-[#71717A] text-xs flex flex-col items-center justify-center gap-2">
                 <Clock className="w-7 h-7 text-[#3F3F46]" />
                 <p className="font-semibold text-[#A1A1AA]">Aucune transaction correspondante.</p>
-                <p className="text-[11px]">Enregistrez votre première dépense via la barre ci-dessus.</p>
+                <p className="text-[11px]">Enregistrez votre première transaction pour commencer le suivi.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1001,7 +841,7 @@ export default function DashboardView({
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          5. SECTION OBJECTIFS D'ÉPARGNE
+          4. SECTION OBJECTIFS D'ÉPARGNE
       ══════════════════════════════════════════════════════════════════════════ */}
       <div>
         <GoalsCard

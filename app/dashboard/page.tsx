@@ -32,11 +32,13 @@ import {
   FileText,
   FileDown,
   Repeat,
+  CalendarRange,
 } from "lucide-react";
 import { SidebarLogoFull, SidebarLogoIcon } from "../components/Logo";
 import { AccountIcon, getAccountColor } from "../components/AccountIcon";
 import DashboardView from "../components/DashboardView";
 import RecurringExpensesManager from "../components/RecurringExpensesManager";
+import PeriodActivityFilter from "../components/PeriodActivityFilter";
 import SidebarProfile from "../components/SidebarProfile";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
@@ -186,6 +188,12 @@ export default function GestFiProDashboard() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
   const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "expense" | "income">("all");
+  // Sous-onglet initial de l'Historique (lien direct : /dashboard?tab=historique&vue=periode)
+  const [historyView, setHistoryView] = useState<string>(() => {
+    if (typeof window === "undefined") return "transactions";
+    const vue = new URLSearchParams(window.location.search).get("vue");
+    return vue === "periode" || vue === "recurrences" ? vue : "transactions";
+  });
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataLoadError, setDataLoadError] = useState<string | null>(null);
@@ -1975,14 +1983,18 @@ export default function GestFiProDashboard() {
                 <p style={{ fontSize: 13, color: "#A1A1AA" }}>{t.dashboard.historyPage.subtitle}</p>
               </div>
 
-              {/* ── Tabs Shadcn UI : Transactions vs Récurrences ── */}
-              <Tabs defaultValue="transactions" className="w-full">
-                <TabsList className="bg-[#18181B] border border-[#27272A] p-1 mb-5">
-                  <TabsTrigger value="transactions" className="gap-2">
+              {/* ── Tabs Shadcn UI : Transactions / Par période / Récurrences ── */}
+              <Tabs value={historyView} onValueChange={setHistoryView} className="w-full">
+                <TabsList className="bg-[#18181B] border border-[#27272A] p-1 mb-5 max-w-full overflow-x-auto">
+                  <TabsTrigger value="transactions" className="gap-2 px-3 sm:px-4">
                     <Clock size={14} className="text-[#EF4444]" />
                     <span>Transactions</span>
                   </TabsTrigger>
-                  <TabsTrigger value="recurrences" className="gap-2">
+                  <TabsTrigger id="history-tab-periode" value="periode" className="gap-2 px-3 sm:px-4">
+                    <CalendarRange size={14} className="text-[#EF4444]" />
+                    <span>Par période</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="recurrences" className="gap-2 px-3 sm:px-4">
                     <Repeat size={14} className="text-[#EF4444]" />
                     <span>Récurrences</span>
                   </TabsTrigger>
@@ -2163,7 +2175,12 @@ export default function GestFiProDashboard() {
               </div>
             </TabsContent>
 
-            {/* 2. Onglet Récurrences */}
+            {/* 2. Onglet Par période */}
+            <TabsContent value="periode">
+              <PeriodActivityFilter />
+            </TabsContent>
+
+            {/* 3. Onglet Récurrences */}
             <TabsContent value="recurrences">
               <RecurringExpensesManager />
             </TabsContent>

@@ -11,9 +11,11 @@ import {
   FileDown,
   ArrowLeft,
   Plus,
+  CalendarRange,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import RecurringExpensesManager from "@/app/components/RecurringExpensesManager";
+import PeriodActivityFilter from "@/app/components/PeriodActivityFilter";
 import { useCurrency } from "@/lib/context/CurrencyContext";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
@@ -215,12 +217,16 @@ export default function HistoriquePage() {
 
         {/* ── Composant Tabs de Shadcn UI (Strict Dark Mode) ── */}
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="bg-[#18181B] border border-[#27272A] p-1 mb-6">
-            <TabsTrigger value="transactions" className="gap-2">
+          <TabsList className="bg-[#18181B] border border-[#27272A] p-1 mb-6 max-w-full overflow-x-auto">
+            <TabsTrigger value="transactions" className="gap-2 px-3 sm:px-4">
               <Clock className="w-4 h-4 text-[#EF4444]" />
               <span>Transactions</span>
             </TabsTrigger>
-            <TabsTrigger value="recurrences" className="gap-2">
+            <TabsTrigger id="historique-page-tab-periode" value="periode" className="gap-2 px-3 sm:px-4">
+              <CalendarRange className="w-4 h-4 text-[#EF4444]" />
+              <span>Par période</span>
+            </TabsTrigger>
+            <TabsTrigger value="recurrences" className="gap-2 px-3 sm:px-4">
               <Repeat className="w-4 h-4 text-[#EF4444]" />
               <span>Récurrences</span>
             </TabsTrigger>
@@ -363,7 +369,12 @@ export default function HistoriquePage() {
             </div>
           </TabsContent>
 
-          {/* ════════════ 2. Onglet "Récurrences" ════════════ */}
+          {/* ════════════ 2. Onglet "Par période" ════════════ */}
+          <TabsContent value="periode">
+            <PeriodActivityFilter />
+          </TabsContent>
+
+          {/* ════════════ 3. Onglet "Récurrences" ════════════ */}
           <TabsContent value="recurrences">
             <RecurringExpensesManager />
           </TabsContent>

@@ -14,16 +14,19 @@ import Image from "next/image";
 
 // ─── Mapping opérateur → fichier ──────────────────────────────────────────────
 
-type ResolvedType = "boa" | "wave" | "orange" | "mtn" | "moov" | "cash" | "bank" | "custom";
+type ResolvedType = "boa" | "wave" | "orange" | "mtn" | "moov" | "cash" | "bni" | "nsia" | "ecobank" | "bank" | "custom";
 
 const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: string; fit: "cover" | "contain"; bg?: string; padding?: number }> = {
-  boa:    { src: "/icons/Bank_of_africa-logo.png", label: "Bank of Africa (BOA)", fit: "contain", bg: "#ffffff", padding: 3 },
-  wave:   { src: "/icons/wave.jpg",   label: "Wave",         fit: "cover"   },
-  orange: { src: "/icons/orange.jpg", label: "Orange Money", fit: "cover"   },
-  mtn:    { src: "/icons/mtn.jpg",    label: "MTN Money",    fit: "cover"   },
-  moov:   { src: "/icons/moov.png",   label: "Moov Money",   fit: "cover"   },
-  cash:   { src: "/icons/cash.svg",   label: "Espèces",      fit: "contain" },
-  bank:   { src: "/icons/banque.jpg", label: "Banque",       fit: "cover",  bg: "#ffffff" },
+  boa:     { src: "/icons/Bank_of_africa-logo.png", label: "Bank of Africa (BOA)", fit: "contain", bg: "#ffffff", padding: 3 },
+  wave:    { src: "/icons/wave.jpg",   label: "Wave",         fit: "cover"   },
+  orange:  { src: "/icons/orange.jpg", label: "Orange Money", fit: "cover"   },
+  mtn:     { src: "/icons/mtn.jpg",    label: "MTN Money",    fit: "cover"   },
+  moov:    { src: "/icons/moov.png",   label: "Moov Money",   fit: "cover"   },
+  cash:    { src: "/icons/cash.svg",   label: "Espèces",      fit: "contain" },
+  bni:     { src: "/icons/bni.jpg",    label: "BNI",          fit: "contain", bg: "#ffffff", padding: 2 },
+  nsia:    { src: "/icons/nsia.png",   label: "NSIA",         fit: "contain", bg: "#ffffff", padding: 2 },
+  ecobank: { src: "/icons/ecobank.jpg",label: "Ecobank",      fit: "contain", bg: "#ffffff", padding: 2 },
+  bank:    { src: "/icons/banque.jpg", label: "Banque",       fit: "cover",  bg: "#ffffff" },
 };
 
 // ─── Résolution du type ────────────────────────────────────────────────────────
@@ -31,12 +34,15 @@ const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: st
 export function resolveAccountType(name = "", type = ""): ResolvedType {
   const k = `${name} ${type}`.toLowerCase();
   if (k.includes("boa") || k.includes("bank of africa") || k.includes("b.o.a") || k.includes("bank_of_africa")) return "boa";
+  if (k.includes("bni"))                                                          return "bni";
+  if (k.includes("nsia"))                                                         return "nsia";
+  if (k.includes("ecobank"))                                                      return "ecobank";
   if (k.includes("wave"))                                                         return "wave";
   if (k.includes("orange"))                                                       return "orange";
   if (k.includes("mtn"))                                                          return "mtn";
   if (k.includes("moov"))                                                         return "moov";
   if (k.includes("espèce") || k.includes("espece") || k.includes("cash"))        return "cash";
-  if (k.includes("banque") || k.includes("bank") || k.includes("ecobank"))       return "bank";
+  if (k.includes("banque") || k.includes("bank"))                                return "bank";
   return "custom";
 }
 
@@ -110,13 +116,16 @@ export function AccountIcon({ name, type, size = 46, radius = 12 }: AccountIconP
 // ─── Helpers couleur ─────────────────────────────────────────────────────────
 
 const COLORS: Record<Exclude<ResolvedType, "custom">, string> = {
-  boa:    "#00558F",
-  wave:   "#0BBFD6",
-  orange: "#FF7A00",
-  mtn:    "#FFCC00",
-  moov:   "#0066CC",
-  cash:   "#EF4444",
-  bank:   "#FAFAFA",
+  boa:     "#00558F",
+  wave:    "#0BBFD6",
+  orange:  "#FF7A00",
+  mtn:     "#FFCC00",
+  moov:    "#0066CC",
+  cash:    "#EF4444",
+  bni:     "#006837",
+  nsia:    "#003366",
+  ecobank: "#005B94",
+  bank:    "#FAFAFA",
 };
 
 export function getAccountColor(name: string, type = ""): string {
@@ -128,3 +137,6 @@ export function getAccountBg(name: string, type = ""): string {
   const r = resolveAccountType(name, type);
   return r !== "custom" ? `${COLORS[r]}18` : "rgba(239,68,68,0.12)";
 }
+
+export { AccountLogo } from "./AccountLogo";
+

@@ -48,6 +48,7 @@ import LanguageSelector from "../components/LanguageSelector";
 import { getCurrencyMeta, useLanguage } from "@/lib/i18n/LanguageContext";
 import { useCurrency, formatCurrency } from "@/lib/context/CurrencyContext";
 import { useToday } from "@/hooks/useToday";
+import { sanitizeCsvCell } from "@/lib/security";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { getDateKey, getTodayInAbidjan, isSameDay, parseLocalDateKey } from "@/lib/date-utils";
 import jsPDF from "jspdf";
@@ -679,14 +680,14 @@ export default function GestFiProDashboard() {
     }
 
     try {
-      const headers = ["Date", "Description", "Catégorie", "Compte", `Montant (${selectedCurrency})`, "Type"];
+      const headers = ["Date", "Description", "Catégorie", "Compte", `Montant (${selectedCurrency})`, "Type"].map(sanitizeCsvCell);
       const rows = filteredHistoryTransactions.map((tx) => [
-        tx.date,
-        `"${(tx.label || "").replace(/"/g, '""')}"`,
-        `"${(tx.category || "").replace(/"/g, '""')}"`,
-        `"${(tx.account || "").replace(/"/g, '""')}"`,
-        Math.abs(tx.amount),
-        tx.type === "income" || tx.amount > 0 ? "Revenu" : "Dépense",
+        sanitizeCsvCell(tx.date),
+        sanitizeCsvCell(tx.label || ""),
+        sanitizeCsvCell(tx.category || ""),
+        sanitizeCsvCell(tx.account || ""),
+        sanitizeCsvCell(Math.abs(tx.amount)),
+        sanitizeCsvCell(tx.type === "income" || tx.amount > 0 ? "Revenu" : "Dépense"),
       ]);
 
       const csvContent =

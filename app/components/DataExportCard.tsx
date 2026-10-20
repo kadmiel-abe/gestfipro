@@ -5,6 +5,7 @@ import { FileText, FileDown, Download, CheckCircle2, Loader2 } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { sanitizeCsvCell } from "@/lib/security";
 
 export interface TransactionExportItem {
   date: string;
@@ -78,15 +79,15 @@ export default function DataExportCard({
       const items = transactions.length > 0 ? transactions : MOCK_TRANSACTIONS;
 
       // En-têtes du CSV
-      const headers = ["Date", "Description", "Montant (FCFA)", "Type", "Compte"];
+      const headers = ["Date", "Description", "Montant (FCFA)", "Type", "Compte"].map(sanitizeCsvCell);
 
-      // Lignes de données échappées
+      // Lignes de données assainies contre l'injection de formules
       const rows = items.map((t) => [
-        t.date,
-        `"${t.description.replace(/"/g, '""')}"`,
-        t.montant,
-        t.type,
-        `"${t.compte.replace(/"/g, '""')}"`,
+        sanitizeCsvCell(t.date),
+        sanitizeCsvCell(t.description),
+        sanitizeCsvCell(t.montant),
+        sanitizeCsvCell(t.type),
+        sanitizeCsvCell(t.compte),
       ]);
 
       // Assemblage avec point-virgule (standard Excel francophone) + BOM UTF-8

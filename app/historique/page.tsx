@@ -20,6 +20,7 @@ import { useCurrency } from "@/lib/context/CurrencyContext";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { sanitizeCsvCell } from "@/lib/security";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface TransactionItem {
@@ -137,14 +138,14 @@ export default function HistoriquePage() {
       return;
     }
 
-    const headers = ["Date", "Description", "Catégorie", "Compte", `Montant (${currency})`, "Type"];
+    const headers = ["Date", "Description", "Catégorie", "Compte", `Montant (${currency})`, "Type"].map(sanitizeCsvCell);
     const rows = filteredTransactions.map((tx) => [
-      `"${tx.date}"`,
-      `"${tx.label.replace(/"/g, '""')}"`,
-      `"${tx.category}"`,
-      `"${tx.account}"`,
-      `"${tx.type === "income" ? "+" : "-"}${Math.abs(tx.amount)}"`,
-      `"${tx.type === "income" ? "Revenu" : "Dépense"}"`,
+      sanitizeCsvCell(tx.date),
+      sanitizeCsvCell(tx.label),
+      sanitizeCsvCell(tx.category),
+      sanitizeCsvCell(tx.account),
+      sanitizeCsvCell(`${tx.type === "income" ? "+" : "-"}${Math.abs(tx.amount)}`),
+      sanitizeCsvCell(tx.type === "income" ? "Revenu" : "Dépense"),
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map((e) => e.join(";"))].join("\r\n");

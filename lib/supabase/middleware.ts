@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sanitizeRedirectPath } from "@/lib/security";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -38,25 +39,23 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Exclure les routes de callback, api, et pages de test
-  if (
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/dashboard/test-auth") ||
-    pathname.startsWith("/dashboard/test-db")
-  ) {
+  // Exclure les routes d'authentification publique et les endpoints d'API (qui gèrent leur propre auth)
+  if (pathname.startsWith("/auth") || pathname.startsWith("/api")) {
     return supabaseResponse;
   }
 
-  // Protection des routes privées (Dashboard, Onboarding)
+  // Protection des routes privées (Dashboard, Onboarding, Historique)
   const isProtectedRoute =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/historique");
 
   // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirectedFrom", pathname);
+    // Assainir le chemin de redirection pour éviter tout Open Redirect
+    url.searchParams.set("redirectedFrom", sanitizeRedirectPath(pathname, "/dashboard"));
     const redirectResponse = NextResponse.redirect(url);
     // Transférer tous les cookies (y compris les éventuels refresh tokens)
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -68,7 +67,7 @@ export async function updateSession(request: NextRequest) {
   // Si l'utilisateur est déjà connecté et visite la page de connexion ou d'inscription
   if (user && (pathname === "/login" || pathname === "/signup")) {
     const redirectedFrom = request.nextUrl.searchParams.get("redirectedFrom");
-    const targetPath = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
+    const targetPath = sanitizeRedirectPath(redirectedFrom, "/dashboard");
     const url = request.nextUrl.clone();
     url.pathname = targetPath;
     url.search = "";
@@ -82,4 +81,3 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse;
 }
-

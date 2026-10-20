@@ -21,7 +21,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
+import { sanitizeRedirectPath } from "@/lib/security";
+import type { Session, AuthChangeEvent, User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 interface LoginPageProps {
   initialSignUp?: boolean;
@@ -81,11 +82,11 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
 
     const params = new URLSearchParams(window.location.search);
     const redirectedFrom = params.get("redirectedFrom");
-    const targetDest = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
+    const targetDest = sanitizeRedirectPath(redirectedFrom, "/dashboard");
 
-    // 1. Vérifier la session existante immédiatement
-    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      if (data?.session?.user) {
+    // 1. Vérifier l'utilisateur connecté avec validation serveur
+    supabase.auth.getUser().then(({ data }: { data: { user: SupabaseAuthUser | null } }) => {
+      if (data?.user) {
         router.push(targetDest);
       }
     });
@@ -113,7 +114,7 @@ export default function LoginPage({ initialSignUp = false }: LoginPageProps) {
 
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const redirectedFrom = params?.get("redirectedFrom");
-      const targetNext = redirectedFrom && redirectedFrom.startsWith("/") ? redirectedFrom : "/dashboard";
+      const targetNext = sanitizeRedirectPath(redirectedFrom, "/dashboard");
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const redirectUrl = `${origin}/auth/callback?next=${encodeURIComponent(targetNext)}`;
 

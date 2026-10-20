@@ -49,19 +49,19 @@ export default function SettingsPage() {
     async function loadProfile() {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
+          data: { user },
+        } = await supabase.auth.getUser();
 
-        if (session?.user) {
-          setUserId(session.user.id);
+        if (user) {
+          setUserId(user.id);
           const { data: prof, error: profError } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", session.user.id)
+            .eq("id", user.id)
             .single();
 
           if (prof && !profError) {
-            setUserName(prof.full_name || session.user.email?.split("@")[0] || "");
+            setUserName(prof.full_name || user.email?.split("@")[0] || "");
             setMonthlySalary(Number(prof.net_salary) || 0);
             setPaydayDate(prof.payday_with_month || 0);
           } else {

@@ -379,7 +379,16 @@ export function groupByDay(items: ActivityItem[]): DayGroup[] {
 
 /** Export CSV (séparateur « ; », BOM UTF-8 pour Excel). Montants en devise de base. */
 export function buildActivitiesCsv(items: ActivityItem[]): string {
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const escape = (v: unknown) => {
+    if (v === null || v === undefined) return '""';
+    const str = String(v);
+    if (str.length === 0) return '""';
+    const trimmed = str.trimStart();
+    const isPureNumber = /^[+-]?\d+(\.\d+)?$/.test(trimmed);
+    const DANGEROUS = ["=", "+", "-", "@", "\t", "\r", ";"];
+    const safeStr = !isPureNumber && DANGEROUS.some((c) => trimmed.startsWith(c)) ? "'" + str : str;
+    return `"${safeStr.replace(/"/g, '""')}"`;
+  };
   const header = ["Date", "Heure", "Type", "Libellé", "Détails", "Montant (FCFA)"];
   const rows = sortActivities(items).map((it) => {
     const time = it.hasTime ? new Date(it.occurredAt).toTimeString().slice(0, 5) : "";

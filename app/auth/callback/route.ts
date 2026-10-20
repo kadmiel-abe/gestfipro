@@ -1,18 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { sanitizeRedirectPath } from "@/lib/security";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/dashboard";
+  const rawNext = requestUrl.searchParams.get("next");
+  const targetPath = sanitizeRedirectPath(rawNext, "/dashboard");
 
-  // Vercel transmet l'hôte public dans ces en-têtes proxy.
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0].trim();
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
-  const origin = forwardedHost
-    ? `${forwardedProto || "https"}://${forwardedHost}`
-    : requestUrl.origin;
+  // Sécurisation de l'origine : dériver l'origine depuis le host de la requête
+  // pour se prémunir contre l'empoisonnement d'en-tête (Host Header Poisoning)
+  const host = request.headers.get("host") || requestUrl.host;
+  const forwardedProto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+    requestUrl.protocol.replace(":", "");
+  const origin = `${forwardedProto}://${host}`;
 
   // Gérer d'éventuelles erreurs renvoyées directement par le fournisseur OAuth
   const oauthError = requestUrl.searchParams.get("error");
@@ -34,8 +37,6 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sYmNidHhxYmltaGtyY3dza3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTM3NjgsImV4cCI6MjEwNDM2OTc2OH0.wDcWOuAxHUjIK9mwSYA6r4Bjl9nUzRARRknwC42mnBU";
 
-    // Only allow internal paths as the post-login destination.
-    const targetPath = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
     const redirectTarget = new URL(targetPath, origin);
     const response = NextResponse.redirect(redirectTarget);
 
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
         if (user) {
           const meta = user.user_metadata;
           const fullName = meta?.full_name || meta?.name || user.email?.split("@")[0] || "";
-          
+
           await supabase.from("profiles").upsert(
             {
               id: user.id,

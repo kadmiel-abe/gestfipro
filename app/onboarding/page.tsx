@@ -67,7 +67,7 @@ export default function OnboardingPage() {
             let type = "cash";
             const lower = acc.type.toLowerCase() + " " + acc.name.toLowerCase();
             if (lower.includes("wave")) type = "wave";
-            else if (lower.includes("orange") || lower.includes("mtn") || lower.includes("moov") || lower.includes("mobile")) type = "mobile_money";
+            else if (lower.includes("orange") || lower.includes("m-pesa") || lower.includes("mpesa") || lower.includes("m pesa") || lower.includes("mtn") || lower.includes("moov") || lower.includes("mobile")) type = "mobile_money";
             else if (lower.includes("banque") || lower.includes("bank")) type = "bank";
 
             return {

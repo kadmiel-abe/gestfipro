@@ -32,6 +32,14 @@ export const QUICK_CHOICES: ReadonlyArray<QuickChoice> = [
     keywords: ["orange", "om"],
   },
   {
+    id: "m-pesa",
+    name: "M-Pesa",
+    provider: "m-pesa",
+    defaultName: "Compte M-Pesa",
+    type: "mobile_money",
+    keywords: ["m pesa", "m-pesa", "mpesa"],
+  },
+  {
     id: "mtn",
     name: "MTN",
     provider: "mtn",
@@ -121,6 +129,7 @@ export function normalizeProviderKey(provider = ""): string {
   if (p.includes("ecobank")) return "ecobank";
   if (p.includes("wave")) return "wave";
   if (p.includes("orange")) return "orange";
+  if (p.includes("m-pesa") || p.includes("mpesa") || p.includes("m pesa")) return "m-pesa";
   if (p.includes("mtn")) return "mtn";
   if (p.includes("moov")) return "moov";
   if (p.includes("boa") || p.includes("africa")) return "boa";

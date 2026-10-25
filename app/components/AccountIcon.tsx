@@ -14,12 +14,13 @@ import Image from "next/image";
 
 // ─── Mapping opérateur → fichier ──────────────────────────────────────────────
 
-type ResolvedType = "boa" | "wave" | "orange" | "mtn" | "moov" | "cash" | "bni" | "nsia" | "ecobank" | "bank" | "custom";
+type ResolvedType = "boa" | "wave" | "orange" | "m-pesa" | "mtn" | "moov" | "cash" | "bni" | "nsia" | "ecobank" | "bank" | "custom";
 
 const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: string; fit: "cover" | "contain"; bg?: string; padding?: number }> = {
   boa:     { src: "/icons/Bank_of_africa-logo.png", label: "Bank of Africa (BOA)", fit: "contain", bg: "#ffffff", padding: 3 },
   wave:    { src: "/icons/wave.jpg",   label: "Wave",         fit: "cover"   },
   orange:  { src: "/icons/orange.jpg", label: "Orange Money", fit: "cover"   },
+  "m-pesa": { src: "/icons/M%20PESA.jfif", label: "M-Pesa", fit: "cover" },
   mtn:     { src: "/icons/mtn.jpg",    label: "MTN Money",    fit: "cover"   },
   moov:    { src: "/icons/moov.png",   label: "Moov Money",   fit: "cover"   },
   cash:    { src: "/icons/cash.svg",   label: "Espèces",      fit: "contain" },
@@ -39,6 +40,7 @@ export function resolveAccountType(name = "", type = ""): ResolvedType {
   if (k.includes("ecobank"))                                                      return "ecobank";
   if (k.includes("wave"))                                                         return "wave";
   if (k.includes("orange"))                                                       return "orange";
+  if (k.includes("m-pesa") || k.includes("mpesa") || k.includes("m pesa"))      return "m-pesa";
   if (k.includes("mtn"))                                                          return "mtn";
   if (k.includes("moov"))                                                         return "moov";
   if (k.includes("espèce") || k.includes("espece") || k.includes("cash"))        return "cash";
@@ -119,6 +121,7 @@ const COLORS: Record<Exclude<ResolvedType, "custom">, string> = {
   boa:     "#00558F",
   wave:    "#0BBFD6",
   orange:  "#FF7A00",
+  "m-pesa": "#D71920",
   mtn:     "#FFCC00",
   moov:    "#0066CC",
   cash:    "#EF4444",
@@ -139,4 +142,3 @@ export function getAccountBg(name: string, type = ""): string {
 }
 
 export { AccountLogo } from "./AccountLogo";
-

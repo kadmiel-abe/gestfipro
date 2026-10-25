@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 
 export interface AccountLogoProps {
-  /** Identifiant ou nom du provider (ex: "wave", "orange", "mtn", "cash", "bni", "nsia", "ecobank") */
+  /** Identifiant ou nom du provider (ex: "wave", "orange", "m-pesa", "mtn", "cash", "bni", "nsia", "ecobank") */
   provider: string;
   /** Taille en pixels (largeur et hauteur), par défaut 26px */
   size?: number;
@@ -31,6 +31,11 @@ const PROVIDER_MAP: Record<string, ProviderMeta> = {
   orange: {
     src: "/icons/orange.jpg",
     label: "Orange Money",
+    fit: "cover",
+  },
+  "m-pesa": {
+    src: "/icons/M%20PESA.jfif",
+    label: "M-Pesa",
     fit: "cover",
   },
   mtn: {
@@ -97,6 +102,7 @@ export function normalizeProviderKey(provider = ""): string {
   if (p.includes("ecobank")) return "ecobank";
   if (p.includes("wave")) return "wave";
   if (p.includes("orange")) return "orange";
+  if (p.includes("m-pesa") || p.includes("mpesa") || p.includes("m pesa")) return "m-pesa";
   if (p.includes("mtn")) return "mtn";
   if (p.includes("moov")) return "moov";
   if (p.includes("boa") || p.includes("africa")) return "boa";

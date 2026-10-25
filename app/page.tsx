@@ -665,7 +665,7 @@ export default function GestFiProPanAfricanLanding() {
       name: "Amina Sow",
       city: "Bamako, Mali",
       flag: "🇲🇱",
-      avatar: "/avatars/avatar_fatou.jpg",
+      avatar: "/avatars/avatar7.jpg",
       ringColor: "#FAFAFA",
       role: lang === "fr" ? "Responsable RH" : "HR Manager",
       stars: 5,
@@ -679,7 +679,7 @@ export default function GestFiProPanAfricanLanding() {
       name: "Jean-Luc Bakayoko",
       city: "Yamoussoukro, CI",
       flag: "🇨🇮",
-      avatar: "/avatars/avatar_emmanuel.jpg",
+      avatar: "/avatars/avatar8.jpg",
       ringColor: "#EF4444",
       role: lang === "fr" ? "Ingénieur Réseaux" : "Telecom Engineer",
       stars: 5,
@@ -690,6 +690,8 @@ export default function GestFiProPanAfricanLanding() {
           : "Viewing my Wave, Moov and Orange Money balances in one single dashboard helps me plan expenses with zero surprises.",
     },
   ];
+
+  const testimonials = [...testimonialsRow1, ...testimonialsRow2];
 
   const panAfricanFaqs = [
     {
@@ -2026,140 +2028,72 @@ export default function GestFiProPanAfricanLanding() {
           </motion.p>
         </motion.div>
 
-        {/* ── MASQUES DE DÉGRADÉ GAUCHE / DROITE POUR INFINITY EFFECT ── */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-36 md:w-48 bg-gradient-to-r from-[#09090B] via-[#09090B]/80 to-transparent z-20" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-36 md:w-48 bg-gradient-to-l from-[#09090B] via-[#09090B]/80 to-transparent z-20" />
-
-        {/* ── DUAL MARQUEE CONTAINER ── */}
-        <div className="flex flex-col gap-5 sm:gap-6 w-full select-none pause-hover">
-          
-          {/* ══ LIGNE 1 : DÉFILEMENT DE DROITE VERS GAUCHE (LEFTWARD) ══ */}
-          <div className="flex overflow-hidden relative w-full">
-            <div className="animate-marquee-left flex gap-4 sm:gap-6">
-              {[...testimonialsRow1, ...testimonialsRow1, ...testimonialsRow1, ...testimonialsRow1].map((item, idx) => (
-                <div
-                  key={`row1-${idx}`}
-                  className="w-[280px] sm:w-[350px] md:w-[400px] shrink-0 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] hover:border-[#EF4444]/60 hover:shadow-2xl hover:shadow-[#EF4444]/15 transition-all duration-300 flex flex-col justify-between group"
-                >
-                  {/* Note étoiles + Badge vérifié */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-1">
-                      {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
-                      ))}
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                      <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
-                    </span>
+        <motion.div
+          variants={scrollStaggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12"
+        >
+          {testimonials.map((item) => (
+            <motion.article
+              key={item.name}
+              variants={scrollCardItem}
+              whileHover={{ y: -4 }}
+              className="rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] p-4 sm:p-6 hover:border-[#EF4444]/60 hover:shadow-xl hover:shadow-[#EF4444]/10 transition-all duration-300 flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3.5">
+                  <div className="flex items-center gap-1" aria-label={`${item.stars} ${lang === "fr" ? "étoiles sur 5" : "out of 5 stars"}`}>
+                    {[...Array(item.stars)].map((_, starIndex) => (
+                      <Star key={starIndex} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" aria-hidden="true" />
+                    ))}
                   </div>
-
-                  {/* Avis utilisateur */}
-                  <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
-                    &ldquo;{item.text}&rdquo;
-                  </p>
-
-                  {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
-                  <div className="pt-3.5 border-t border-[#27272A] flex items-center gap-3">
-                    <div
-                      className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] shrink-0 transition-transform duration-300 group-hover:scale-105"
-                      style={{
-                        background: `linear-gradient(135deg, ${item.ringColor}, ${item.ringColor}80)`,
-                        boxShadow: `0 0 14px ${item.ringColor}30`,
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full overflow-hidden bg-[#18181B] relative">
-                        <Image
-                          src={item.avatar}
-                          alt={item.name}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover object-center"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
-                        <span>{item.name}</span>
-                        <span className="text-sm">{item.flag}</span>
-                      </h4>
-                      <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#A1A1AA] mt-0.5">
-                        <span className="truncate">{item.city}</span>
-                        <span>·</span>
-                        <span className="text-[11px] font-medium text-[#EF4444] truncate">{item.role}</span>
-                      </div>
-                    </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
+                    <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
+                    <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
+                  &ldquo;{item.text}&rdquo;
+                </p>
+              </div>
+              <div className="pt-3.5 border-t border-[#27272A] flex items-center gap-3">
+                <div
+                  className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] shrink-0 transition-transform duration-300 group-hover:scale-105"
+                  style={{
+                    background: `linear-gradient(135deg, ${item.ringColor}, ${item.ringColor}80)`,
+                    boxShadow: `0 0 14px ${item.ringColor}30`,
+                  }}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden bg-[#18181B] relative">
+                    <Image
+                      src={item.avatar}
+                      alt={item.name}
+                      width={48}
+                      height={48}
+                      sizes="48px"
+                      quality={60}
+                      loading="lazy"
+                      className="w-full h-full object-cover object-center"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ══ LIGNE 2 : DÉFILEMENT DE GAUCHE VERS DROITE (RIGHTWARD) ══ */}
-          <div className="flex overflow-hidden relative w-full">
-            <div className="animate-marquee-right flex gap-4 sm:gap-6">
-              {[...testimonialsRow2, ...testimonialsRow2, ...testimonialsRow2, ...testimonialsRow2].map((item, idx) => (
-                <div
-                  key={`row2-${idx}`}
-                  className="w-[280px] sm:w-[350px] md:w-[400px] shrink-0 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] hover:border-[#EF4444]/60 hover:shadow-2xl hover:shadow-[#EF4444]/15 transition-all duration-300 flex flex-col justify-between group"
-                >
-                  {/* Note étoiles + Badge vérifié */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-1">
-                      {[...Array(item.stars)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
-                      ))}
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/25">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                      <span>{lang === "fr" ? "Vérifié" : "Verified"}</span>
-                    </span>
-                  </div>
-
-                  {/* Avis utilisateur */}
-                  <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed mb-5 font-normal">
-                    &ldquo;{item.text}&rdquo;
-                  </p>
-
-                  {/* Utilisateur : Avatar avec visage visible + Anneau coloré + Métadonnées */}
-                  <div className="pt-3.5 border-t border-[#27272A] flex items-center gap-3">
-                    <div
-                      className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] shrink-0 transition-transform duration-300 group-hover:scale-105"
-                      style={{
-                        background: `linear-gradient(135deg, ${item.ringColor}, ${item.ringColor}80)`,
-                        boxShadow: `0 0 14px ${item.ringColor}30`,
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full overflow-hidden bg-[#18181B] relative">
-                        <Image
-                          src={item.avatar}
-                          alt={item.name}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover object-center"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
-                        <span>{item.name}</span>
-                        <span className="text-sm">{item.flag}</span>
-                      </h4>
-                      <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#A1A1AA] mt-0.5">
-                        <span className="truncate">{item.city}</span>
-                        <span>·</span>
-                        <span className="text-[11px] font-medium text-[#EF4444] truncate">{item.role}</span>
-                      </div>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                    <span>{item.name}</span>
+                    <span className="text-sm">{item.flag}</span>
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#A1A1AA] mt-0.5">
+                    <span className="truncate">{item.city}</span>
+                    <span>·</span>
+                    <span className="text-[11px] font-medium text-[#EF4444] truncate">{item.role}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
+              </div>
+            </motion.article>
+          ))}
+        </motion.div>
 
       </section>
 

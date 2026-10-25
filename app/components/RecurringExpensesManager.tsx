@@ -74,6 +74,7 @@ export default function RecurringExpensesManager() {
   const [name, setName] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [category, setCategory] = useState<string>("Logement");
+  const [customCategory, setCustomCategory] = useState<string>("");
   const [dayOfMonth, setDayOfMonth] = useState<string>("5");
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -85,6 +86,7 @@ export default function RecurringExpensesManager() {
     setName("");
     setAmount("");
     setCategory("Logement");
+    setCustomCategory("");
     setDayOfMonth("5");
     setFormError(null);
   };
@@ -122,11 +124,17 @@ export default function RecurringExpensesManager() {
       return;
     }
 
+    const trimmedCustomCategory = customCategory.trim();
+    if (category === "Autre" && !trimmedCustomCategory) {
+      setFormError("Veuillez préciser la catégorie de cette charge fixe.");
+      return;
+    }
+
     const newExpense: RecurringExpense = {
       id: `rec-${Date.now()}`,
       name: trimmedName,
       amount: parsedAmount,
-      category,
+      category: category === "Autre" ? trimmedCustomCategory : category,
       dayOfMonth: parsedDay,
     };
 
@@ -373,7 +381,10 @@ export default function RecurringExpensesManager() {
                 <div className="relative">
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => {
+                      setCategory(e.target.value);
+                      setFormError(null);
+                    }}
                     className="w-full rounded-xl bg-[#09090B] border border-[#27272A] px-3.5 py-2.5 text-sm font-medium text-[#FAFAFA] focus:border-[#EF4444] focus:outline-none transition-colors cursor-pointer appearance-none"
                   >
                     {CATEGORIES.map((cat) => (
@@ -384,6 +395,29 @@ export default function RecurringExpensesManager() {
                   </select>
                   <Tag className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1AA]" />
                 </div>
+                {category === "Autre" && (
+                  <div className="mt-3">
+                    <label
+                      htmlFor="recurring-custom-category"
+                      className="block text-xs font-semibold text-[#A1A1AA] mb-1.5"
+                    >
+                      Préciser la catégorie
+                    </label>
+                    <input
+                      id="recurring-custom-category"
+                      type="text"
+                      required
+                      value={customCategory}
+                      onChange={(e) => {
+                        setCustomCategory(e.target.value);
+                        setFormError(null);
+                      }}
+                      placeholder="Ex: Remboursement prêt"
+                      className="w-full rounded-xl bg-[#09090B] border border-[#27272A] px-3.5 py-2.5 text-sm font-medium text-[#FAFAFA] placeholder-[#52525B] focus:border-[#EF4444] focus:outline-none transition-colors"
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               {/* 4. Jour du prélèvement (1 à 31) */}

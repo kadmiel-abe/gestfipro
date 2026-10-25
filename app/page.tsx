@@ -21,7 +21,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Sparkles,
-  PieChart,
   Wallet,
   Lock,
   Clock,
@@ -36,6 +35,12 @@ import {
   X,
   Mail,
   ShieldCheck,
+  Eye,
+  EyeOff,
+  Smartphone,
+  Repeat,
+  FileDown,
+  Receipt,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useToday } from "@/hooks/useToday";
@@ -365,10 +370,10 @@ export default function GestFiProPanAfricanLanding() {
   const t = {
     fr: {
       badge: "La 1ère plateforme panafricaine de gestion par cycle de paie",
-      heroTitle1: "Maîtrisez votre argent",
-      heroTitle2: "jusqu'au prochain salaire.",
+      heroTitle1: "Faites durer votre salaire",
+      heroTitle2: "jusqu'à la prochaine paie.",
       heroSubtitle:
-        "Suivi en temps réel de votre trésorerie et calcul automatique de votre budget journalier disponible (Solde ÷ Jours restants). 0 connexion bancaire requise.",
+        "Ne finissez plus le mois à sec. Suivez vos comptes et découvrez combien vous pouvez dépenser chaque jour jusqu'à votre prochaine paie.",
       ctaPrimary: "Créer mon compte gratuit",
       ctaSecondary: "Voir la démo en direct",
       microTrust1: "100% Manuel & Confidentiel",
@@ -405,22 +410,32 @@ export default function GestFiProPanAfricanLanding() {
       defi3Desc:
         "Même avec un salaire régulier, la dernière semaine avant le virement devient stressante, forçant à emprunter ou serrer la ceinture.",
       defisTransition: "GestFiPro unifie tous vos comptes et calcule votre budget quotidien de sécurité.",
+      blindTitle: "Gérer à l'aveugle",
+      blindDesc: "Un solde isolé ne dit pas ce qu'il vous reste à dépenser ni combien de jours il doit durer.",
+      clarityTitle: "Voir clair jusqu'à la paie",
+      clarityDesc: "Votre solde disponible divisé par les jours restants : un repère concret pour tenir jusqu'au salaire.",
 
       // Bento Grid
-      bentoTitle: "Conçu pour ceux qui vivent de salaire en salaire",
-      bentoSubtitle: "Une approche radicalement simple adaptée à l'Afrique entière.",
-      bento1Title: "Cycle de Paie Intelligent",
+      bentoTitle: "Votre salaire sous contrôle, jusqu'à la fin du mois",
+      bentoSubtitle: "Les outils essentiels pour savoir où va votre argent et préparer la suite.",
+      bento1Title: "Budget quotidien & compte à rebours",
       bento1Desc:
-        "Le compteur se synchronise automatiquement avec votre date de paie pour calculer ce que vous pouvez dépenser chaque jour sans risque de découvert.",
-      bento2Title: "Saisie Rapide < 3s",
+        "Suivez les jours avant la paie et le montant conseillé par jour. Le budget s'adapte à vos soldes et à vos dépenses.",
+      bento2Title: "Wave, espèces et tous vos comptes",
       bento2Desc:
-        "Enregistrez vos achats du quotidien en 3 secondes chrono. Une interface ultra-épurée pour un suivi sans friction.",
-      bento3Title: "Confidentialité Totale",
+        "Centralisez Wave, Orange Money, M-Pesa, vos espèces et vos comptes bancaires dans une seule vue, sans connexion bancaire.",
+      bento3Title: "Dépenses récurrentes automatiques",
       bento3Desc:
-        "Zéro liaison bancaire requise. Vos comptes manuels restent sous votre contrôle exclusif et chiffré.",
-      bento4Title: "Santé Financière & Alertes",
+        "Planifiez vos charges fixes, factures et abonnements avec leur montant et leur date pour mieux anticiper chaque mois.",
+      bento4Title: "Simulateur d'investissement",
       bento4Desc:
-        "Une jauge dynamique vous prévient immédiatement si votre rythme de dépense met en danger votre fin de mois.",
+        "Projetez vos placements selon le montant et la durée choisis pour comparer des scénarios avant de vous décider.",
+      bento5Title: "Export CSV & PDF",
+      bento5Desc:
+        "Téléchargez l'historique de vos opérations pour suivre votre budget, conserver vos données ou les analyser.",
+      bento6Title: "Saisie rapide et privée",
+      bento6Desc:
+        "Notez vos dépenses en quelques secondes. Vos comptes restent sous votre contrôle, sans identifiants bancaires.",
 
       // How it works
       howBadge: "Prêt en 30 secondes",
@@ -456,10 +471,10 @@ export default function GestFiProPanAfricanLanding() {
     },
     en: {
       badge: "The #1 Pan-African Pay-Cycle Financial Platform",
-      heroTitle1: "Master your money",
+      heroTitle1: "Make your salary last",
       heroTitle2: "until your next payday.",
       heroSubtitle:
-        "Real-time cashflow tracking and automatic daily budget calculation (Balance ÷ Remaining Days). 0 bank integration required.",
+        "Stop running out of money before month-end. Track your accounts and see how much you can safely spend each day until payday.",
       ctaPrimary: "Create free account",
       ctaSecondary: "Live Interactive Demo",
       microTrust1: "100% Manual & Private",
@@ -496,22 +511,32 @@ export default function GestFiProPanAfricanLanding() {
       defi3Desc:
         "Even with a steady job, the last week before salary feels like an uphill battle, forcing loans or extreme frugality.",
       defisTransition: "GestFiPro unifies all your accounts and computes your safe daily budget.",
+      blindTitle: "Managing in the dark",
+      blindDesc: "A balance on its own cannot tell you what you can spend or how many days it needs to last.",
+      clarityTitle: "Clarity until payday",
+      clarityDesc: "Your available balance divided by the days remaining: a practical guide to make your salary last.",
 
       // Bento Grid
-      bentoTitle: "Built for those living from paycheck to paycheck",
-      bentoSubtitle: "A radically simple approach crafted for all of Africa.",
-      bento1Title: "Intelligent Pay Cycle",
+      bentoTitle: "Keep your salary under control until month-end",
+      bentoSubtitle: "The essentials to understand where your money goes and plan what comes next.",
+      bento1Title: "Daily budget & payday countdown",
       bento1Desc:
-        "The countdown automatically synchronizes with your salary date to calculate what you can spend each day without overdraft risk.",
-      bento2Title: "Ultra-Fast Entry < 3s",
+        "Track the days until payday and your recommended daily amount. Your budget adjusts to your balances and spending.",
+      bento2Title: "Wave, cash and all your accounts",
       bento2Desc:
-        "Log everyday expenses in under 3 seconds. An ultra-minimal interface for zero-friction tracking.",
-      bento3Title: "Total Privacy",
+        "Bring Wave, Orange Money, M-Pesa, cash and bank accounts together in one view, without connecting to your bank.",
+      bento3Title: "Automated recurring expenses",
       bento3Desc:
-        "Zero bank link required. Your manual accounts remain under your exclusive, encrypted control.",
-      bento4Title: "Financial Health & Alerts",
+        "Plan bills, subscriptions and regular expenses with their amount and due date to anticipate costs each month.",
+      bento4Title: "Investment simulator",
       bento4Desc:
-        "A reactive gauge warns you immediately if your spending pace threatens your month-end runway.",
+        "Project potential returns based on your chosen amount and duration to compare scenarios before you invest.",
+      bento5Title: "CSV & PDF export",
+      bento5Desc:
+        "Download your transaction history to track your budget, keep your records or analyze your spending.",
+      bento6Title: "Quick and private tracking",
+      bento6Desc:
+        "Log expenses in seconds. Your accounts stay under your control, with no banking credentials required.",
 
       // How it works
       howBadge: "Ready in 30 seconds",
@@ -1514,6 +1539,36 @@ export default function GestFiProPanAfricanLanding() {
         </motion.div>
 
         <motion.div
+          variants={scrollCardItem}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4 mb-8 sm:mb-10"
+        >
+          <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 sm:p-6">
+            <div className="flex items-center gap-2 text-[#A1A1AA]">
+              <EyeOff className="h-5 w-5 text-[#EF4444]" />
+              <h3 className="font-bold text-[#FAFAFA]">{t.blindTitle}</h3>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-[#A1A1AA]">{t.blindDesc}</p>
+          </div>
+          <div className="hidden md:flex items-center justify-center px-2 text-[#EF4444]">
+            <ArrowRight className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <div className="rounded-2xl border border-[#EF4444]/40 bg-gradient-to-br from-[#EF4444]/10 to-[#18181B] p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-[#EF4444]" />
+              <h3 className="font-bold text-[#FAFAFA]">{t.clarityTitle}</h3>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-[#A1A1AA]">{t.clarityDesc}</p>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#27272A] bg-[#09090B]/80 px-3 py-2 text-xs font-bold text-[#FAFAFA]">
+              <Wallet className="h-4 w-4 text-[#EF4444]" />
+              <span>{lang === "fr" ? "Solde disponible ÷ jours restants = budget / jour" : "Available balance ÷ days left = budget / day"}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
           variants={scrollStaggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -1533,8 +1588,8 @@ export default function GestFiProPanAfricanLanding() {
             className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
-                📱
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                <Smartphone className="h-5 w-5" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi1Title}</h3>
               <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-2.5">
@@ -1561,8 +1616,8 @@ export default function GestFiProPanAfricanLanding() {
             className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
-                💸
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                <Receipt className="h-5 w-5" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi2Title}</h3>
               <p className="text-xs text-[#EF4444] font-semibold uppercase tracking-wider mb-2.5">
@@ -1589,8 +1644,8 @@ export default function GestFiProPanAfricanLanding() {
             className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#DC2626]/60 transition-all flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
           >
             <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] text-xl font-bold mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
-                📉
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
+                <Clock className="h-5 w-5" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.defi3Title}</h3>
               <p className="text-xs text-[#DC2626] font-semibold uppercase tracking-wider mb-2.5">
@@ -1677,109 +1732,76 @@ export default function GestFiProPanAfricanLanding() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6"
         >
-          
-          {/* Bento 1 : Cycle de Paie Intelligent */}
-          <motion.div
-            variants={scrollCardItem}
-            whileHover={{
-              y: -6,
-              scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
-              transition: { duration: 0.3, ease: smoothEase },
-            }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default"
-          >
-            <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+          {[
+            {
+              title: t.bento1Title,
+              description: t.bento1Desc,
+              icon: <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: lang === "fr" ? "Solde ÷ jours restants = budget / jour" : "Balance ÷ days left = daily budget",
+              layout: "md:col-span-2 lg:col-span-3",
+            },
+            {
+              title: t.bento2Title,
+              description: t.bento2Desc,
+              icon: <Smartphone className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: "Wave · Espèces · Mobile Money · Banque",
+              layout: "md:col-span-2 lg:col-span-3",
+            },
+            {
+              title: t.bento3Title,
+              description: t.bento3Desc,
+              icon: <Repeat className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: lang === "fr" ? "Loyer · Factures · Abonnements" : "Rent · Bills · Subscriptions",
+              layout: "md:col-span-1 lg:col-span-2",
+            },
+            {
+              title: t.bento4Title,
+              description: t.bento4Desc,
+              icon: <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: lang === "fr" ? "Comparez vos scénarios" : "Compare your scenarios",
+              layout: "md:col-span-1 lg:col-span-2",
+            },
+            {
+              title: t.bento5Title,
+              description: t.bento5Desc,
+              icon: <FileDown className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: "CSV · PDF",
+              layout: "md:col-span-1 lg:col-span-2",
+            },
+            {
+              title: t.bento6Title,
+              description: t.bento6Desc,
+              icon: <Shield className="h-5 w-5 sm:h-6 sm:w-6" />,
+              detail: lang === "fr" ? "Sans identifiants bancaires" : "No banking credentials",
+              layout: "md:col-span-2 lg:col-span-3",
+            },
+          ].map((feature) => (
+            <motion.div
+              key={feature.title}
+              variants={scrollCardItem}
+              whileHover={{
+                y: -6,
+                scale: 1.015,
+                boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
+                transition: { duration: 0.3, ease: smoothEase },
+              }}
+              className={`${feature.layout} rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] p-5 sm:p-7 md:p-8 flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default`}
+            >
+              <div>
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-[#EF4444]/20 bg-[#EF4444]/10 text-[#EF4444] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] sm:h-12 sm:w-12">
+                  {feature.icon}
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-[#FAFAFA] sm:text-xl">{feature.title}</h3>
+                <p className="text-xs leading-relaxed text-[#A1A1AA] sm:text-sm">{feature.description}</p>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento1Title}</h3>
-              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
-                {t.bento1Desc}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#EF4444] font-semibold flex items-center gap-1.5">
-              <span>✓ {lang === "fr" ? "Formule : Solde ÷ Jours restants" : "Formula: Balance ÷ Remaining days"}</span>
-            </div>
-          </motion.div>
-
-          {/* Bento 2 : Saisie Rapide < 3s */}
-          <motion.div
-            variants={scrollCardItem}
-            whileHover={{
-              y: -6,
-              scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
-              transition: { duration: 0.3, ease: smoothEase },
-            }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default"
-          >
-            <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
-                <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+              <div className="mt-6 flex items-center gap-2 border-t border-[#27272A] pt-4 text-xs font-semibold text-[#EF4444]">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{feature.detail}</span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento2Title}</h3>
-              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
-                {t.bento2Desc}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#EF4444] font-semibold flex items-center gap-1.5">
-              <span>⚡ {lang === "fr" ? "Sans prise de tête ni friction" : "Friction-free tracking"}</span>
-            </div>
-          </motion.div>
-
-          {/* Bento 3 : Sécurité & Confidentialité */}
-          <motion.div
-            variants={scrollCardItem}
-            whileHover={{
-              y: -6,
-              scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(255, 255, 255, 0.15)",
-              transition: { duration: 0.3, ease: smoothEase },
-            }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-white/40 transition-all group cursor-default"
-          >
-            <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
-                <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento3Title}</h3>
-              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
-                {t.bento3Desc}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-white font-semibold flex items-center gap-1.5">
-              <span>🔒 {lang === "fr" ? "0 identifiant ni mot de passe bancaire" : "0 bank credentials stored"}</span>
-            </div>
-          </motion.div>
-
-          {/* Bento 4 : Visualisation & Santé */}
-          <motion.div
-            variants={scrollCardItem}
-            whileHover={{
-              y: -6,
-              scale: 1.015,
-              boxShadow: "0 20px 40px -15px rgba(220, 38, 38, 0.25)",
-              transition: { duration: 0.3, ease: smoothEase },
-            }}
-            className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between hover:border-[#DC2626]/60 transition-all group cursor-default"
-          >
-            <div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] mb-5 group-hover:scale-110 group-hover:rotate-[-3deg] transition-transform duration-300">
-                <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{t.bento4Title}</h3>
-              <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
-                {t.bento4Desc}
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#27272A] text-xs text-[#DC2626] font-semibold flex items-center gap-1.5">
-              <span>📊 {lang === "fr" ? "Alerte de rythme et répartition auto" : "Automatic pace alerts"}</span>
-            </div>
-          </motion.div>
-
+            </motion.div>
+          ))}
         </motion.div>
       </section>
 

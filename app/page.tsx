@@ -369,11 +369,11 @@ export default function GestFiProPanAfricanLanding() {
   // Dictionnaire de traduction FR / EN
   const t = {
     fr: {
-      badge: "La 1ère plateforme panafricaine de gestion par cycle de paie",
-      heroTitle1: "Faites durer votre salaire",
-      heroTitle2: "jusqu'à la prochaine paie.",
+      badge: "Pensé pour les salariés d'Afrique de l'Ouest",
+      heroTitle1: "Votre salaire disparaît avant la fin du mois ?",
+      heroTitle2: "Prenez le contrôle.",
       heroSubtitle:
-        "Ne finissez plus le mois à sec. Suivez vos comptes et découvrez combien vous pouvez dépenser chaque jour jusqu'à votre prochaine paie.",
+        "La plateforme des salariés ouest-africains qui calcule votre budget quotidien sur Wave, Orange Money et Espèces. Fini le stress du 20 du mois.",
       ctaPrimary: "Créer mon compte gratuit",
       ctaSecondary: "Voir la démo en direct",
       microTrust1: "100% Manuel & Confidentiel",
@@ -470,11 +470,11 @@ export default function GestFiProPanAfricanLanding() {
       ctaFinalDemo: "Ouvrir l'application",
     },
     en: {
-      badge: "The #1 Pan-African Pay-Cycle Financial Platform",
-      heroTitle1: "Make your salary last",
-      heroTitle2: "until your next payday.",
+      badge: "Built for West African employees",
+      heroTitle1: "Does your salary disappear before month-end?",
+      heroTitle2: "Take control.",
       heroSubtitle:
-        "Stop running out of money before month-end. Track your accounts and see how much you can safely spend each day until payday.",
+        "The platform for West African employees that calculates your daily budget across Wave, Orange Money and cash. No more stress by the 20th.",
       ctaPrimary: "Create free account",
       ctaSecondary: "Live Interactive Demo",
       microTrust1: "100% Manual & Private",
@@ -1040,7 +1040,7 @@ export default function GestFiProPanAfricanLanding() {
           {/* Titre Principal */}
           <motion.h1
             variants={scrollTextFadeUp}
-            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight max-w-4xl mx-auto leading-[1.1] mb-4 sm:mb-6 text-[#FAFAFA]"
+            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight max-w-5xl mx-auto leading-[1.1] mb-4 sm:mb-6 text-[#FAFAFA]"
           >
             {t.heroTitle1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#EF4444] via-[#f87171] to-rose-400">
@@ -1055,6 +1055,22 @@ export default function GestFiProPanAfricanLanding() {
           >
             {t.heroSubtitle}
           </motion.p>
+
+          <motion.div
+            variants={scrollBadgeItem}
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-flex items-center gap-2.5 rounded-full border border-[#EF4444]/35 bg-[#18181B] px-4 py-2.5 mb-7 shadow-lg shadow-[#EF4444]/10"
+            aria-label={lang === "fr" ? "12 jours avant la paie, budget de 5 500 FCFA par jour" : "12 days until payday, daily budget of 5,500 CFA francs"}
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EF4444]/15 text-[#EF4444]">
+              <Clock className="h-4 w-4" />
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-[#FAFAFA]">
+              {lang === "fr" ? "J-12 avant la paie : 5 500 FCFA / jour" : "12 days until payday: 5,500 XOF / day"}
+            </span>
+            <span className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" aria-hidden="true" />
+          </motion.div>
 
           {/* Double CTA avec micro-interactions hover / tap */}
           <motion.div
@@ -1581,11 +1597,10 @@ export default function GestFiProPanAfricanLanding() {
             variants={scrollCardItem}
             whileHover={{
               y: -6,
-              scale: 1.015,
               boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.22)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between h-full group cursor-default"
           >
             <div>
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-[#EF4444] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
@@ -1609,11 +1624,10 @@ export default function GestFiProPanAfricanLanding() {
             variants={scrollCardItem}
             whileHover={{
               y: -6,
-              scale: 1.015,
               boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.22)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 transition-all flex flex-col justify-between h-full group cursor-default"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#EF4444]/60 hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between h-full group cursor-default"
           >
             <div>
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
@@ -1637,11 +1651,10 @@ export default function GestFiProPanAfricanLanding() {
             variants={scrollCardItem}
             whileHover={{
               y: -6,
-              scale: 1.015,
               boxShadow: "0 20px 40px -15px rgba(220, 38, 38, 0.22)",
               transition: { duration: 0.3, ease: smoothEase },
             }}
-            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#DC2626]/60 transition-all flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
+            className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] hover:border-[#DC2626]/60 hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between h-full group sm:col-span-2 lg:col-span-1 cursor-default"
           >
             <div>
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] mb-4 sm:mb-5 group-hover:scale-110 group-hover:rotate-[-4deg] transition-transform duration-300">
@@ -1740,14 +1753,15 @@ export default function GestFiProPanAfricanLanding() {
               description: t.bento1Desc,
               icon: <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />,
               detail: lang === "fr" ? "Solde ÷ jours restants = budget / jour" : "Balance ÷ days left = daily budget",
-              layout: "md:col-span-2 lg:col-span-3",
+              layout: "md:col-span-2 lg:col-span-4 lg:row-span-2",
+              highlight: true,
             },
             {
               title: t.bento2Title,
               description: t.bento2Desc,
               icon: <Smartphone className="h-5 w-5 sm:h-6 sm:w-6" />,
               detail: "Wave · Espèces · Mobile Money · Banque",
-              layout: "md:col-span-2 lg:col-span-3",
+              layout: "md:col-span-1 lg:col-span-2",
             },
             {
               title: t.bento3Title,
@@ -1775,26 +1789,52 @@ export default function GestFiProPanAfricanLanding() {
               description: t.bento6Desc,
               icon: <Shield className="h-5 w-5 sm:h-6 sm:w-6" />,
               detail: lang === "fr" ? "Sans identifiants bancaires" : "No banking credentials",
-              layout: "md:col-span-2 lg:col-span-3",
+              layout: "md:col-span-2 lg:col-span-2",
             },
           ].map((feature) => (
             <motion.div
               key={feature.title}
               variants={scrollCardItem}
               whileHover={{
-                y: -6,
-                scale: 1.015,
+                y: -4,
                 boxShadow: "0 20px 40px -15px rgba(239, 68, 68, 0.25)",
                 transition: { duration: 0.3, ease: smoothEase },
               }}
-              className={`${feature.layout} rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] p-5 sm:p-7 md:p-8 flex flex-col justify-between hover:border-[#EF4444]/60 transition-all group cursor-default`}
+              className={`${feature.layout} ${feature.highlight ? "lg:min-h-[340px] lg:p-9" : ""} rounded-2xl sm:rounded-3xl bg-[#18181B] border border-[#27272A] p-5 sm:p-7 md:p-8 flex flex-col justify-between hover:border-[#EF4444]/60 hover:scale-[1.02] transition-all duration-300 group cursor-default`}
             >
-              <div>
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-[#EF4444]/20 bg-[#EF4444]/10 text-[#EF4444] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] sm:h-12 sm:w-12">
-                  {feature.icon}
+              <div className={feature.highlight ? "lg:flex lg:items-center lg:gap-8" : ""}>
+                <div className={feature.highlight ? "lg:flex-1" : ""}>
+                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-[#EF4444]/20 bg-[#EF4444]/10 text-[#EF4444] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] sm:h-12 sm:w-12">
+                    {feature.icon}
+                  </div>
+                  <h3 className={`mb-2 font-bold text-[#FAFAFA] ${feature.highlight ? "text-xl sm:text-2xl" : "text-lg sm:text-xl"}`}>{feature.title}</h3>
+                  <p className={`text-xs leading-relaxed text-[#A1A1AA] sm:text-sm ${feature.highlight ? "max-w-lg" : ""}`}>{feature.description}</p>
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-[#FAFAFA] sm:text-xl">{feature.title}</h3>
-                <p className="text-xs leading-relaxed text-[#A1A1AA] sm:text-sm">{feature.description}</p>
+                {feature.highlight && (
+                  <div className="mt-6 rounded-2xl border border-[#27272A] bg-[#09090B] p-4 sm:p-5 lg:mt-0 lg:w-[240px] lg:shrink-0">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                        {lang === "fr" ? "Votre cycle de paie" : "Your pay cycle"}
+                      </span>
+                      <Calendar className="h-4 w-4 text-[#EF4444]" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black tabular-nums text-[#FAFAFA]">12</span>
+                      <span className="text-xs font-medium text-[#A1A1AA]">{lang === "fr" ? "jours restants" : "days remaining"}</span>
+                    </div>
+                    <div className="my-4 h-2 overflow-hidden rounded-full bg-[#27272A]">
+                      <div className="h-full w-3/5 rounded-full bg-[#EF4444]" />
+                    </div>
+                    <div className="border-t border-[#27272A] pt-3">
+                      <span className="block text-[10px] font-semibold text-[#A1A1AA]">
+                        {lang === "fr" ? "Budget conseillé / jour" : "Recommended daily budget"}
+                      </span>
+                      <span className="mt-1 block text-lg font-extrabold text-[#EF4444]">
+                        5 500 FCFA <span className="text-xs font-semibold text-[#A1A1AA]">/ {lang === "fr" ? "jour" : "day"}</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="mt-6 flex items-center gap-2 border-t border-[#27272A] pt-4 text-xs font-semibold text-[#EF4444]">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />

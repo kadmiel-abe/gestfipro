@@ -34,7 +34,7 @@ const PROVIDER_MAP: Record<string, ProviderMeta> = {
     fit: "cover",
   },
   "m-pesa": {
-    src: "/icons/M%20PESA.jfif",
+    src: "/icons/m-pesa.jpg",
     label: "M-Pesa",
     fit: "cover",
   },

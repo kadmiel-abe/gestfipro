@@ -20,7 +20,7 @@ const ICON_MAP: Record<Exclude<ResolvedType, "custom">, { src: string; label: st
   boa:     { src: "/icons/Bank_of_africa-logo.png", label: "Bank of Africa (BOA)", fit: "contain", bg: "#ffffff", padding: 3 },
   wave:    { src: "/icons/wave.jpg",   label: "Wave",         fit: "cover"   },
   orange:  { src: "/icons/orange.jpg", label: "Orange Money", fit: "cover"   },
-  "m-pesa": { src: "/icons/M%20PESA.jfif", label: "M-Pesa", fit: "cover" },
+  "m-pesa": { src: "/icons/m-pesa.jpg", label: "M-Pesa", fit: "cover" },
   mtn:     { src: "/icons/mtn.jpg",    label: "MTN Money",    fit: "cover"   },
   moov:    { src: "/icons/moov.png",   label: "Moov Money",   fit: "cover"   },
   cash:    { src: "/icons/cash.svg",   label: "Espèces",      fit: "contain" },
